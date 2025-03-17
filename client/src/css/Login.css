@@ -1,0 +1,191 @@
+
+/* login */
+.login-container {
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 2px;
+    text-align: center;
+    border-radius: 8px;
+    background-color: #f9fafc; /* White background */
+    /* box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); Subtle shadow */
+  }
+  
+  .login-logo-container {
+    margin-bottom: 20px;
+  }
+  
+  .login-logo {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .welcome-heading {
+    font-size: 2.9rem; /* Adjusted for scalability */
+    font-weight: 550;
+    color: #1C222B; /* Slightly softer black for readability */
+  }
+  
+  .subheading {
+    font-size: 0.8rem;
+    color: #8398b0;
+    margin-top: 0; /* Removed margin to eliminate gap */
+    margin-bottom: 40px;
+  }
+  
+  .login-form .email-input {
+    width: 85%; /* Ensures full-width responsiveness */
+    padding: 11px;
+    padding-left: 20px;
+    border: 2px solid #dddddd;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-size: 0.7rem;
+    caret-color: #000;
+    color: #000;
+    background-color: #f9f9f9; /* Light background for input */
+    cursor: text; /* Ensures the cursor appears when focused */
+    transition: border-color 0.3s ease; /* Smooth focus transition */
+    box-sizing: border-box; /* Ensures padding is included in width calculation */
+  }
+  
+  .email-input::placeholder{
+    color: #8398b0;
+  }
+  
+  .login-form .email-input:focus {
+    border-color: #4a55c2; /* Highlight border on focus */
+    outline: none;
+    background-color: #ffffff; /* Remove input background on focus */
+  }
+  
+  .login-form .login-button {
+    width: 85%;
+    padding: 11px;
+    background-color: #4651ce;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    /* font-weight: bold; */
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    box-sizing: border-box; /* Ensures padding is included in width calculation */
+  }
+  
+  .login-form .login-button:hover {
+    background-color: #2F38A3;
+  }
+  
+  .login-or-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 5px 0;
+  }
+  
+  .login-divider-line {
+    flex: none; /* Overrides flex-grow behavior */
+    width: 38%; /* Matches the width of the button */
+    height: 1px;
+    background-color: #dfdfdf;
+  }
+  
+  
+  .login-or-text {
+    margin: 10px 10px;
+    font-size: 0.8rem;
+    color: #374151;
+  }
+  
+  .google-login-button {
+    width: 85%;
+    margin-left: 30px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #2D3643;
+    font-size: 0.8rem;
+    color: #b9b9b9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    box-sizing: border-box; /*Ensures padding is included in width calculation*/
+  }
+  
+  .google-icon-text{
+    margin-top: 10px;
+  }
+  
+  .google-login-button .google-icon {
+    width: 15px;
+    height: 15px;
+    margin-right: 8px;
+  }
+  
+  .google-login-button:hover {
+    background-color: #1a1a1a;
+  }
+  
+  .signup-text {
+    font-size: 0.9rem;
+    color: #677a86;
+    margin-top: 41px;
+  }
+  
+  .signup-text a {
+    color: #2a4665;
+    text-decoration: none;
+  }
+  
+  .signup-text a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Media Queries for Responsiveness */
+  @media screen and (max-width: 768px) {
+    .login-container {
+      padding: 15px;
+    }
+  
+    .welcome-heading {
+      font-size: 2rem; /* Scales down for tablets */
+    }
+  
+    .subheading {
+      font-size: 1rem;
+    }
+  
+    .login-form .email-input,
+    .login-form .login-button {
+      padding: 12px; /* Equalize button and input padding */
+    }
+  }
+  
+  @media screen and (max-width: 480px) {
+    .login-container {
+      width: 90%;
+    }
+  
+    .welcome-heading {
+      font-size: 1.8rem; /* Further scaling down for mobile */
+    }
+  
+    .subheading {
+      font-size: 0.9rem;
+    }
+  
+    .login-form .email-input,
+    .login-form .login-button {
+      padding: 12px; /* Equalize button and input padding */
+    }
+  
+    .or-text {
+      font-size: 0.8rem; /* Smaller text for mobile */
+    }
+  
+    .google-login-button {
+      font-size: 0.9rem; /* Smaller font size for mobile */
+    }
+  }
+  

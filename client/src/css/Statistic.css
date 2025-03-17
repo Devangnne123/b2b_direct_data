@@ -1,0 +1,94 @@
+/* Dashboard Layout */
+.dashboard {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-x: auto;
+}
+
+.profile-lookup {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Table Container */
+.statistics-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 16px;
+  text-align: left;
+  min-width: 800px; /* Prevents table from breaking on small screens */
+}
+
+/* Table Headers and Cells */
+.statistics-table th,
+.statistics-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
+}
+
+.statistics-table th {
+  background-color: #f4f4f4;
+  color: #333;
+  font-weight: bold;
+}
+
+/* Alternating Row Colors */
+.statistics-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.statistics-table tr:hover {
+  background-color: #f1f1f1;
+}
+
+/* Sticky Table Header */
+.statistics-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* Responsive Table - Wrapping Container */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .statistics-table {
+    font-size: 14px;
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .statistics-table {
+    font-size: 12px;
+  }
+
+  .statistics-table th,
+  .statistics-table td {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .statistics-table {
+    font-size: 11px;
+  }
+
+  .statistics-table th,
+  .statistics-table td {
+    padding: 6px;
+  }
+}

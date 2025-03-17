@@ -1,0 +1,183 @@
+/* Form Container */
+.add-user-form-container {
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 30px;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  font-family: "Arial", sans-serif;
+}
+
+.add-user-form-container h1 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.add-user-form-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.add-user-form-container input[type="email"],
+.add-user-form-container input[type="password"],
+.add-user-form-container input[type="number"] {
+  padding: 12px 15px;
+  font-size: 16px;
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: black;
+  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.add-user-form-container input[type="email"]:focus,
+.add-user-form-container input[type="password"]:focus,
+.add-user-form-container input[type="number"]:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+}
+
+.add-user-form-container button[type="submit"] {
+  padding: 12px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.add-user-form-container button[type="submit"]:hover {
+  background-color: #0056b3;
+}
+
+.add-user-form-container button[type="submit"]:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.add-user-form-container .error-message {
+  color: #ff4d4f;
+  font-size: 14px;
+  text-align: center;
+}
+
+.add-user-form-container div {
+  display: flex;
+  flex-direction: column;
+}
+
+.add-user-form-container input::placeholder {
+  color: #999;
+}
+
+.add-user-form-container input[type="email"]:hover,
+.add-user-form-container input[type="password"]:hover,
+.add-user-form-container input[type="number"]:hover {
+  background-color: #f1f1f1;
+}
+
+/* User List Table Styles */
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  /* margin: 20px 0;
+  font-size: 16px;
+  text-align: center;
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); */
+}
+
+.user-table th,
+.user-table td {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+}
+
+.user-table th {
+  background-color: #007bff;
+  color: white;
+  text-transform: uppercase;
+}
+
+.user-table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.user-table tr:hover {
+  background-color: #e6f7ff;
+}
+
+.user-table td {
+  color: #333;
+}
+
+/* Header Styling */
+.user-list-header {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  /* margin-top: 20px; */
+  text-align: center;
+}
+
+.add-btn{
+  margin-right: 10px;
+}
+
+/* Error Message Styling */
+.error-message {
+  color: #ff4d4f;
+  font-size: 16px;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.dashboard {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* Loading Message */
+.main-content p {
+  font-size: 16px;
+  color: #666;
+  text-align: center;
+}
+
+/* Styling the Update button */
+button {
+  background-color: #4caf50; /* Green background */
+  color: white; /* White text */
+  padding: 10px 10px; /* Padding for the button */
+  border: none; /* Remove border */
+  border-radius: 5px; /* Rounded corners */
+  cursor: pointer; /* Change cursor to pointer when hovering */
+  transition: background-color 0.3s ease; /* Smooth background color transition */
+}
+
+button:hover {
+  background-color: #45a049; /* Darker green on hover */
+}
+
+/* Styling the textbox for entering credits */
+input[type="number"] {
+  padding: 10px; /* Padding inside the input */
+  border: 1px solid #ccc; /* Light gray border */
+  border-radius: 5px; /* Rounded corners */
+  width: 150px; /* Set a fixed width */
+  margin-right: 10px; /* Space between textbox and button */
+  font-size: 16px; /* Larger font size */
+}
+
+input[type="number"]:focus {
+  outline: none; /* Remove the outline when the input is focused */
+  border-color: #4caf50; /* Green border when focused */
+}

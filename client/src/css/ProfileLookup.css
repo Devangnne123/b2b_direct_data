@@ -1,0 +1,335 @@
+
+.dashboard {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #ffffff;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 12px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #d1d1d1;
+  border-radius: 2px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+.user-info {
+  display: flex;
+  text-align: center;
+  font-size: 12px;
+}
+
+.avatar-container {
+  margin-right: 5px;
+}
+
+.avatar {
+  width: 90%;
+  height: 70%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.menu li {
+  margin: 15px 0;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 5px;
+  transition: background-color 0.3s, color 0.3s;
+  display: flex; /* Ensure the li behaves like a block */
+  align-items: center; /* Vertically align the text */
+}
+
+.menu li .menu-link {
+  text-decoration: none; /* Remove underline */
+  color: inherit; /* Inherit color from li */
+  display: block; /* Make the link fill the li */
+  width: 100%; /* Ensure it takes the full width */
+  height: 100%; /* Ensure it takes the full height */
+}
+
+.menu li:hover {
+  background-color: #666666;
+  color: #fff;
+}
+
+.menu li.active {
+  background-color: #0c0743;
+  color: #fff;
+}
+
+.start-plan {
+  text-align: center;
+  background-color: #0c0743;
+  color: #fff;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.start-plan h3 {
+  margin: 0 0 10px;
+}
+
+.start-plan button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #4c4cd5;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.main-content {
+  padding: 20px;
+  flex: 1;
+  background-color: white;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.explore-section {
+  text-align: center;
+}
+
+.explore-section h1 {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.explore-section p {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+
+.search-box {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.search-box input {
+  color: black;
+  background-color: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px 0 0 5px;
+  flex: 1;
+}
+
+.search-box button {
+  padding: 10px;
+  background-color: #4c4cd5;
+  color: white;
+  border: none;
+  border-radius: 0 5px 5px 0;
+  cursor: pointer;
+}
+
+.search-box button:hover {
+  background-color: #3333a5;
+}
+
+.file-upload-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.file-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-name {
+  font-size: 14px;
+  color: #333;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+.upload-label {
+  background-color: #007bff;
+  color: white;
+  padding: 8px 15px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.upload-button {
+  background-color: #28a745;
+  color: white;
+  padding: 8px 15px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.upload-label:hover,
+.upload-button:hover {
+  opacity: 0.8;
+}
+
+.download-button {
+  display: inline-block;
+  background-color: #4caf50; /* Green background */
+  color: white; /* White text */
+  padding: 10px 20px; /* Padding for the button */
+  font-size: 16px; /* Font size */
+  font-weight: bold; /* Bold text */
+  border: none; /* Remove default border */
+  border-radius: 5px; /* Rounded corners */
+  cursor: pointer; /* Pointer cursor on hover */
+  text-align: center; /* Center the text */
+  text-decoration: none; /* Remove underline for links, if any */
+  /* margin-top: 20px; Add some margin to the top */
+}
+
+.download-button:hover {
+  background-color: #45a049; /* Darker green on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add a shadow on hover */
+}
+
+.download-button:active {
+  background-color: #3e8e41; /* Even darker green on active */
+  transform: scale(0.98); /* Slightly reduce the size on click */
+}
+
+.modal-overlay-1 {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal Container */
+.modal-container-1 {
+  background: #ffffff;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 8px;
+  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Close Button */
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  font-weight: bold;
+  color: #444;
+  cursor: pointer;
+}
+
+/* Modal Header */
+.modal-header-1 {
+  background: #007bff;
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Modal Body */
+.modal-body-1 {
+  padding: 20px;
+  line-height: 1.6;
+  color: #555;
+}
+
+.info-row-1 {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.info-row-1 strong {
+  font-weight: bold;
+  color: #333;
+}
+
+.info-value-1 {
+  color: #555;
+  text-align: right;
+}
+
+.info-value-1 a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.info-value-1 a:hover {
+  text-decoration: underline;
+}
+
+/* Modal Footer */
+.modal-footer-1 {
+  text-align: center;
+  padding: 15px;
+  border-top: 1px solid #eee;
+}
+
+.action-button-1 {
+  background: #007bff;
+  color: #ffffff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.action-button-1:hover {
+  background: #0056b3;
+}
+

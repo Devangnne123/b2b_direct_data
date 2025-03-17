@@ -1,0 +1,749 @@
+/* #root {
+  max-width: 0;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+} */
+
+/* General Styles */
+body,
+html {
+  margin: 0;
+  padding: 0;
+  font-family: "Arial", sans-serif;
+  background-color: #f9fafc;
+}
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  width: 100%;
+}
+
+/* Header Section */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 20px 0px;
+  background-color: #ffffff;
+  /* box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); */
+  position: relative;
+  top: 0;
+  z-index: 1000;
+}
+
+/* Logo */
+.logo {
+  padding-left: 50px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #1e90ff;
+  text-transform: capitalize;
+}
+.logo a {
+  color: #1e90ff;
+  text-decoration: none;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.logo a:hover {
+  color: #0074cc;
+  transform: scale(1.1); /* Slightly increase the size on hover */
+}
+
+/* Prevent underline or color change after visiting */
+.logo a:visited {
+  text-decoration: none;
+  color: #1e90ff;
+}
+
+/* Navigation Menu */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  list-style: none;
+}
+
+.nav-links li {
+  position: relative;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.3s ease;
+}
+
+/* .nav-links a:hover {
+  color: #1e90ff;
+} */
+
+/* Dropdown Menu */
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: #c0c0c0c4;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  /* border-radius: 6px; */
+  display: none; /* Initially hidden */
+  z-index: 1000;
+  min-width: 200px; /* Adjust to fit smaller screens */
+  padding: 10px 0;
+  overflow: hidden;
+}
+
+.nav-links .dropdown-container:hover .dropdown {
+  display: block; /* Show dropdown when hovering */
+}
+
+.dropdown a {
+  display: block;
+  padding: 10px 20px;
+  color: #333;
+  text-decoration: none;
+  font-weight: 400;
+  font-size: 16px;
+  white-space: nowrap; /* Prevent text wrapping */
+  /* transition: background-color 0.3s ease, color 0.3s ease; */
+}
+
+/* .dropdown a:hover {
+  background-color: #1e90ff;
+  color: #fff;
+} */
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .dropdown {
+    min-width: 100%; /* Use full width on smaller screens */
+  }
+
+  .nav-links {
+    flex-direction: column;
+    gap: 15px;
+    align-items: flex-start;
+  }
+
+  .nav-links a {
+    font-size: 14px;
+  }
+}
+
+/* Authentication Buttons */
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  padding-right: 50px;
+}
+
+.auth-btn {
+  padding: 8px 16px;
+  border: 10px #000000;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.auth-btn.login {
+  background-color: #ffffff;
+  font-size: 16px;
+  color: #545454c3;
+}
+
+/* .auth-btn.login:hover {
+  background-color: #1e90ff;
+  color: #ffffff;
+} */
+
+.auth-btn.signup {
+  background-color: #ffffff;
+  font-size: 19px;
+  color: #000000;
+  border: 1px;
+  border-color: #89898952; /* Add a border */
+  border-style: groove;
+  border-radius: 8px; /* Curved edges */
+  padding: 13px 10px; /* Adjust padding for better appearance */
+  transition: all 0.3s ease;
+}
+
+/* .auth-btn.signup:hover {
+  background-color: #0074cc;
+} */
+
+/* Reverse Email Lookup Section */
+/* Email Lookup Section */
+.email-lookup {
+  margin-top: 20px;
+  flex: 1;
+  max-width: 650px;
+  text-align: left;
+  padding-left: 70px;
+  padding-right: 70px;
+}
+
+.main-heading {
+  font-size: 55px;
+  font-weight: bold;
+  color: #000;
+}
+
+.highlight {
+  color: #9341fb; /* Slight purple color */
+}
+
+.turn-emails-into {
+  color: #060507;
+}
+
+.sub-text {
+  margin-top: 20px;
+  font-size: 18px;
+  color: #555;
+  max-width: 700px;
+  margin-left: left;
+}
+
+/* Email Purpose */
+
+.input-container {
+  display: flex;
+  /* justify-content: center; */
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.input-field {
+  width: 300px;
+  padding: 15px 30px;
+  background-color: white;
+  border: 1px groove #a2a2a2; /* Light border */
+  border-radius: 10px; /* Fully rounded border */
+  font-size: 1rem;
+  outline: none;
+  color: #000; /* Black text color */
+  caret-color: #000; /* Purple blinking cursor */
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.input-field::placeholder {
+  color: #999; /* Placeholder text color */
+}
+
+.input-field:focus {
+  border-color: #0073ff; /* Purple border on focus */
+  box-shadow: 0 0 1px #616161; /* Subtle purple glow */
+}
+
+.search-button {
+  padding: 15px 20px;
+  font-size: 1rem;
+  background-color: #4175fb; /* Bright blue background */
+  color: #fff; /* White text */
+  border: none;
+  border-radius: 10px; /* Full rounded button */
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 0 0 1px #3768ea, 0 1px 3px #3768ea, inset 0 -1px #3768ea;
+}
+
+.search-button:hover {
+  background-color: #3c63e2; /* Darker blue on hover */
+}
+
+.search-button:active {
+  background-color: #1d4ed8; /* Slightly lighter blue for active click */
+  transform: scale(0.98); /* Slight button press effect */
+}
+
+/* Rating Section */
+.rating-section {
+  margin-top: 20px;
+  width: 600px;
+  font-size: 1rem;
+  color: #080505;
+}
+
+.rating-section .stars {
+  color: #4a90e2; /* Blue stars */
+  font-size: 2rem; /* Increased size for larger stars */
+  margin-right: 10px;
+}
+
+.rating-section .rating-text a {
+  color: #216fed;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.rating-section .rating-text a:hover {
+  text-decoration: underline;
+}
+
+.reverse-email-lookup {
+  color: black;
+  font-size: 1.2rem;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .email-lookup {
+    margin-right: 0; /* Reset the margin for smaller screens */
+    max-width: 100%; /* Allow the section to take full width */
+    margin-top: 10px; /* Adjust margin on top */
+    text-align: center; /* Center the text on smaller screens */
+  }
+
+  .input-container {
+    flex-direction: column; /* Stack input and button vertically */
+    align-items: center;
+  }
+
+  .input-field {
+    width: 90%; /* Make the input field wider for smaller screens */
+    padding: 12px 20px;
+  }
+
+  .search-button {
+    width: 90%; /* Make the button wider for smaller screens */
+    margin-top: 10px; /* Space between button and input field */
+  }
+
+  .main-heading {
+    font-size: 40px; /* Adjust font size for smaller screens */
+  }
+
+  .sub-text {
+    font-size: 16px; /* Adjust font size for readability on smaller screens */
+  }
+
+  .rating-section {
+    width: 100%; /* Ensure rating section is responsive */
+  }
+}
+
+/* General Footer Styles */
+footer {
+  background-color: #f8f9fa;
+  width: 92%; /* Full width */
+  padding: 40px 0;
+  /* border-top: 1px solid #ddd; */
+}
+
+.footer-container {
+  width: 100%; /*  Full width */
+  margin: 0 auto;
+  padding: 0 20px; /*  Adjust padding for responsiveness */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.footer-section {
+  margin: 10px 0;
+  gap: 20%;
+}
+
+.footer-section h3,
+.footer-section h4 {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #000;
+}
+
+.footer-section p {
+  color: #555;
+  margin: 0 0 10px;
+}
+
+.footer-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-section ul li {
+  margin-bottom: 5px;
+}
+
+.footer-section ul li a {
+  text-decoration: none;
+  color: #555;
+  transition: color 0.3s ease;
+}
+
+.footer-section ul li a:hover {
+  color: #000;
+}
+
+/* Footer Icons */
+.footer-icons img,
+.social-icons img {
+  margin-right: 10px;
+  display: inline-block;
+  vertical-align: middle;
+  /* border-radius: 4px; */
+}
+
+.footer-icons img {
+  width: 40px;
+  height: 40px;
+}
+
+.social-icons img {
+  width: 20px;
+  height: 20px;
+}
+
+/* Footer Bottom Section */
+.footer-bottom {
+  padding: 20px 40px;
+  border-top: 1px solid #ddd;
+  margin-top: 20px;
+}
+
+.footer-bottom p {
+  color: #000000;
+  margin: 0;
+  font-weight: 500;
+}
+
+.footer-links {
+  text-align: center;
+  margin-top: 10px;
+  padding-left: 140px;
+}
+
+.footer-links a {
+  margin-right: 40px;
+  font-size: 10px;
+  text-decoration: none;
+  color: #555;
+  transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+  color: #000;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .footer-container {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 10px; /* Adjust padding for smaller screens */
+  }
+
+  .footer-section {
+    flex: 1 1 100%; /* Footer sections will stack on smaller screens */
+    margin-bottom: 20px; /* Add space between sections */
+  }
+
+  .footer-bottom {
+    padding: 15px 0;
+  }
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 50px;
+  text-align: center;
+  width: 500px;
+  height: 500px;
+  position: relative;
+}
+
+.popup-logo{
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  height: 50px;
+  width: 50px;
+  background: transparent;
+  border: none;
+  font-size: 2px;
+  font-weight: bold;
+}
+
+.close-button-x {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  background: transparent;
+  border: none;
+  font-size: 30px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #000000;
+}
+
+.close-button-x:hover {
+  color: #000000;
+}
+
+.modal-header h2 {
+  font-size: 28px;
+  margin: 0;
+  color: #282876;
+}
+.modal-header p {
+  font-size: 13px;
+  margin-bottom: 20px;
+  color: #8181AC;
+}
+
+.modal-body {
+  margin: 3px 0;
+}
+
+.modal-image {
+  width: 230px;
+  height: 230px;
+  margin: 40px 0;
+}
+
+.action-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 20px 30px;
+  border-radius: 30px;
+  cursor: pointer;
+}
+
+.action-button:hover {
+  background-color: #0056b3;
+}
+
+/* Mobile Enrichment */
+
+/* Additional styles for the file upload section */
+.file-upload-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.file-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-name {
+  font-size: 14px;
+  color: #333;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+.upload-label {
+  background-color: #007bff;
+  color: white;
+  padding: 8px 15px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.upload-button {
+  background-color: #28a745;
+  color: white;
+  padding: 8px 15px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.upload-label:hover, .upload-button:hover {
+  opacity: 0.8;
+}
+
+.download-button {
+  display: inline-block;
+  background-color: #4caf50; /* Green background */
+  color: white; /* White text */
+  padding: 10px 20px; /* Padding for the button */
+  font-size: 16px; /* Font size */
+  font-weight: bold; /* Bold text */
+  border: none; /* Remove default border */
+  border-radius: 5px; /* Rounded corners */
+  cursor: pointer; /* Pointer cursor on hover */
+  text-align: center; /* Center the text */
+  text-decoration: none; /* Remove underline for links, if any */
+  /* margin-top: 20px; Add some margin to the top */
+}
+
+.download-button:hover {
+  background-color: #45a049; /* Darker green on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add a shadow on hover */
+}
+
+.download-button:active {
+  background-color: #3e8e41; /* Even darker green on active */
+  transform: scale(0.98); /* Slightly reduce the size on click */
+}
+
+/* Sample dropdown CSS */
+.dropdown-container-1 {
+  margin: 10px 0;
+}
+
+.dropdown-1 {
+  background-color: white;
+  border: 1px groove #a2a2a2; /* Light border */
+  border-radius: 10px; /* Fully rounded border */
+  color: rgb(0, 0, 0);
+  padding: 10px;
+  font-size: 16px;
+  width: 200px;
+}
+
+
+/* Modal Overlay */
+.modal-overlay-1 {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Modal Container */
+.modal-container-1 {
+  background: #ffffff;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 8px;
+  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Close Button */
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  font-weight: bold;
+  color: #444;
+  cursor: pointer;
+}
+
+/* Modal Header */
+.modal-header-1 {
+  background: #007bff;
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Modal Body */
+.modal-body-1 {
+  padding: 20px;
+  line-height: 1.6;
+  color: #555;
+}
+
+.info-row-1 {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.info-row-1 strong {
+  font-weight: bold;
+  color: #333;
+}
+
+.info-value-1 {
+  color: #555;
+  text-align: right;
+}
+
+.info-value-1 a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.info-value-1 a:hover {
+  text-decoration: underline;
+}
+
+/* Modal Footer */
+.modal-footer-1 {
+  text-align: center;
+  padding: 15px;
+  border-top: 1px solid #eee;
+}
+
+.action-button-1 {
+  background: #007bff;
+  color: #ffffff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.action-button-1:hover {
+  background: #0056b3;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

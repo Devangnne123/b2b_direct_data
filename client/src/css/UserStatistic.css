@@ -1,0 +1,99 @@
+/* Dashboard Layout */
+.dashboard {
+    display: flex;
+    flex-direction: row;
+    min-height: 100vh;
+}
+
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    overflow-x: hidden;
+}
+
+/* Header */
+.header {
+    text-align: center;
+}
+
+/* Statistics Table */
+.statistics-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    border-radius: 8px;
+}
+
+/* Table Head */
+.statistics-table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+    border: 1px solid #ddd;
+}
+
+/* Table Data */
+.statistics-table td {
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+/* Alternate Row Color */
+.statistics-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+/* No Data Message */
+.no-data {
+    text-align: center;
+    color: gray;
+    font-style: italic;
+    padding: 10px;
+}
+
+/* Responsive Design */
+/* @media screen and (max-width: 1024px) {
+    .main-content {
+        margin-left: 200px;/
+    }
+} */
+
+@media screen and (max-width: 768px) {
+    .dashboard {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 15px;
+    }
+
+    .statistics-table th,
+    .statistics-table td {
+        font-size: 14px;
+        padding: 6px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .statistics-table th,
+    .statistics-table td {
+        font-size: 12px;
+        padding: 4px;
+    }
+
+    /* Make table scrollable */
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .statistics-table {
+        min-width: 600px; /* Prevent table from shrinking too much */
+    }
+}

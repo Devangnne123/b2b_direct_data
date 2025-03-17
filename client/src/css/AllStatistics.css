@@ -1,0 +1,44 @@
+.content-container {
+    padding: 20px;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 800px;
+  }
+  
+  th, td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+  
+  th {
+    background-color: #007bff;
+    color: rgb(10, 10, 10);
+  }
+  
+  tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+  
+  tr:hover {
+    background-color: #ddd;
+  }
+  
+  @media (max-width: 768px) {
+    .content-container {
+      margin-left: 0;
+      padding: 10px;
+    }
+  
+    table {
+      min-width: 600px;
+    }
+  }
+  

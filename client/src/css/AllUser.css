@@ -1,0 +1,101 @@
+/* Sidebar and Content Layout */
+.dashboard {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .content-container {
+    flex: 1;
+    padding: 20px;
+    overflow-x: auto; /* Enables scrolling on smaller screens */
+  }
+
+  .search-input {
+    width: 50%;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: white;
+    color:black;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  /* Table Styles */
+  .table-container {
+    width: 100%;
+    overflow-x: auto; /* Makes the table responsive */
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+  }
+  
+  th, td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #ddd;
+  }
+  
+  th {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .dashboard {
+      flex-direction: column;
+    }
+  
+    .content-container {
+      width: 100%;
+    }
+  
+    th, td {
+      padding: 8px;
+    }
+  }
+  
+  
+/* User password CSS */
+.password-cell {
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle {
+  cursor: pointer;
+  margin-left: 10px;
+  font-size: 1.2rem;
+  color: #007bff;
+}
+
+.password-toggle:hover {
+  color: #0056b3;
+}
+
+.show-icon {
+  color: green;
+}
+
+.hide-icon {
+  color: red;
+}
+
+
+
+/* Admin Password CSS */
+.password-icon {
+  cursor: pointer;
+  margin-left: 8px;
+  font-size: 16px;
+  color: green;
+  transition: color 0.3s ease;
+}
+
+.password-icon:hover {
+  color: #0757ad;
+}
