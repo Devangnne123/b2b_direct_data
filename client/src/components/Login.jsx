@@ -41,6 +41,8 @@ function Login() {
           // Store user data and roleId in sessionStorage instead of localStorage
           sessionStorage.setItem("user", JSON.stringify(user));
           sessionStorage.setItem("roleId", user.roleId);
+
+          window.alert("Login successful!");
   
           // Navigate based on roleId
           if (parseInt(user.roleId) === 1) {

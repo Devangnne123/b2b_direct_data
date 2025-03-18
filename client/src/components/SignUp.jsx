@@ -133,7 +133,12 @@ const SignUp = () => {
         setError("");
         setCaptchaError("");
         drawCaptcha(); // Refresh CAPTCHA
+        // navigate("/login");
+         // Show success confirmation
+      const confirmLogin = window.confirm("Signup successful! Do you want to log in now?");
+      if (confirmLogin) {
         navigate("/login");
+      }
       } else if (response.status === 409) {
         setError("User already exists.");
       } else {
