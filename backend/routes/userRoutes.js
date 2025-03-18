@@ -9,5 +9,6 @@ router.patch("/update-credits", userController.updateCredits);
 router.get("/user", userController.getUser);
 router.post("/login", userController.loginUser);
 router.get("/getAllAdmin", userController.getAllAdmin);
+router.get("/credits/:userEmail", userController.getUserCredits);
 
 module.exports = router;

@@ -48,9 +48,8 @@ const UserCreditReport = () => {
             ) : (
               transactions.map((transaction, index) => (
                 <tr key={index}>
-                  <td>
-                    {new Date(transaction.transactionDate).toLocaleString()}
-                  </td>
+                  <td>{new Date(transaction.transactionDate || transaction.createdAt).toLocaleString()}</td>
+
                   <td>
                     <td>
                       {transaction.senderEmail === userEmail

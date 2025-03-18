@@ -18,7 +18,7 @@ const CreditTransaction = sequelize.define(
       allowNull: false,
     },
     transactionType: {
-      type: DataTypes.ENUM("add", "minus"),
+      type: DataTypes.ENUM("Credit", "Debit"),
       allowNull: false,
     },
     amount: {

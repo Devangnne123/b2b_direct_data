@@ -10,16 +10,18 @@ const AllStatistics = () => {
     const fetchStatistics = async () => {
       try {
         const response = await fetch('http://localhost:3000/bulkUpload/allstatistics');
+        console.log("Response Status:", response.status);
+  
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-
+  
         const result = await response.json();
-        console.log('Fetched Data:', result);
-
-        // Directly set the array of statistics to the state
-        if (Array.isArray(result)) {
-          setStatistics(result);
+        console.log('Fetched Data:', result); // Debugging API Response
+  
+        // ✅ Extract data from result
+        if (Array.isArray(result.data)) {
+          setStatistics(result.data);
         } else {
           console.error('Unexpected API Response:', result);
           setStatistics([]);
@@ -28,9 +30,11 @@ const AllStatistics = () => {
         console.error('Error fetching statistics:', error);
       }
     };
-
+  
     fetchStatistics();
   }, []);
+  
+  
 
   return (
     <div className="dashboard">

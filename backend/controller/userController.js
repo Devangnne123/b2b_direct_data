@@ -174,3 +174,27 @@ exports.getAllAdmin = async (req, res) => {
     res.status(500).json({ message: "Error fetching admins.", error: err.message });
   }
 };
+
+exports.getUserCredits = async (req, res) => {
+  const { userEmail } = req.params;
+
+  if (!userEmail) {
+    return res.status(400).json({ message: "User email is required." });
+  }
+
+  try {
+    const user = await User.findOne({
+      where: { userEmail },
+      attributes: ["userEmail", "credits"],
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    res.status(200).json({ success: true, credits: user.credits });
+  } catch (err) {
+    console.error("Error fetching user credits:", err);
+    res.status(500).json({ message: "Something went wrong.", error: err.message });
+  }
+};

@@ -32,17 +32,18 @@ const UserList = () => {
   };
 
   // Fetch credits for the logged-in user
- const fetchUserCredits = async () => {
-  try {
-    const response = await fetch(`http://localhost:3000/users/created-by/${encodeURIComponent(userEmail)}`);
-    if (!response.ok) throw new Error(`Error: ${response.statusText}`);
-
-    const data = await response.json();
-    setUserCredits(data.credits || 0);
-  } catch (error) {
-    console.error("Error fetching user credits:", error);
-  }
-};
+  const fetchUserCredits = async () => {
+    try {
+      const response = await fetch(`http://localhost:3000/users/credits/${encodeURIComponent(userEmail)}`);
+      if (!response.ok) throw new Error(`Error: ${response.statusText}`);
+  
+      const data = await response.json();
+      setUserCredits(data.credits || 0);
+    } catch (error) {
+      console.error("Error fetching user credits:", error);
+    }
+  };
+  
 
 
   // Handle credit input change
@@ -78,8 +79,8 @@ const UserList = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userEmail: email,
-          senderEmail: userEmail,
-          transactionType: isAdding ? "Credit" : "Debit", // Now sends correct ENUM values
+          senderEmail: userEmail, // Pass logged-in user's email
+          transactionType: isAdding ? "Credit" : "Debit",
           amount: transferCredits,
         }),
       });
@@ -89,9 +90,9 @@ const UserList = () => {
         throw new Error(errorData.message || "Transaction failed.");
       }
   
-      alert("Transaction successful!");
+      alert(`Transaction successful! The Credit : ${transferCredits}`);
   
-      // Refresh user list and credits
+      // Refresh user list and logged-in user credits
       fetchUsers();
       fetchUserCredits();
       setCreditUpdates((prev) => ({ ...prev, [email]: "" }));
@@ -99,8 +100,7 @@ const UserList = () => {
       console.error("Error updating credits:", error);
       alert(error.message);
     }
-  };
-  
+  };  
 
   return (
     <div className="dashboard">
