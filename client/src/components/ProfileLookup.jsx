@@ -198,7 +198,7 @@ const ProfileLookup = () => {
             <div className="main-body1">
               <div className="left">
                 <div className="left-main">LinkedIn URL</div>
-                <form action="">
+               
                   <div className="url-input">
                     <input type="url" placeholder="Enter your url" 
                     value={linkedinLink}
@@ -215,7 +215,7 @@ const ProfileLookup = () => {
                       Retrieve all profile or company data on LinkedIn using our LinkedIn Finder URL.
                     </p>
                   </div>
-                </form>
+                
               </div>
               <div className="right">
                 <img src="linkdin1.png" alt="" />
@@ -233,7 +233,7 @@ const ProfileLookup = () => {
                 className="close-button"
                 onClick={() => setShowModal(false)}
               >
-                
+                 ×
               </button>
               <div className="modal-header-1">
                 <h2>LinkedIn Profile Data</h2>
