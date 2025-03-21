@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import { IoArrowBackCircle } from "react-icons/io5";
 import Sidebar from "../components/Sidebar";
-import "../css/ProfileLookup.css";
+import "../css/BulkLookup.css";
 
 const BulkLookup = () => {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ const BulkLookup = () => {
   const [bulkResults, setBulkResults] = useState([]);
   const [file, setFile] = useState(null);
   const [fileHistory, setFileHistory] = useState([]);
+  const [showSidebar, setShowSidebar] = useState(true);
   const user = JSON.parse(sessionStorage.getItem("user"));
   const userEmail = user?.email || "Guest";
   const [statistics, setStatistics] = useState(() => {
@@ -29,7 +31,7 @@ const BulkLookup = () => {
 
   useEffect(() => {
     if (!user) {
-      window.location.href = "/login";
+      window.location.href = "/";
     } else {
       fetchUserCredits();
     }
@@ -308,62 +310,126 @@ const BulkLookup = () => {
   };
 
   return (
-    <div className="dashboard">
-      <Sidebar userEmail={userEmail} />
+    <div className="main1">
+    <div className="main-con1">
+    {showSidebar && <Sidebar userEmail={userEmail} />} 
 
-      <div className="main-content">
-        <div className="header">
-          <h1 className="profile-lookup">Bulk Lookup</h1>
-          <p className="credits-info">Credits: {statistics.remainingCredits}</p>
-        </div>
+      <div className="main-content1">
+        <div className="right-side1">
+          <div className="right-p1">
+            <nav className="main-head1">
+              <li>
+                <IoArrowBackCircle className="back1" onClick={() => setShowSidebar(!showSidebar)} />  
+              </li>
+              
+              <div className="main-title1">
+                <li className="profile">
+                  <p className="title1">Bulk Lookup</p>
+                  <li className="credits-main">
+            <h5 className="credits">
+              <img
+                width="30"
+                height="30"
+                src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
+                alt="external-credits-university-flaticons-flat-flat-icons"
+              />
+              Credits:{statistics.remainingCredits}
+            </h5>
+          </li>
+                </li>
+                <li>
+                  <p className="title-des1">
+                    Enrich your data in bulk with our lookup tool
+                  </p>
+                </li>
+                <li className="big1">
+                  <h1 className="title-head1">Bulk Data in Real-Time</h1>
+                </li>
+              </div>
+            </nav>
+            <section>
+              <div className="main-body11">
+                <div className="main-body111">
+                  <div className="left1">
+                    <div className="left-main1">Linkedin URL Excel File</div>
+                     
+                      <div className="url-input1">
+                        <div className="form">
+                        <label htmlFor="file-input" className="label">
+                          Choose File
+                        </label>
+                        {file && <span className="file-name">{file.name}</span>}
 
-        <div className="explore-section">
-          <div className="file-upload-container">
-            <label htmlFor="file-input" className="upload-label">
-              Choose File
-            </label>
-            {file && <span className="file-name">{file.name}</span>}
-            <input
-              type="file"
-              id="file-input"
-              accept=".csv,.xlsx"
-              onChange={(e) => setFile(e.target.files[0])}
-            />
-            <button className="upload-button" onClick={handleFileUpload}>
-              {isLoading ? "Uploading..." : "Upload & Fetch"}
-            </button>
-            {bulkResults.length > 0 && (
-              <button className="download-button" onClick={handleDownloadExcel}>
-                Download Excel
-              </button>
-            )}
-          </div>
-          <table border="1">
-            <thead>
-              <tr>
-                <th>File Name</th>
-                <th>Uploaded At</th>
-                <th>Action</th>
+                        <input
+                          type="file"
+                          placeholder="Choose file"
+                          id="file-input"
+                          accept=".csv,.xlsx"
+                          onChange={(e) => setFile(e.target.files[0])}
+                        />
+                        </div>
+
+                        <button
+                          className="search-url1"
+                          onClick={handleFileUpload}
+                        >
+                          {isLoading ? "Uploading..." : "Upload & Fetch"}
+                        </button>
+
+                        {bulkResults.length > 0 && (
+                          <button
+                            className="download-button"
+                            onClick={handleDownloadExcel}
+                          >
+                            Download Excel
+                          </button>
+                        )}
+                      </div>
+                     
+
+                      
+                    <div className="url-des1">
+                      <p>
+                        Retrieve all profile or company data on LinkedIn using
+                        our LinkedIn Finder URL.
+                      </p>
+                    </div>
+                    <div className="history-table">
+                    <table border="1">
+          <thead >
+            <tr  >
+              <th className="header12">File Name</th>
+              <th className="header12">Uploaded At</th>
+              <th className="header12">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fileHistory.map((file) => (
+              <tr key={file._id}>
+                <td>{file.fileName}</td>
+                <td>{new Date(file.uploadedAt).toLocaleString()}</td>
+                <td>
+                  <button className="download-button1" onClick={() => handleDownloadFile(file.filePath)}>
+                    Download
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {fileHistory.map((file) => (
-                <tr key={file._id}>
-                  <td>{file.fileName}</td>
-                  <td>{new Date(file.uploadedAt).toLocaleString()}</td>
-                  <td>
-                    <button onClick={() => handleDownloadFile(file.filePath)}>
-                      Download
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            ))}
+          </tbody>
+        </table>
+        </div>
+                  </div>
+                  <div className="right1">
+                    <img src="new linkedin.png" alt="" />
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 };
-
 export default BulkLookup;

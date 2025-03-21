@@ -1,0 +1,76 @@
+/* ApiComingSoon.css */
+
+
+  .container11 {
+    display: flex;
+    justify-content: center;
+    margin: 0px 0px 40px 0px ;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+    
+  }
+  
+  .card1 {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 30px;
+    border-radius: 50px;
+    border: 1px solid rgb(184, 184, 184);
+    max-width: 300px;
+    width: 100%;
+    
+  }
+  .heading-contactus{
+    font-size: 15px;
+  }
+  
+  h2 {
+    font-size: 24px;
+    margin-bottom: 15px;
+  }
+  
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .contact-form input,
+  .contact-form textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+  }
+  
+  .contact-form input:focus,
+  .contact-form textarea:focus {
+    outline: none;
+    
+    
+  }
+  
+  textarea {
+    height: 50px;
+    resize: none;
+  }
+  
+  .submit-button {
+    background: white;
+    color: #667eea;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .submit-button:hover {
+    background: #667eea;
+    color: white;
+  }
+  

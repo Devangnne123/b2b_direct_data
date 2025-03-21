@@ -22,16 +22,19 @@ import AllUser from "./components/AllUser";
 import AllAdmin from "./components/AllAdmin";
 import AllStatistics from "./components/AllStatistics";
 import AdminCreditReport from "./components/AdminCreditReport";
+import Services from "./components/Services";
 import UserCreditReport from "./components/UserCreditReport";
+import Api from "./components/Api";
+import ContactUs from "./components/ContactUs";
 
 import "./App.css";
+import AboutUs from "./components/AboutUs";
 
 
 function App() {
   const location = useLocation();
   const excludePaths = [
-    "/login",
-    "/signup",
+    
     "/profile-lookup",
     "/bulk-lookup",
     "/statistic",
@@ -52,11 +55,16 @@ function App() {
       {!isExcluded && <Header />} {/* Show Header if path is not excluded */}
       <Routes>
         <Route path="/" element={<Index />} />
+        
+        <Route path="/services" element={<Services />} />
         <Route path="/profile-lookup" element={<ProfileLookup />} />
         <Route path="/bulk-lookup" element={<BulkLookup />} />
         <Route path="/statistic" element={<Statistic />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
+        <Route path="/" element={<Login />} />
+        <Route path="/" element={<SignUp />} />
+        <Route path="/api" element={<Api />} />
+        <Route path="/aboutus" element={<AboutUs />} />
+        <Route path="/contactus" element={<ContactUs />}/>
         <Route path="/add-user" element={<AddUser />} />
         <Route path="/all-admin" element={<AllAdmin />} />
         <Route path="/user-list" element={<UserList />} />

@@ -1,0 +1,128 @@
+/* Global Styling */
+.about-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px;
+    text-align: center;
+    font-family: "Poppins", sans-serif;
+    color: #000000;
+    background: linear-gradient(135deg, #e0dede, #ffffff);
+    border-radius: 15px;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Header Section */
+  .about-header {
+    padding: 30px;
+    background: linear-gradient(135deg, #ffffff, #ffffff);
+    border-radius: 10px;
+    margin-bottom: 30px;
+  }
+  
+  .about-header h1 {
+    font-size: 2.8rem;
+    font-weight: bold;
+  }
+  
+  .about-header p {
+    font-size: 1.2rem;
+    margin-top: 5px;
+  }
+  
+  /* Sections */
+  .about-section {
+    padding: 20px;
+    margin-bottom: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .about-section h2 {
+    font-size: 2rem;
+    margin-bottom: 10px;
+  }
+  
+  /* Features Grid */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+  }
+  
+  .feature-card {
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    text-align: center;
+    transition: 0.3s;
+  }
+  
+  .feature-card:hover {
+    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.25);
+  }
+  
+  .feature-icon {
+    font-size: 2.5rem;
+    color: #828282;
+    margin-bottom: 10px;
+  }
+  
+  /* Services Grid */
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+  }
+  
+  .service-card {
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    transition: 0.3s;
+  }
+  
+  .service-card:hover {
+    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Vision Section */
+  .about-vision {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 30px;
+    border-radius: 10px;
+  }
+  
+  /* Contact Section */
+  .about-contact {
+
+    padding: 30px;
+    border-radius: 10px;
+    margin-top: 30px;
+  }
+  
+  .about-contact h2 {
+    font-size: 2rem;
+  }
+  
+  .contact-button {
+    background: #fff;
+    color: #eeebea;
+    font-size: 1.2rem;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+  }
+  
+  .contact-button:hover {
+    background: #ffcc00;
+    color: #222;
+  }
+  

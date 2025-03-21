@@ -227,7 +227,7 @@ html {
 
 .input-field {
   width: 300px;
-  padding: 15px 30px;
+  padding: 5px 30px;
   background-color: white;
   border: 1px groove #a2a2a2; /* Light border */
   border-radius: 10px; /* Fully rounded border */
@@ -248,8 +248,8 @@ html {
 }
 
 .search-button {
-  padding: 15px 20px;
-  font-size: 1rem;
+  padding: 5px 20px;
+  font-size: 0.8rem;
   background-color: #4175fb; /* Bright blue background */
   color: #fff; /* White text */
   border: none;
@@ -336,13 +336,6 @@ html {
   }
 }
 
-/* General Footer Styles */
-footer {
-  background-color: #f8f9fa;
-  width: 92%; /* Full width */
-  padding: 40px 0;
-  /* border-top: 1px solid #ddd; */
-}
 
 .footer-container {
   width: 100%; /*  Full width */

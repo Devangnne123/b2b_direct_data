@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
+import { IoArrowBackCircle } from "react-icons/io5";
 import "../css/ProfileLookup.css";
 
 const ProfileLookup = () => {
@@ -8,13 +9,14 @@ const ProfileLookup = () => {
   const [resultData, setResultData] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [lookupCount, setLookupCount] = useState(0);
+  const [showSidebar, setShowSidebar] = useState(true);
 
   const user = JSON.parse(sessionStorage.getItem("user"));
   const userEmail = user?.email || "Guest";
 
   useEffect(() => {
     if (!user) {
-      window.location.href = "/login";
+      window.location.href = "/";
     } else {
       fetchUserCredits();
       fetchUserStatistics();
@@ -153,89 +155,137 @@ const ProfileLookup = () => {
   };
 
   return (
-    <div className="dashboard">
-      <Sidebar userEmail={userEmail} />
-      <div className="main-content">
-        <div className="header">
-          <h1 className="profile-lookup">Profile Lookup</h1>
-          <p>Your Remaining Lookups: {lookupCount}</p>
-        </div>
-        <div className="explore-section">
-          <div className="search-box">
-            <input
-              type="url"
-              placeholder="Enter a LinkedIn profile link"
-              value={linkedinLink}
-              onChange={(e) => setLinkedinLink(e.target.value)}
+    <div className="main">
+    <div className="main-con">
+    {showSidebar && <Sidebar userEmail={userEmail} />} 
+    
+    <div className="right-side">
+        <div className="right-p">
+        <nav className="main-head">
+          <li>
+            <IoArrowBackCircle className="back1" onClick={() => setShowSidebar(!showSidebar)} /> 
+          </li>
+          
+          <div className="main-title">
+            <li className="profile">
+              <p className="title">Profile Lookup</p>
+              <li className="credits-main1">
+          <h5 className="credits1">
+            <img
+             
+              src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
+              alt="external-credits-university-flaticons-flat-flat-icons"
             />
-            <button
-              className="search-button"
-              onClick={handleSearch}
-              disabled={lookupCount <= 0}
-            >
-              {isLoading ? "Searching..." : "Search"}
-            </button>
-          </div>
+            Credits:{lookupCount}
+          </h5>
+        </li>
 
-          {showModal && resultData && (
-            <div className="modal-overlay-1">
-              <div className="modal-container-1">
-                <button
-                  className="close-button"
-                  onClick={() => setShowModal(false)}
-                >
-                  ×
-                </button>
-                <div className="modal-header-1">
-                  <h2>LinkedIn Profile Data</h2>
-                </div>
-                <div className="modal-body-1">
-                  <div className="info-row-1">
-                    <strong>LinkedIn Link:</strong>{" "}
-                    <a
-                      href={resultData.linkedin_url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {resultData.linkedin_url || "Not Available"}
-                    </a>
+            </li>
+            <li>
+              <p className="title-des2">
+                Retrieve contact and company data in real time using our OSINT methods.
+                <br />
+                Just provide the input and access the data you need instantly
+              </p>
+            </li>
+            <li className="title-head">
+              Explore Real-Time Data
+            </li>
+          </div>
+        </nav>
+        <section>
+          <div className="main-body0">
+            <div className="main-body1">
+              <div className="left">
+                <div className="left-main">LinkedIn URL</div>
+                <form action="">
+                  <div className="url-input">
+                    <input type="url" placeholder="Enter your url" 
+                    value={linkedinLink}
+                    onChange={(e) => setLinkedinLink(e.target.value)}
+                    />
                   </div>
-                  <div className="info-row-1">
-                    <strong>Full Name:</strong>{" "}
-                    <span>{resultData.full_name || "N/A"}</span>
-                  </div>
-                  <div className="info-row-1">
-                    <strong>Lead Location:</strong>{" "}
-                    <span>
-                      {Array.isArray(resultData.lead_location)
-                        ? resultData.lead_location.join(", ")
-                        : "Not Available"}
-                    </span>
-                  </div>
-                  <div className="info-row-1">
-                    <strong>Mobile 1:</strong>{" "}
-                    <span>{resultData.mobile_1 || "Not Available"}</span>
-                  </div>
-                  <div className="info-row-1">
-                    <strong>Mobile 2:</strong>{" "}
-                    <span>{resultData.mobile_2 || "Not Available"}</span>
-                  </div>
-                </div>
-                <div className="modal-footer-1">
-                  <button
-                    className="action-button-1"
-                    onClick={() => setShowModal(false)}
-                  >
-                    Close
+                  <button className="search-url" 
+                  onClick={handleSearch}
+                  disabled={lookupCount <= 0}>
+                  {isLoading ? "Searching..." : "Search"}
                   </button>
-                </div>
+                  <div className="url-des">
+                    <p>
+                      Retrieve all profile or company data on LinkedIn using our LinkedIn Finder URL.
+                    </p>
+                  </div>
+                </form>
+              </div>
+              <div className="right">
+                <img src="linkdin1.png" alt="" />
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        </section>
       </div>
-    </div>
-  );
+      </div>
+
+        {showModal && resultData && (
+          <div className="modal-overlay-1">
+            <div className="modal-container-1">
+              <button
+                className="close-button"
+                onClick={() => setShowModal(false)}
+              >
+                
+              </button>
+              <div className="modal-header-1">
+                <h2>LinkedIn Profile Data</h2>
+              </div>
+              <div className="modal-body-1">
+                <div className="info-row-1">
+                  <strong>LinkedIn Link:</strong>{" "}
+                  <a
+                    href={resultData.linkedin_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {resultData.linkedin_url || "Not Available"}
+                  </a>
+                </div>
+                <div className="info-row-1">
+                  <strong>Full Name:</strong>{" "}
+                  <span>{resultData.full_name || "N/A"}</span>
+                </div>
+                <div className="info-row-1">
+                  <strong>Lead Location:</strong>{" "}
+                  <span>
+                    {Array.isArray(resultData.lead_location)
+                      ? resultData.lead_location.join(", ")
+                      : "Not Available"}
+                  </span>
+                </div>
+                <div className="info-row-1">
+                  <strong>Mobile 1:</strong>{" "}
+                  <span>{resultData.mobile_1 || "Not Available"}</span>
+                </div>
+                <div className="info-row-1">
+                  <strong>Mobile 2:</strong>{" "}
+                  <span>{resultData.mobile_2 || "Not Available"}</span>
+                </div>
+              </div>
+              <div className="modal-footer-1">
+                <button
+                  className="action-button-1"
+                  onClick={() => setShowModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      </div>
+    
+  
+);
 };
 
 export default ProfileLookup;

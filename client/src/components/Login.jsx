@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { IoMdClose } from "react-icons/io";
+
 import "../css/Login.css";
 
-function Login() {
+function Login({ closeModal, setShowModal ,setSShowModal }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -41,8 +43,6 @@ function Login() {
           // Store user data and roleId in sessionStorage instead of localStorage
           sessionStorage.setItem("user", JSON.stringify(user));
           sessionStorage.setItem("roleId", user.roleId);
-
-          window.alert("Login successful!");
   
           // Navigate based on roleId
           if (parseInt(user.roleId) === 1) {
@@ -68,55 +68,80 @@ function Login() {
   
 
   return (
-    <div className="login-container">
-      <div className="login-logo-container">
-        <img
-          src="logo.png"
-          alt="Logo"
-          className="login-logo"
-        />
-      </div>
-      <span className="welcome-heading">Welcome back!</span>
-      <p className="subheading">Let's turn any email into a business opportunity</p>
-      <form className="login-form" onSubmit={handleLogin}>
-        <input
-          type="email"
-          className="email-input"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          className="email-input"
-          placeholder="Enter your password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit" className="login-button" disabled={isSubmitting}>
-          {isSubmitting ? "Logging in..." : "Log in"}
-        </button>
-        {errorMessage && <p className="error-message">{errorMessage}</p>}
-        {/* <div className="login-or-divider">
-          <span className="login-divider-line"></span>
-          <span className="login-or-text">OR</span>
-          <span className="login-divider-line"></span>
-        </div> */}
-        {/* <button type="button" className="google-login-button">
+    <div className="main-container1">
+    <div className="login-wrapper">
+      <div className="login-card1">
+        {/* Left Side */}
+        <div className="login-left">
+          <div className="logo-container">
           <img
-            src="/google.png"
-            alt="Google"
-            className="google-icon"
-          />
-          <p>Sign in with Google</p>
-        </button> */}
-      </form>
-      <p className="signup-text">
-        Need an account? <a href="/signup">Sign up here</a>
-      </p>
-    </div>
+            src="new.png"
+            alt="Company Logo"
+            className="login-logo"
+          /><a className="svg" onClick={closeModal}><IoMdClose /></a></div>
+          <h2 className="login-title">Login</h2>
+          
+          <form className="login-form" onSubmit={handleLogin}>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              className="login-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              type="password"
+              placeholder="Enter your password"
+              className="login-input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button type="submit" className="login-button1"  disabled={isSubmitting}>
+            {isSubmitting ? "Logging in..." : "Log in"}
+            </button>
+            </form>
+            {errorMessage && <p className="error-message">{errorMessage}</p>}
+          
+          <div className="login-divider">
+            <hr className="divider-line" />
+            <span className="divider-text">OR</span>
+            <hr className="divider-line" />
+          </div>
+          {/* <button className="google-login-b1">
+            <img
+              src="https://storage.googleapis.com/a1aa/image/Gp-za5XeCfDCmzCTwXtSL2v3fZ0uyEnq7ptMLr5xQ2A.jpg"
+              alt="Google Logo"
+              className="google-login-l"
+            />
+            Sign in with Google
+          </button> */}
+         
+          <a  onClick={()=>setShowModal("signup")} className="signup-link-text">
+            Sign up here
+          </a>
+        </div>
+        </div>
+        
+
+        {/* Right Side */}
+        <div className="login-right">
+          <div className="login-info">
+            <div className="login-right-title">
+            <h3 className="login-subtitle">Mobile Enrichment
+            </h3>
+            <p className="login-description">Turn <span className="highlight-text"> URL  </span> into <span className="highlight-text">LinkedIn</span> data</p>
+            </div>
+            <img
+              src="Capture-removebg-preview (2).png"
+              alt="Illustration"
+              className="login-illustration"
+            />
+          </div>
+        </div>
+      </div>
+      </div>
   );
 }
 

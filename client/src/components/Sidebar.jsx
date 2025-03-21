@@ -1,53 +1,40 @@
-import React, { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import "../css/ProfileLookup.css";
+import { IoMdSettings } from "react-icons/io";
+import { FaChevronDown, FaChevronUp, FaUserPlus, FaUsers, FaChartBar, FaFileAlt, FaSignOutAlt } from "react-icons/fa";
+import "../css/Sidebar.css";
 
-const Sidebar = () => {
-  const [userEmail, setUserEmail] = useState(null);
-  const [expandedSections, setExpandedSections] = useState({});
+ function Sidebar() {
+  const [expandedItem, setExpandedItem] = useState(null);
+  const [userEmail, setUserEmail] = useState("Loading...");
   const location = useLocation();
   const navigate = useNavigate();
   const roleId = sessionStorage.getItem("roleId");
 
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
-    console.log("Fetched user:", user);
-    
     if (user && user.email) {
       setUserEmail(user.email);
     } else {
       setUserEmail("Guest");
-      console.log("User data not found or incomplete.");
     }
   }, []);
 
-  // Function to toggle the expanded/collapsed state of menu sections
-  const toggleSection = (section) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
-
   const adminMenuItems = [
+    { name: "Direct Number Enrichment",icon: <FaUserPlus />, options: [{name: "Single Lookup",path: "/profile-lookup"},{name: "Bulk Lookup",path: "/bulk-lookup"}] },
+    { name: "Linkedin Contact Verification",icon: <FaUserPlus />, options: [{name: "Upload contact Link",path: "/profile-lookup"},{name: "Contact Statistics",path: "/bulk-lookup"}] },
+    { name: "Linkedin Company Details",icon: <FaUserPlus />, options: [{name: "Upload Company link",path: "/profile-lookup"},{name: "Company Statistics",path: "/bulk-lookup"}] },
     {
-      section: "Lookup",
-      items: [
-        { name: "Profile Lookup", path: "/profile-lookup" },
-        { name: "Bulk Lookup", path: "/bulk-lookup" },
-      ],
-    },
-    {
-      section: "Settings",
-      items: [
+      name: "Settings",
+      icon:<IoMdSettings />,
+      options: [
         { name: "Add User", path: "/add-user" },
         { name: "User Lists", path: "/user-list" },
-        { name: "Sign out" },
+        { name: "Sign out",path: "/" },
       ],
-    },
-    {
-      section: "Statistics",
-      items: [
+    },     {
+      name: "Statistics",
+      options: [
         { name: "Lookup Statistics", path: "/UserStatistics" },
         { name: "Credit Reports", path: "/user-credit-report" },
         { name: "User Statistics", path: "/statistic" },
@@ -56,112 +43,114 @@ const Sidebar = () => {
   ];
 
   const userMenuItems = [
-    { name: "Profile Lookup", path: "/profile-lookup" },
-    { name: "Bulk Lookup", path: "/bulk-lookup" },
-    { name: "User Statistics", path: "/UserStatistics" },
-    { name: "Credit Reports", path: "/user-credit-report" },
-    { name: "Sign out" },
+    { name: "Direct Number Enrichment",icon: <FaUserPlus />, options: [{name: "Single Lookup",path: "/profile-lookup"},{name: "Bulk Lookup",path: "/bulk-lookup"},{name: "Number Statistics",path: "/UserStatistics"}] },
+    { name: "Linkedin Contact Verification",icon: <FaUserPlus />, options: [{name: "Upload contact Link",path: "/profile-lookup"},{name: "Contact Statistics",path: "/bulk-lookup"}] },
+    { name: "Linkedin Company Details",icon: <FaUserPlus />, options: [{name: "Upload Company link",path: "/profile-lookup"},{name: "Company Statistics",path: "/bulk-lookup"}] },
+    
+   
+    {
+      name: "Statistics",
+      icon:<FaChartBar/>,
+      options: [
+        
+        { name: "Credit Reports", path: "/user-credit-report" },
+
+        
+      ],
+    },
+    
+    {
+      name: "Settings",
+      icon:<IoMdSettings />,
+      options: [
+      
+        { name: "Sign out",path: "/" },
+      ],
+    }, 
   ];
 
   const superAdminItems = [
-    { name: "All Admins", path: "/all-admin" },
-    { name: "All Users", path: "/all-user" },
-    { name: "All User Statistics", path: "/all-user-statistics" },
-    { name: "Credit Reports", path: "/admin-credit-report" },
-    { name: "Sign out" },
+    { name: "All Admin", path: "/all-admin",icon:<FaChartBar/> },
+    { name: "All User", path: "/all-user", icon:<FaChartBar/> },
+    { name: "All User Statistic", path: "/all-user-statistics",icon:<FaChartBar/> },
+    { name: "Credit Report", path: "/admin-credit-report",icon:<FaChartBar/> },
+    { name: "Sign out", path: "/",icon:<FaChartBar/>},
   ];
 
   const menuItems =
     roleId === "1" ? adminMenuItems :
     roleId === "2" ? userMenuItems :
-    roleId === "3" ? superAdminItems :
-    [];
+    roleId === "3" ? superAdminItems : [];
 
   const handleMenuClick = (menuItem) => {
     if (menuItem === "Sign out") {
       sessionStorage.removeItem("user");
       sessionStorage.removeItem("roleId");
-      navigate("/login");
+      navigate("/")
+      
     }
   };
 
   return (
-    <aside className="sidebar">
+    <aside className="menu-container">
       <div className="user-info">
-        <div className="avatar-container">
-          <img src="/profile.png" alt="Profile" className="avatar" />
-        </div>
-        <p>{userEmail ? userEmail : "Loading..."}</p>
+      <FaUsers className="avatar" />
+        <p className="e">{userEmail ? userEmail : "Loading..."}</p>
+        <img className="b2b"src="new.png" alt="" />
       </div>
       <nav className="menu">
-        <ul>
-          {roleId === "1" &&
-            adminMenuItems.map((section) => (
-              <li key={section.section}>
-                <div
-                  className="menu-section"
-                  onClick={() => toggleSection(section.section)}
-                >
-                  {section.section}{" "}
-                  <span className="arrow">
-                    {expandedSections[section.section] ? "▲" : "▼"}
-                  </span>
-                </div>
-                {expandedSections[section.section] && (
-                  <ul className="submenu">
-                    {section.items.map((item) => (
-                      <li
-                        key={item.name}
-                        onClick={() => handleMenuClick(item.name)}
-                        className={
-                          item.path === location.pathname
-                            ? "menu-item active"
-                            : "menu-item"
-                        }
-                      >
-                        {item.path ? (
-                          <Link to={item.path} className="menu-link">
-                            {item.name}
-                          </Link>
-                        ) : (
-                          <span className="menu-link">{item.name}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
-
-          {(roleId === "2" || roleId === "3") &&
-            menuItems.map((item) => (
-              <li
-                key={item.name}
-                onClick={() => handleMenuClick(item.name)}
+        
+          {menuItems.map((item, index) => (
+            <li key={item.name} className="menu-item">
+               
+              <button
+                onClick={() => {
+                  setExpandedItem(expandedItem === index ? null : index);
+                  handleMenuClick(item.name);
+                }}
                 className={
-                  item.path === location.pathname ? "menu-item active" : "menu-item"
+                  item.path === location.pathname ? "menu-button" : "menu-button"
                 }
               >
-                {item.path ? (
-                  <Link to={item.path} className="menu-link">
-                    {item.name}
-                  </Link>
+             
+                 {item.icon}
+              {item.path ? (
+                <Link to={item.path} className="menu-link">{item.name}</Link>
+               
+              ) : (
+                item.name
+              )}
+                 {item.options && (
+                expandedItem === index ? (
+                  <FaChevronUp className="expand-icon" />
                 ) : (
-                  <span className="menu-link">{item.name}</span>
-                )}
-              </li>
-            ))}
-        </ul>
-      </nav>
-      {roleId === "1" && (
+                  <FaChevronDown className="expand-icon" />
+                )
+              )}
+                
+              </button>
+              {expandedItem === index && item.options && (
+              <div className="submenu">
+                {item.options.map((option, optIndex) => (
+                  <Link key={optIndex} to={option.path} className="submenu-button">
+                    {option.name}
+                  </Link>
+                ))}
+                </div>
+              )}
+            </li>
+          ))}
+        {roleId === "1" && (
+          <div className="start">
         <div className="start-plan">
           <h3>Start Your Plan</h3>
-          <p>
-            Upgrade your plan to unlock additional features and access more credits.
-          </p>
-          <button>Upgrade</button>
+          <p className="up">Upgrade your plan to unlock additional features and access more credits.</p>
+          <button className="upgrade">Upgrade</button>
+        </div>
         </div>
       )}
+      </nav>
+      
     </aside>
   );
 };

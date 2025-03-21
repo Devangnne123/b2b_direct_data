@@ -1,36 +1,39 @@
 import React from 'react'
+import '../css/footer.css';
 
 function footer() {
   return (
     <>
     {/* <!-- Footer --> */}
     <footer>
-        <div className="footer-container">
+        <div className="footer-container1">
           <div className="footer-section">
-            <h3>Reverse Contact</h3>
-            <p>Data enrichment for Business</p>
-            <div className="footer-icons">
-              <img src="https://via.placeholder.com/40" alt="GDPR" />
-              <img src="https://via.placeholder.com/40" alt="CCPA" />
-              <img src="https://via.placeholder.com/40" alt="AICPA SOC" />
+            <div className='footer-title'>
+            <h3> <img width="150px" src="new.png" alt="" /><br /></h3>
             </div>
             <div className="social-icons">
               <a href="#">
-                <img src="/LinkedIn.png" alt="LinkedIn" />
+              <img width="48" height="48" src="https://img.icons8.com/color/48/instagram-new--v1.png" alt="instagram-new--v1"/>
               </a>
               <a href="#">
-                <img src="/youtube.png" alt="YouTube" />
+              <img width="48" height="48" src="https://img.icons8.com/color/48/linkedin.png" alt="linkedin"/>
               </a>
+              <a href="#">
+              <img width="48" height="48" src="https://img.icons8.com/color/48/youtube-play.png" alt="youtube-play"/>
+              </a>
+              <a href="#"><img width="48" height="48" src="https://img.icons8.com/color/48/whatsapp--v1.png" alt="whatsapp--v1"/></a>
             </div>
+            
           </div>
+          <div className='menu-product'>
           <div className="footer-section">
-            <h4>Menu</h4>
+            <h4>MENU</h4>
             <ul>
               <li>
                 <a href="#">Home</a>
               </li>
               <li>
-                <a href="#">Pricing</a>
+                <a href="#">Services</a>
               </li>
               <li>
                 <a href="#">Login</a>
@@ -41,7 +44,7 @@ function footer() {
             </ul>
           </div>
           <div className="footer-section">
-            <h4>Product</h4>
+            <h4>PRODUCT</h4>
             <ul>
               <li>
                 <a href="#">Reverse Email Lookup</a>
@@ -53,6 +56,7 @@ function footer() {
                 <a href="#">Email Verification</a>
               </li>
             </ul>
+          </div>
           </div>
           {/* <div className="footer-section">
             <h4>Popular Resources</h4>
@@ -90,13 +94,13 @@ function footer() {
           </div> */}
         </div>
         <div className="footer-bottom">
-          <p>Copyright © 2024 | All Rights Reserved. Powered by Visum.</p>
-          <div className="footer-links">
-            <a href="#">Terms</a>
-            <a href="#">Privacy Policy</a>
-            <a href="#">Security Policy</a>
-            <a href="#">Cookies Policy</a>
-            <a href="#">Data Processing Agreement</a>
+          <p className='footer-links1'>Copyright © 2024 | All Rights Reserved. Powered by B2B direct data.</p>
+          <div className="footer-links2">
+            <a className='aa' href="#">Terms</a>
+            <a className='aa' href="#">Privacy Policy</a>
+            <a className='aa' href="#">Security Policy</a>
+            <a className='aa' href="#">Cookies Policy</a>
+            <a className='aa' href="#">Data Processing Agreement</a>
           </div>
         </div>
       </footer>
