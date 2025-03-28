@@ -1,22 +1,23 @@
 /* Global Styling */
 .about-container {
-    max-width: 1200px;
+    max-width: 1000px;
     margin: 0 auto;
     padding: 40px;
     text-align: center;
     font-family: "Poppins", sans-serif;
     color: #000000;
-    background: linear-gradient(135deg, #e0dede, #ffffff);
-    border-radius: 15px;
-    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, #ffffff, #ffffff);   margin-bottom: 100px;
+    border-radius: 50px;
+    margin-top: 20px;
+  
   }
   
   /* Header Section */
   .about-header {
-    padding: 30px;
+    padding: 10px;
     background: linear-gradient(135deg, #ffffff, #ffffff);
     border-radius: 10px;
-    margin-bottom: 30px;
+    
   }
   
   .about-header h1 {
@@ -110,8 +111,8 @@
   }
   
   .contact-button {
-    background: #fff;
-    color: #eeebea;
+    background: #000000;
+    color: #ffffff;
     font-size: 1.2rem;
     padding: 12px 25px;
     border: none;

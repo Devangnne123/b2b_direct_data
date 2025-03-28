@@ -247,6 +247,66 @@
   }
 }
 
+
+
+/* Add this to your Login.css file */
+.success-message {
+  color: #4CAF50; /* Green color for success */
+  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
+  margin: 15px 0;
+  background-color: rgba(76, 175, 80, 0.1);
+  padding: 10px;
+  border-radius: 5px;
+  border-left: 4px solid #4CAF50;
+  animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-10px); }
+  20% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+.login_main{
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+ justify-content: center;
+  position: relative;
+  width: 120%;
+}
+.login_main1{
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+ justify-content: center;
+  position: relative;
+  width: 105%;
+}
+.password-toggle{
+  position: absolute;
+  right: 20px;
+  background-color: transparent;
+
+}
+.password-toggle:hover{
+  
+  background-color: transparent;
+
+}
+.password-toggle1{
+  position: absolute;
+  right: 30px;
+  background-color: transparent;
+
+}
+.password-toggle1:hover{
+  
+  background-color: transparent;
+
+}
 /* Responsive Design */
 @media (min-width: 768px) {
   .login-wrapper {
@@ -263,8 +323,17 @@
     display: none;
   }
   .login-input{
+    width: 140%;
+  }
+  .login_main{
+    
     width: 150%;
   }
+  .login-button1 {
+    width: 150%;
+   
+  }
+
 
   
 }

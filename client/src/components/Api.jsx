@@ -29,7 +29,7 @@ export default function Api() {
   }, []);
 
   return (
-    <div className="container">
+    <div className="container_api">
       <div className="card">
         <h1 className="title">API Coming Soon 🚀</h1>
         <p className="description">

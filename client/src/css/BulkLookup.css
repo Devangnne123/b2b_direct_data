@@ -345,8 +345,8 @@
 
   /* ///table/// */
   .history-table{
-    width: 60vw;
-    height: 25vh;
+    width: 100%;
+    height: auto;
     scrollbar-width: thin;
     font-size: small;
     scrollbar-color: rgb(0, 0, 0);
@@ -378,7 +378,7 @@
     border-radius: 10px;
     
   }
-
+ 
 
 
   
@@ -386,7 +386,7 @@
   @media (max-width: 768px) {
     .main-con1 {
         display: flex;
-      flex-direction: column;
+      flex-direction: row;
     }
     .main-head1{
         width: 90%;
@@ -448,18 +448,7 @@
     .title-head1 {
       font-size: 20px;
     }
-    .history-table{
-      width: 60vw;
-      height: 30vh;
-      scrollbar-width: thin;
-      font-size: small;
-      scrollbar-color: rgb(0, 0, 0);
-      overflow-x: auto;
-      overflow-y: auto;
-      z-index: 1000000;
-      border-radius: 20px;
-      
-    }
+   
   }
   
   @media (max-width: 480px) {
@@ -487,17 +476,5 @@
       width: 20px;
       height: 20px;
     }
-    .history-table{
-      width: 80vw;
-      height: auto;
-      scrollbar-width: thin;
-      font-size: small;
-      scrollbar-color: rgb(0, 0, 0);
-      overflow-x: auto;
-      overflow-y: auto;
-      z-index: 1000000;
-      justify-content: center;
-      border-radius: 20px;
-      
-    }
+   
   }

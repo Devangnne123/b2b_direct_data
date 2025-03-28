@@ -1,5 +1,5 @@
 body{
-    background-color: #ffffff;
+  background-color: #f6f6f6;
     margin: 0px;
     padding: 0%;
    }
@@ -9,9 +9,10 @@ body{
      background-color: #ffffff;
        box-shadow: 2px 2px 30px rgba(181, 181, 181, 0.407);
 
+    
      margin: 2%;
      padding: 0px 10px;
-     
+   
      border-radius: 100px;
      
    
@@ -186,6 +187,8 @@ body{
    .MAIN{
      display: flex;
      flex-direction: column;
+     
+    
      justify-content: center;
      background-color: #f6f6f6;
     
@@ -312,7 +315,9 @@ body{
        margin-bottom: 15px;
        color: #000000;
      }
-   
+     .servicesCards2{
+      margin-top: 30px;
+     }
      .serviceCard{
        display: flex;
        flex-direction: column;
@@ -331,7 +336,7 @@ body{
       flex-direction: column;
       justify-content: center;
     align-items: center;
-      width: 230px;
+      width: 260px;
       height: 300px;
       margin-left: 30px;
       border-radius: 50px;
@@ -376,14 +381,7 @@ body{
      width: 380px;
      
    }
-   .section-m{
-     display: flex;
-     flex-direction: column;
-     height: 300px;
-     
-     
-     
-   }
+  
    .blueText{
      color: #0F46A8;
    }
@@ -406,6 +404,7 @@ body{
        flex-direction: row;
        justify-content: space-evenly;
        height: 300px;
+       width: 100%;
        
      }
      .search-email{
@@ -417,11 +416,16 @@ body{
      .heroText{
       width: 400px;
      }
-   
+     .search-email{
+      display: none;
+      
+      align-items: center;
+      justify-content: center;
+   }
      
    }
    
-   @media (max-width: 670px){
+   @media (max-width: 778px){
    
    .heroText{
      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -455,12 +459,7 @@ body{
      width: 200px;
      
    }
-   .search-email{
-    display: none;
-    
-    align-items: center;
-    justify-content: center;
- }
+
    
    }
    
@@ -511,7 +510,7 @@ body{
     text-align: justify;
    margin-top: 50px;
     font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
-    width: 60%;
+    width: 70%;
 
   }
    .serviceHeading{
@@ -681,6 +680,9 @@ body{
        gap: 10px;
        
      }
+     .right-r{
+      max-width: 500px;
+     }
      .service{
       flex-direction: column;
       align-items: center;
@@ -763,6 +765,7 @@ body{
     display: flex;
     flex-direction: column;
     width: auto;
+
     
   }
   .heroText{
@@ -788,7 +791,7 @@ body{
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+   
     background: rgba(255, 255, 255,0.2); /* Dark overlay */
     backdrop-filter: blur(5px); /* Blur effect */
     display: flex;

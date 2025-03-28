@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
+import "../css/UserS.css";
 
 const AdminCreditReport = () => {
   const [transactions, setTransactions] = useState([]);

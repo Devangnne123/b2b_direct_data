@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { IoMdClose } from "react-icons/io";
+import { IoMdClose, IoMdEye, IoMdEyeOff } from "react-icons/io";
 import "../css/SignUp.css";
 import "../css/Login.css";
 
@@ -13,6 +13,8 @@ const SignUp = ({ closeModal, setShowModal }) => {
   const [captchaInput, setCaptchaInput] = useState("");
   const [error, setError] = useState("");
   const [captchaError, setCaptchaError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const canvasRef = useRef(null);
   const navigate = useNavigate();
 
@@ -127,6 +129,9 @@ const SignUp = ({ closeModal, setShowModal }) => {
 
       if (response.ok) {
         sessionStorage.setItem("userEmail", email);
+        setSuccessMessage("Signup successful! Redirecting...");
+        
+        // Clear form and errors
         setEmail("");
         setPassword("");
         setCompanyName("");
@@ -135,7 +140,11 @@ const SignUp = ({ closeModal, setShowModal }) => {
         setError("");
         setCaptchaError("");
         drawCaptcha(); // Refresh CAPTCHA
-        navigate("/");
+        
+        // Redirect after 2 seconds
+        setTimeout(() => {
+          navigate(setShowModal("login"));
+        }, 2000);
       } else if (response.status === 409) {
         setError("User already exists.");
       } else {
@@ -148,182 +157,105 @@ const SignUp = ({ closeModal, setShowModal }) => {
 
   return (
     <div className="main-container">
-    <div className="container1">
-    <div className="login-card">
-      <div className="left-panel">
-        <div className="login-right">
-          <div className="login-info">
-            <h3 className="login-subtitle">LinkedIn Contact Verification
-            </h3>
-            <p className="login-description">Verify and <span className="highlight-text"> Connect </span> with professionals on <span className="highlight-text"> LinkedIn</span></p>
-            <img src="newd.png" alt="Illustration" className="login-illustration1" />
+      <div className="container1">
+        <div className="login-card">
+          <div className="left-panel">
+            <div className="login-right">
+              <div className="login-info">
+                <h3 className="login-subtitle">LinkedIn Contact Verification</h3>
+                <p className="login-description">
+                  Verify and <span className="highlight-text"> Connect </span> with professionals on{" "}
+                  <span className="highlight-text"> LinkedIn</span>
+                </p>
+                <img src="newd.png" alt="Illustration" className="login-illustration1" />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      
-      <div className="right-panel">
-      <div className="logo-container">
-          <img src="new.png" alt="Company Logo" className="login-logo" />
-          <a className="svg" onClick={closeModal}><IoMdClose /></a></div>
-        <div className="logo-container1">
-          <h2 className="login-logo1">Sign up</h2>
-        
           
-        </div>
-        <form className="form" onSubmit={handleSubmit}>
-
-        
-          {/* {massage({error})} */
-          /* or
-          error && <h3 className="error-message">{error}</h3>} */}
-
-          {error && <h3 className="error-message">{error}</h3>}
-          {captchaError && <h3 className="error-message">{captchaError}</h3>}
-          <input type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <input type="text" placeholder="Enter your company name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
-          <input type="text" placeholder="Enter your phone number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
-          <div className="captcha-section">
-            <canvas ref={canvasRef} className="captcha-canvas"></canvas>
-            <button
-              type="button"
-              onClick={drawCaptcha}
-              className="refresh-captcha"
-            >
-              🔄
-            </button>
+          <div className="right-panel">
+            <div className="logo-container">
+              <img src="new.png" alt="Company Logo" className="login-logo" />
+              <a className="svg" onClick={closeModal}><IoMdClose /></a>
+            </div>
+            <div className="logo-container1">
+              <h2 className="login-logo1">Sign up</h2>
+            </div>
+            
+            <form className="form" onSubmit={handleSubmit}>
+              {error && <h3 className="error-message">{error}</h3>}
+              {captchaError && <h3 className="error-message">{captchaError}</h3>}
+              {successMessage && <p className="success-message">{successMessage}</p>}
+              
+              <input 
+                type="email" 
+                placeholder="Enter your email" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+              />
+              
+              <div className="login_main1">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="password-toggle1"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <IoMdEyeOff /> : <IoMdEye />}
+                </button>
+              </div>
+              
+              <input 
+                type="text" 
+                placeholder="Enter your company name" 
+                value={companyName} 
+                onChange={(e) => setCompanyName(e.target.value)} 
+              />
+              <input 
+                type="text" 
+                placeholder="Enter your phone number" 
+                value={phoneNumber} 
+                onChange={(e) => setPhoneNumber(e.target.value)} 
+              />
+              
+              <div className="captcha-section">
+                <canvas ref={canvasRef} className="captcha-canvas"></canvas>
+                <button
+                  type="button"
+                  onClick={drawCaptcha}
+                  className="refresh-captcha"
+                >
+                  🔄
+                </button>
+              </div>
+              
+              <input 
+                type="text" 
+                placeholder="Enter CAPTCHA" 
+                value={captchaInput} 
+                onChange={(e) => setCaptchaInput(e.target.value)} 
+              />
+              
+              <button type="submit" className="login-button">Create account</button>
+              
+              <p className="terms">
+                By signing up, you agree to our <a href="#">Terms of Service</a> and
+                our <a href="#">Privacy Policy</a>.
+              </p>
+            </form>
+            
+            <p className="login-link">
+              Already have an account? <a onClick={() => setShowModal("login")}>login</a>
+            </p>
           </div>
-          <input type="text" placeholder="Enter CAPTCHA" value={captchaInput} onChange={(e) => setCaptchaInput(e.target.value)} />
-          <button type="submit" className="login-button">Create account</button>
-        
-{/*     Method	                        Best Use Case
-onSubmit with useState           	Standard form handling ✅
-onClick with useRef             	Simple forms (avoids re-renders)
-useState with useEffect	          Auto-submit (search bars, live filters)
-onKeyPress (Enter key)	          Quick input submissions
-react-hook-form	                  Large forms with validation */}
-
-
-{/* 
-✅ React Form with Multiple Fields Using One useState
-
-
-import { useState } from "react";
-
-function MultiFieldForm() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
-
-  // Handle input change
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value, // Update only the changed field
-    }));
-  };
-
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Submitted Data:", formData);
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        name="name"
-        value={formData.name}
-        onChange={handleChange}
-        placeholder="Enter your name"
-      />
-      <br />
-      <input
-        type="email"
-        name="email"
-        value={formData.email}
-        onChange={handleChange}
-        placeholder="Enter your email"
-      />
-      <br />
-      <input
-        type="password"
-        name="password"
-        value={formData.password}
-        onChange={handleChange}
-        placeholder="Enter your password"
-      />
-      <br />
-      <button type="submit">Submit</button>
-    </form>
-  );
-}
-
-export default MultiFieldForm;
-
-🔥 How It Works?
-1.useState stores all form data in a single object (formData).
-2.handleChange dynamically updates the state based on the input's name attribute.
-3.handleSubmit logs the entire formData object when the form is submitted. */}
-
-{/* 
-Difference from useRef:
-
-// useState causes re-renders when the input changes.
-// useRef does not cause re-renders.
-
-
-import { useState } from "react";
-
-function InputStateExample() {
-  const [inputValue, setInputValue] = useState("");
-
-  const handleChange = (e) => {
-    setInputValue(e.target.value); // Update state
-  };
-
-  const handleClick = () => {
-    console.log(inputValue); // Get input value
-  };
-
-  return (
-    <div>
-      <input type="text" value={inputValue} onChange={handleChange} placeholder="Enter text" />
-      <button onClick={handleClick}>Get Value</button>
-    </div>
-  );
-}
-
-export default InputStateExample; */}
-
-{/* Comparison of Different Method
-Method   	                  Best For	             Causes Re-renders?      Recommended?
-useRef	                    Uncontrolled Inputs	   ❌ No	                  ✅ Yes (Efficient)
-useState  	                Controlled Inputs	     ✅ Yes	                ✅ Yes (React Way)
-document.getElementById	    Direct DOM Access	     ❌ No	                  ❌ No (Not React-Friendly)
-event.target.value         	Quick Access in Event  ❌ No	                  ✅ Yes (For One-time Use) */}
-
-<p className="terms">
-          By signing up, you agree to our <a href="#">Terms of Service</a> and
-          our <a href="#">Privacy Policy</a>.
-        </p>
-        
-        
-        
-          </form>
-        <p className="login-link">
-          Already have an account? <a  onClick={()=>setShowModal("login")}>login</a>
-        </p>
+        </div>
       </div>
-    </div>
-    </div>
     </div>
   );
 };
-
 
 export default SignUp;

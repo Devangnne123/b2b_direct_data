@@ -14,8 +14,8 @@ footer{
     border-radius: 50px 50px 0px 0px;
     margin-top: 10px;
     padding: 10px;
-   
-    width: 99vw;
+    max-width: 1500px;
+    width: 100vw;
     padding: 0%;
 }
 .menu-product{

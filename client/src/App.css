@@ -6,10 +6,19 @@
 } */
 
 /* General Styles */
-body,
+
 html {
   margin: 0;
+  display: flex;
+  justify-content: center;
   padding: 0;
+  font-family: "Arial", sans-serif;
+  background-color: #f9fafc;
+}
+body{
+  margin: 0;
+  padding: 0;
+  max-width: 1500px;
   font-family: "Arial", sans-serif;
   background-color: #f9fafc;
 }
@@ -17,7 +26,7 @@ html {
 .page-container {
   display: flex;
   flex-direction: column;
-  align-items: left;
+  
   width: 100%;
 }
 
@@ -219,19 +228,19 @@ html {
 
 .input-container {
   display: flex;
-  /* justify-content: center; */
+ justify-content: center;
   align-items: center;
   gap: 10px;
   margin-top: 20px;
 }
 
 .input-field {
-  width: 300px;
+  width: 140px;
   padding: 5px 30px;
   background-color: white;
   border: 1px groove #a2a2a2; /* Light border */
   border-radius: 10px; /* Fully rounded border */
-  font-size: 1rem;
+  font-size: 0.9rem;
   outline: none;
   color: #000; /* Black text color */
   caret-color: #000; /* Purple blinking cursor */
@@ -250,7 +259,7 @@ html {
 .search-button {
   padding: 5px 20px;
   font-size: 0.8rem;
-  background-color: #4175fb; /* Bright blue background */
+  background-color: #000000; /* Bright blue background */
   color: #fff; /* White text */
   border: none;
   border-radius: 10px; /* Full rounded button */

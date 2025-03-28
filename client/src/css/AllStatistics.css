@@ -9,7 +9,7 @@
   table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 800px;
+    
   }
   
   th, td {
@@ -37,8 +37,6 @@
       padding: 10px;
     }
   
-    table {
-      min-width: 600px;
-    }
+    
   }
   

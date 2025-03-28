@@ -310,26 +310,25 @@ const BulkLookup = () => {
   };
 
   return (
-    <div className="main1">
-    <div className="main-con1">
+    <div className="main">
+    <div className="main-con">
     {showSidebar && <Sidebar userEmail={userEmail} />} 
 
-      <div className="main-content1">
-        <div className="right-side1">
-          <div className="right-p1">
-            <nav className="main-head1">
+      
+        <div className="right-side">
+          <div className="right-p">
+            <nav className="main-head">
               <li>
                 <IoArrowBackCircle className="back1" onClick={() => setShowSidebar(!showSidebar)} />  
               </li>
               
-              <div className="main-title1">
+              <div className="main-title">
                 <li className="profile">
-                  <p className="title1">Bulk Lookup</p>
-                  <li className="credits-main">
-            <h5 className="credits">
+                  <p className="title">Bulk Lookup</p>
+                  <li className="credits-main1">
+            <h5 className="credits1">
               <img
-                width="30"
-                height="30"
+                
                 src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
                 alt="external-credits-university-flaticons-flat-flat-icons"
               />
@@ -338,22 +337,22 @@ const BulkLookup = () => {
           </li>
                 </li>
                 <li>
-                  <p className="title-des1">
+                  <p className="title-des2">
                     Enrich your data in bulk with our lookup tool
                   </p>
                 </li>
-                <li className="big1">
-                  <h1 className="title-head1">Bulk Data in Real-Time</h1>
-                </li>
+                
+                  <h1 className="title-head">Bulk Data in Real-Time</h1>
+                
               </div>
             </nav>
             <section>
-              <div className="main-body11">
-                <div className="main-body111">
-                  <div className="left1">
-                    <div className="left-main1">Linkedin URL Excel File</div>
+              <div className="main-body0">
+                <div className="main-body1">
+                  <div className="left">
+                    <div className="left-main">Linkedin URL Excel File</div>
                      
-                      <div className="url-input1">
+                      <div className="url-input">
                         <div className="form">
                         <label htmlFor="file-input" className="label">
                           Choose File
@@ -370,7 +369,7 @@ const BulkLookup = () => {
                         </div>
 
                         <button
-                          className="search-url1"
+                          className="search-url"
                           onClick={handleFileUpload}
                         >
                           {isLoading ? "Uploading..." : "Upload & Fetch"}
@@ -388,7 +387,7 @@ const BulkLookup = () => {
                      
 
                       
-                    <div className="url-des1">
+                    <div className="url-des">
                       <p>
                         Retrieve all profile or company data on LinkedIn using
                         our LinkedIn Finder URL.
@@ -396,30 +395,31 @@ const BulkLookup = () => {
                     </div>
                     <div className="history-table">
                     <table border="1">
-          <thead >
-            <tr  >
-              <th className="header12">File Name</th>
-              <th className="header12">Uploaded At</th>
-              <th className="header12">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {fileHistory.map((file) => (
-              <tr key={file._id}>
-                <td>{file.fileName}</td>
-                <td>{new Date(file.uploadedAt).toLocaleString()}</td>
-                <td>
-                  <button className="download-button1" onClick={() => handleDownloadFile(file.filePath)}>
-                    Download
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  <thead>
+    <tr>
+      <th className="header12" title="File Name">📁</th>
+      <th className="header12" title="Uploaded At">📅</th>
+      <th className="header12" title="Action">⚡</th>
+    </tr>
+  </thead>
+  <tbody>
+    {fileHistory.map((file) => (
+      <tr key={file._id}>
+        <td>{file.fileName}</td>
+        <td>{new Date(file.uploadedAt).toLocaleString()}</td>
+        <td>
+          <button className="download-button1" title="Download File" onClick={() => handleDownloadFile(file.filePath)}>
+            ⬇️
+          </button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
         </div>
                   </div>
-                  <div className="right1">
+                  <div className="right">
                     <img src="new linkedin.png" alt="" />
                   </div>
                 </div>
@@ -427,7 +427,7 @@ const BulkLookup = () => {
             </section>
           </div>
         </div>
-      </div>
+      
     </div>
   </div>
 );

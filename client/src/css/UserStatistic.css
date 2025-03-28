@@ -1,99 +1,247 @@
 /* Dashboard Layout */
 .dashboard {
-    display: flex;
-    flex-direction: row;
-    min-height: 100vh;
+  display: flex;
+  min-height: 100vh;
+  background-color: #f9fafb;
 }
 
-
-/* Main Content */
 .main-content {
-    flex: 1;
-    overflow-x: hidden;
+  flex: 1;
+  padding: 2rem;
 }
 
-/* Header */
 .header {
-    text-align: center;
+  margin-bottom: 2rem;
 }
 
-/* Statistics Table */
+.profile-lookup {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+/* Desktop Table Styles */
+.desktop-view {
+  display: block;
+}
+
+.table-wrapper {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
 .statistics-table {
-    width: 100%;
-    border-collapse: collapse;
-    background-color: #fff;
-    border-radius: 8px;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
-/* Table Head */
 .statistics-table th {
-    background-color: #f4f4f4;
-    font-weight: bold;
-    border: 1px solid #ddd;
+  background-color: #f3f4f6;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4b5563;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-/* Table Data */
 .statistics-table td {
-    border: 1px solid #ddd;
-    text-align: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
 }
 
-/* Alternate Row Color */
-.statistics-table tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
+.task-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-/* No Data Message */
+.icon-blue {
+  color: #3b82f6;
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.icon-green {
+  color: #10b981;
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.download-btn:hover {
+  background-color: #2563eb;
+}
+
 .no-data {
-    text-align: center;
-    color: gray;
-    font-style: italic;
-    padding: 10px;
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Mobile Card Styles */
+.mobile-view {
+  display: none;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.stat-card {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.task-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.task-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.date-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.card-body {
+  padding: 1rem;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.stat-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.stat-value {
+  color: #111827;
+  font-weight: 500;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4b5563;
+}
+
+.credits-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.credits-info {
+  display: flex;
+  justify-content: space-between;
+  color: #4b5563;
+  font-size: 0.875rem;
+}
+
+.mobile-download-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #3b82f6;
+  color: white;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.mobile-download-btn:hover {
+  background-color: #2563eb;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Responsive Design */
-/* @media screen and (max-width: 1024px) {
-    .main-content {
-        margin-left: 200px;/
-    }
-} */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;
+  }
 
-@media screen and (max-width: 768px) {
-    .dashboard {
-        flex-direction: column;
-    }
+  .desktop-view {
+    display: none;
+  }
 
-    .sidebar {
-        width: 100%;
-        height: auto;
-        position: relative;
-    }
+  .mobile-view {
+    display: flex;
+    flex-direction: column;
+  }
 
-    .main-content {
-        margin-left: 0;
-        padding: 15px;
-    }
-
-    .statistics-table th,
-    .statistics-table td {
-        font-size: 14px;
-        padding: 6px;
-    }
-}
-
-@media screen and (max-width: 480px) {
-    .statistics-table th,
-    .statistics-table td {
-        font-size: 12px;
-        padding: 4px;
-    }
-
-    /* Make table scrollable */
-    .table-container {
-        overflow-x: auto;
-    }
-
-    .statistics-table {
-        min-width: 600px; /* Prevent table from shrinking too much */
-    }
+  .profile-lookup {
+    font-size: 1.5rem;
+  }
 }
