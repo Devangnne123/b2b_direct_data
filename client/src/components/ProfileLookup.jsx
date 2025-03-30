@@ -162,8 +162,9 @@ const ProfileLookup = () => {
     <div className="right-side">
         <div className="right-p">
         <nav className="main-head">
-          <li>
-            <IoArrowBackCircle className="back1" onClick={() => setShowSidebar(!showSidebar)} /> 
+          <li className="back1">
+
+            {/* <IoArrowBackCircle className="back1" onClick={() => setShowSidebar(!showSidebar)} />  */}
           </li>
           
           <div className="main-title">

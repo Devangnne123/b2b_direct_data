@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { IoArrowBackCircle } from "react-icons/io5";
+import { FaEye, FaEyeSlash } from "react-icons/fa"; // Import eye icons
 import Sidebar from "../components/Sidebar";
 import "../css/UserList.css";
 
 const AddUser = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // State for password visibility
   const [credits, setCredits] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
 
-  const userEmail = JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
+  const userEmail =
+    JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
 
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
@@ -19,41 +25,40 @@ const AddUser = () => {
       window.location.href = "/";
     }
   }, []);
-  // Check roleId on page load
+
   useEffect(() => {
     const roleId = sessionStorage.getItem("roleId");
     if (roleId !== "1") {
-      // If the user is not an admin (roleId is not 1), redirect them
-      navigate("/profile-lookup"); // Redirect to profile page for non-admin users
+      navigate("/profile-lookup");
     }
   }, [navigate]);
 
   const handleAddUser = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      setErrorMessage("All email and password are required.");
+      setErrorMessage("Email and password are required.");
       return;
     }
-  
+
     setIsSubmitting(true);
-  
+
     const createdBy = JSON.parse(sessionStorage.getItem("user"))?.email || "";
-  
+
     const userData = {
       userEmail: email,
       userPassword: password,
       roleId: 2,
       createdBy,
-      credits: 0, // Assign default credits
+      credits: 0,
     };
-  
+
     try {
       const response = await fetch("http://localhost:3000/users/newuser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
       });
-  
+
       const data = await response.json();
       if (response.ok) {
         navigate("/user-list");
@@ -66,59 +71,70 @@ const AddUser = () => {
       setIsSubmitting(false);
     }
   };
-  
-  
 
   return (
-    <>
-      <div className="dashboard">
-        <Sidebar userEmail={userEmail} />
-
-        <div className="main-content">
-          <div className="header">
-            <h1 className="profile-lookup">Add User</h1>
-          </div>
-
-          <div className="add-user-form-container">
-            <form onSubmit={handleAddUser}>
-              <div>
-                <input
-                  type="email"
-                  placeholder="Enter user email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+    <div className="main">
+      <div className="main-con">
+        {showSidebar && <Sidebar userEmail={userEmail} />}
+        <div className="right-side">
+          <div className="right-p">
+            <nav className="main-head">
+            <li className="back1">
+                {/* <IoArrowBackCircle className="back1" onClick={() => setShowSidebar(!showSidebar)} />  */}
+              </li>
+              <div className="main-title">
+                <li className="profile">
+                  <p className="title">Add User</p>
+                </li>
+                <li>
+                  <p className="title-des2">You can Add your User Here</p>
+                </li>
+                <li className="title-head">Explore Real-Time Data</li>
               </div>
+            </nav>
+          </div>
+          <section>
+            <div className="main-body0">
+              <div className="main-body1">
+                <div className="left">
+                  <div className="left-main"></div>
+                  <div className="add-user-form-container">
+                    <form onSubmit={handleAddUser}>
+                      <div>
+                        <input
+                          type="email"
+                          placeholder="Enter user email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                        />
+                      </div>
               <div>
-                <input
+                        <input
                   type="password"
-                  placeholder="Enter user password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                          placeholder="Enter user password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                      {errorMessage && (
+                        <p className="error-message">{errorMessage}</p>
+                      )}
+                      <div>
+                        <button type="submit" disabled={isSubmitting}>
+                          {isSubmitting ? "Adding..." : "Add User"}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
               </div>
-              {/* <div>
-                <input
-                  type="number"
-                  value={credits}
-                  onChange={(e) => setCredits(e.target.value)}
-                  placeholder="Default Credits"
-                />
-              </div> */}
-
-              {errorMessage && <p className="error-message">{errorMessage}</p>}
-              <div>
-                <button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Adding..." : "Add User"}
-                </button>
-              </div>
-            </form>
-          </div>
+            </div>
+          </section>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

@@ -7,7 +7,12 @@ import "../css/Index.css"; // Import the CSS file
 function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [showModal, setShowModal] = useState(null);
-  const navigate = useNavigate(); // Initialize the navigate function
+  const navigate = useNavigate();
+
+  // Function to handle link clicks and close mobile menu
+  const handleLinkClick = () => {
+    setIsOpen(false);
+  };
 
   return (
     <div className="MAIN">
@@ -15,7 +20,7 @@ function Header() {
         <div className="nav-container">
           {/* Logo */}
           <div className="nav-logo">
-            <Link to="/">
+            <Link to="/" onClick={handleLinkClick}>
               <img src="new.png" alt="Logo" />
             </Link>
           </div>
@@ -23,31 +28,53 @@ function Header() {
           {/* Desktop Menu */}
           <ul className={`nav-menu ${isOpen ? "active" : ""}`}>
             <li>
-              <Link to="/">Home</Link>
+              <Link to="/" onClick={handleLinkClick}>
+                Home
+              </Link>
             </li>
             <li>
-              <Link to="/services">Services</Link>
+              <Link to="/services" onClick={handleLinkClick}>
+                Services
+              </Link>
             </li>
             <li>
-              <Link to="/api">API Reference</Link>
+              <Link to="/api" onClick={handleLinkClick}>
+                API Reference
+              </Link>
             </li>
             <li>
-              <Link to="/aboutus">About Us</Link>
+              <Link to="/aboutus" onClick={handleLinkClick}>
+                About Us
+              </Link>
             </li>
             <li>
-              <Link to="/contactus">Contact</Link>
+              <Link to="/contactus" onClick={handleLinkClick}>
+                Contact
+              </Link>
             </li>
           </ul>
 
           {/* Login & Signup Buttons */}
           <div className="login-signup">
             <li>
-              <button className="login-btn" onClick={() => setShowModal("login")}>
+              <button 
+                className="login-btn" 
+                onClick={() => {
+                  setShowModal("login");
+                  setIsOpen(false); // Close mobile menu when login button is clicked
+                }}
+              >
                 Login
               </button>
             </li>
             <li>
-              <button className="signup-btn" onClick={() => setShowModal("signup")}>
+              <button 
+                className="signup-btn" 
+                onClick={() => {
+                  setShowModal("signup");
+                  setIsOpen(false); // Close mobile menu when signup button is clicked
+                }}
+              >
                 Signup
               </button>
             </li>

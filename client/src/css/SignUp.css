@@ -133,12 +133,8 @@
   border-radius: 5px;
   cursor: pointer;
 }
- .form button:hover{
-  background-color: black;
- }
- button:hover{
-  background-color: #dadadacb;
- }
+
+ 
 .extra-links {
   text-align: center;
   margin-top: 10px;
@@ -263,7 +259,7 @@
   
 }
 .refresh-captcha:hover{
-      background-color: #a0a0a0;
+     
 }
 
 .login-illustration1 {
@@ -330,13 +326,13 @@
 /* Password toggle styles */
 .password-input-container {
   position: relative;
-  width: 80%;
-  margin: 5px 30px;
+  width: 92%;
+
 }
 
 .password-input-container input {
   width: 100%;
-  padding: 8px;
+  padding: 8px 12px;
   border: 1px solid #ccc;
   border-radius: 5px;
 }

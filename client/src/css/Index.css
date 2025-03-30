@@ -323,7 +323,7 @@ body{
        flex-direction: column;
        justify-content: center;
      align-items: center;
-       width: 230px;
+       width: 250px;
        height: 300px;
       
        border-radius: 50px;
@@ -336,7 +336,7 @@ body{
       flex-direction: column;
       justify-content: center;
     align-items: center;
-      width: 260px;
+      width: 250px;
       height: 300px;
       margin-left: 30px;
       border-radius: 50px;
@@ -703,6 +703,9 @@ body{
      align-items: center;
    
     }
+    .serviceDetail1{
+      width: 80%;
+    }
     .contact{
      justify-content: center;
      align-items: center;
@@ -753,7 +756,7 @@ body{
     height: 30px;
    }
    .serviceCard{
-    width: 300px;
+    width: 250px;
    }
     
    .main-s{
@@ -773,6 +776,7 @@ body{
   }
   .serviceCard1{
     margin: 0%;
+    width: 250px;
    }
  
    }

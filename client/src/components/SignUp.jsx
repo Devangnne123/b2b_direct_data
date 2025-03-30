@@ -202,7 +202,7 @@ const SignUp = ({ closeModal, setShowModal }) => {
                 />
                 <button
                   type="button"
-                  className="password-toggle1"
+                  className="password-toggle11"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <IoMdEyeOff /> : <IoMdEye />}

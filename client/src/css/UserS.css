@@ -32,13 +32,20 @@
 /* Desktop Table Styles */
 .desktop-view {
   display: block;
+
 }
 
 .table-wrapper {
   background-color: white;
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  max-width:100%;
+
+  
+  
 }
 
 .statistics-table {
@@ -51,14 +58,14 @@
   background-color: #f3f4f6;
   padding: 0.75rem 1rem;
   text-align: left;
-  font-size: 0.875rem;
+  font-size:0.3rem;
   font-weight: 600;
   color: #4b5563;
   border-bottom: 1px solid #e5e7eb;
 }
 
 .statistics-table td {
-  padding: 1rem;
+  padding: 0.2rem;
   border-bottom: 1px solid #e5e7eb;
   color: #1f2937;
 }
@@ -89,7 +96,7 @@
   background-color: #3b82f6;
   color: white;
   border-radius: 0.375rem;
-  font-size: 0.875rem;
+  font-size: 0.5rem;
   font-weight: 500;
   transition: background-color 0.2s;
 }
@@ -106,24 +113,37 @@
 }
 
 /* Mobile Card Styles */
-.mobile-view {
+.mobile-view1 {
+  display: none;
+  gap: 1rem;
+  padding: 1rem;
+}
+.mobile-view_credit {
+  display: none;
+  gap: 1rem;
+  padding: 1rem;
+}
+.mobile-view11 {
   display: none;
   gap: 1rem;
   padding: 1rem;
 }
 
-.stat-card {
+.stat-card_admin {
   background-color: white;
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  
 }
+
 
 .card-header {
   display: flex;
   justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  padding: 1rem;
+  padding: 2rem;
   background-color: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -146,12 +166,32 @@
   padding: 0.25rem 0.5rem;
   background-color: #e5e7eb;
   border-radius: 0.375rem;
-  font-size: 0.875rem;
+  font-size: 0.5rem;
   color: #4b5563;
 }
 
-.card-body {
+.card-body1 {
   padding: 1rem;
+}
+.card-body11 {
+  padding: 1rem;
+  
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+
+}
+.card-body_credit {
+  padding: 1rem;
+  
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+
 }
 
 .stat-row {
@@ -227,21 +267,117 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 1000px) {
   .main-content {
     padding: 1rem;
   }
+  
 
   .desktop-view {
     display: none;
   }
 
-  .mobile-view {
+  .mobile-view1 {
+    display: flex;
+    flex-direction: column;
+  }
+  .mobile-view11 {
+    display: flex;
+    flex-direction: column;
+  }
+  .mobile-view_credit {
     display: flex;
     flex-direction: column;
   }
 
+  .stat-card_credit {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    
+    max-width: 500px;
+  }
+
+  .stat-card_admin {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    
+    max-width: 500px;
+  }
+  .stat-card {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    max-width: 500px;
+  }
+
+
   .profile-lookup {
     font-size: 1.5rem;
   }
+}
+
+
+
+
+
+/* Pagination Styles */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 10px 0;
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  background-color: white;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 36px;
+}
+
+.pagination-btn:hover:not(.disabled) {
+  background-color: #f0f0f0;
+}
+
+.pagination-btn.active {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.pagination-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Mobile Pagination */
+.mobile-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.mobile-pagination .pagination-btn {
+  padding: 8px 16px;
+}
+
+.page-info {
+  font-size: 14px;
+  color: #555;
 }

@@ -478,3 +478,160 @@
     }
    
   }
+
+  
+@media(max-width:420px){
+  .history-table{
+    width: 100%;
+    height: auto;
+    scrollbar-width: thin;
+    font-size: 10px;
+    scrollbar-color: rgb(0, 0, 0);
+    overflow-x: auto;
+    overflow-y: auto;
+    z-index: 1000000;
+   
+    border-radius: 20px;
+    
+  }
+ 
+  .add-user-form-container{
+    width: 50vw;
+  }
+}
+
+
+
+
+
+
+
+
+
+/* User List Specific Styles */
+
+
+/* Credit Input */
+.credit-input {
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  width: 120px;
+  text-align: center;
+}
+
+.mobile-credit-input {
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn.add-btn {
+  background-color: #10b981;
+  color: white;
+}
+
+.action-btn.add-btn:hover {
+  background-color: #059669;
+}
+
+.action-btn.minus-btn {
+  background-color: #ef4444;
+  color: white;
+}
+
+.action-btn.minus-btn:hover {
+  background-color: #dc2626;
+}
+
+/* Mobile Action Buttons */
+.mobile-action-buttons {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.mobile-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex: 1;
+}
+
+.mobile-action-btn.add-btn {
+  background-color: #10b981;
+  color: white;
+}
+
+.mobile-action-btn.add-btn:hover {
+  background-color: #059669;
+}
+
+.mobile-action-btn.minus-btn {
+  background-color: #ef4444;
+  color: white;
+}
+
+.mobile-action-btn.minus-btn:hover {
+  background-color: #dc2626;
+}
+
+/* Mobile Card Specific Styles */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-number {
+  background-color: #e2e8f0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+
+
+.transfer-section {
+  width: 100%;
+}
+
+.email-cell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-email {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

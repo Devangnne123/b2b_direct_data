@@ -285,28 +285,23 @@
   position: relative;
   width: 105%;
 }
-.password-toggle{
+.password-toggl{
   position: absolute;
-  right: 20px;
+  right: 10px;
+  bottom: 15px;
+  color: black;
   background-color: transparent;
 
 }
-.password-toggle:hover{
-  
-  background-color: transparent;
 
-}
-.password-toggle1{
+.password-toggle11{
   position: absolute;
-  right: 30px;
   background-color: transparent;
+  right: 50px;
+ 
 
 }
-.password-toggle1:hover{
-  
-  background-color: transparent;
 
-}
 /* Responsive Design */
 @media (min-width: 768px) {
   .login-wrapper {
@@ -327,13 +322,30 @@
   }
   .login_main{
     
-    width: 150%;
+    width: 160%;
   }
   .login-button1 {
     width: 150%;
    
   }
-
+ 
+  
+.password-toggl{
+    position: absolute;
+    right: 0px;
+    bottom: 15px;
+    color: black;
+    background-color: transparent;
+  
+  }
+  .password-toggle11{
+    position: absolute;
+    
+    right: 40px;
+   
+  
+  }
+ 
 
   
 }

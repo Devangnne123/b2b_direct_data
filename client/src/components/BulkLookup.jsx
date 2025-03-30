@@ -46,22 +46,25 @@ const BulkLookup = () => {
           Authorization: `Bearer ${user?.token}`,
         },
       });
-  
+
       if (!response.ok) throw new Error("Failed to fetch lookup credits");
-  
+
       const data = await response.json();
       console.log("API Response:", data); // Debugging log
-  
+
       // Ensure correct data structure
       let usersArray = data?.data || data?.users || data; // Handle different response structures
-  
+
       if (!Array.isArray(usersArray)) {
-        console.error("Invalid API response: expected an array but got", usersArray);
+        console.error(
+          "Invalid API response: expected an array but got",
+          usersArray
+        );
         return;
       }
-  
+
       const currentUser = usersArray.find((u) => u.userEmail === userEmail);
-      
+
       if (currentUser) {
         setStatistics((prevState) => ({
           ...prevState,
@@ -74,8 +77,6 @@ const BulkLookup = () => {
       console.error("Error fetching user credits:", error);
     }
   };
-  
-  
 
   const updateUserCredits = async (newCredits) => {
     try {
@@ -97,18 +98,18 @@ const BulkLookup = () => {
       alert("Please upload a file first.");
       return;
     }
-  
+
     if (statistics.remainingCredits <= 0) {
       alert("You have no remaining credits. Please contact support.");
       return;
     }
-  
+
     try {
       const reader = new FileReader();
       reader.onload = async (e) => {
         const fileData = e.target.result;
         let links = [];
-  
+
         if (file.name.endsWith(".csv")) {
           const parsedData = Papa.parse(fileData, { header: false }).data;
           links = parsedData.flat();
@@ -118,25 +119,27 @@ const BulkLookup = () => {
           const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
           links = jsonData.flat();
         }
-  
+
         const linkedinRegex = /([a-z]{2,3}\.)?linkedin\.com\/.+$/;
         const validLinks = links.filter((link) => linkedinRegex.test(link));
-  
+
         if (validLinks.length === 0) {
           alert("No valid LinkedIn links found in the file.");
           return;
         }
-  
+
         setIsLoading(true);
-  
+
         try {
-          const apiUrl = `http://localhost:3000/mobileEnrichments/mobileEnrichment?linkedin_url=${validLinks.join(",")}`;
+          const apiUrl = `http://localhost:3000/mobileEnrichments/mobileEnrichment?linkedin_url=${validLinks.join(
+            ","
+          )}`;
           const response = await fetch(apiUrl);
-  
+
           if (!response.ok) throw new Error("Failed to fetch bulk data");
-  
+
           const data = await response.json();
-  
+
           if (data.data && data.data.length > 0) {
             // Filter only the links that have valid data in the database
             const fetchedLinks = data.data.filter((item) => item !== null);
@@ -149,18 +152,21 @@ const BulkLookup = () => {
               mobile_1: result?.mobile_1 || "Not Available",
               mobile_2: result?.mobile_2 || "Not Available",
             }));
-  
+
             setBulkResults(bulkData);
             await saveStatistics(file.name, fetchedLinks, fetchedLinks.length);
-  
+
             // **Auto-Save the file immediately after fetching**
             await saveFileToDatabase(bulkData);
-  
+
             // Deduct credits only for links that returned data
             const creditDeduction = fetchedLinks.length * 5; // Deduct credits (5 per valid link)
-            const newCredits = Math.max(0, statistics.remainingCredits - creditDeduction);
+            const newCredits = Math.max(
+              0,
+              statistics.remainingCredits - creditDeduction
+            );
             await updateUserCredits(newCredits);
-  
+
             alert("Bulk data fetched successfully and statistics saved!");
           } else {
             alert("No data found for the provided LinkedIn URLs.");
@@ -172,7 +178,7 @@ const BulkLookup = () => {
           setIsLoading(false);
         }
       };
-  
+
       if (file.name.endsWith(".csv")) {
         reader.readAsText(file);
       } else if (file.name.endsWith(".xlsx")) {
@@ -183,7 +189,6 @@ const BulkLookup = () => {
       alert("Error processing file. Please try again later.");
     }
   };
-  
 
   const saveStatistics = async (filename, validLinks, linkUploadCount) => {
     const userStats =
@@ -311,39 +316,36 @@ const BulkLookup = () => {
 
   return (
     <div className="main">
-    <div className="main-con">
-    {showSidebar && <Sidebar userEmail={userEmail} />} 
+      <div className="main-con">
+        {showSidebar && <Sidebar userEmail={userEmail} />}
 
-      
         <div className="right-side">
           <div className="right-p">
             <nav className="main-head">
-              <li>
-                <IoArrowBackCircle className="back1" onClick={() => setShowSidebar(!showSidebar)} />  
+              <li className="back1">
+                {/* <IoArrowBackCircle className="back1" onClick={() => setShowSidebar(!showSidebar)} />  */}
               </li>
-              
+
               <div className="main-title">
                 <li className="profile">
                   <p className="title">Bulk Lookup</p>
                   <li className="credits-main1">
-            <h5 className="credits1">
-              <img
-                
-                src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
-                alt="external-credits-university-flaticons-flat-flat-icons"
-              />
-              Credits:{statistics.remainingCredits}
-            </h5>
-          </li>
+                    <h5 className="credits1">
+                      <img
+                        src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
+                        alt="external-credits-university-flaticons-flat-flat-icons"
+                      />
+                      Credits:{statistics.remainingCredits}
+                    </h5>
+                  </li>
                 </li>
                 <li>
                   <p className="title-des2">
                     Enrich your data in bulk with our lookup tool
                   </p>
                 </li>
-                
-                  <h1 className="title-head">Bulk Data in Real-Time</h1>
-                
+
+                <h1 className="title-head">Bulk Data in Real-Time</h1>
               </div>
             </nav>
             <section>
@@ -351,9 +353,9 @@ const BulkLookup = () => {
                 <div className="main-body1">
                   <div className="left">
                     <div className="left-main">Linkedin URL Excel File</div>
-                     
-                      <div className="url-input">
-                        <div className="form">
+
+                    <div className="url-input">
+                      <div className="form">
                         <label htmlFor="file-input" className="label">
                           Choose File
                         </label>
@@ -366,27 +368,22 @@ const BulkLookup = () => {
                           accept=".csv,.xlsx"
                           onChange={(e) => setFile(e.target.files[0])}
                         />
-                        </div>
-
-                        <button
-                          className="search-url"
-                          onClick={handleFileUpload}
-                        >
-                          {isLoading ? "Uploading..." : "Upload & Fetch"}
-                        </button>
-
-                        {bulkResults.length > 0 && (
-                          <button
-                            className="download-button"
-                            onClick={handleDownloadExcel}
-                          >
-                            Download Excel
-                          </button>
-                        )}
                       </div>
-                     
 
-                      
+                      <button className="search-url" onClick={handleFileUpload}>
+                        {isLoading ? "Uploading..." : "Upload & Fetch"}
+                      </button>
+
+                      {bulkResults.length > 0 && (
+                        <button
+                          className="download-button"
+                          onClick={handleDownloadExcel}
+                        >
+                          Download Excel
+                        </button>
+                      )}
+                    </div>
+
                     <div className="url-des">
                       <p>
                         Retrieve all profile or company data on LinkedIn using
@@ -394,30 +391,43 @@ const BulkLookup = () => {
                       </p>
                     </div>
                     <div className="history-table">
-                    <table border="1">
-  <thead>
-    <tr>
-      <th className="header12" title="File Name">📁</th>
-      <th className="header12" title="Uploaded At">📅</th>
-      <th className="header12" title="Action">⚡</th>
-    </tr>
-  </thead>
-  <tbody>
-    {fileHistory.map((file) => (
-      <tr key={file._id}>
-        <td>{file.fileName}</td>
-        <td>{new Date(file.uploadedAt).toLocaleString()}</td>
-        <td>
-          <button className="download-button1" title="Download File" onClick={() => handleDownloadFile(file.filePath)}>
-            ⬇️
-          </button>
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-
-        </div>
+                      <table border="1">
+                        <thead>
+                          <tr>
+                            <th className="header12" title="File Name">
+                              📁
+                            </th>
+                            <th className="header12" title="Uploaded At">
+                              📅
+                            </th>
+                            <th className="header12" title="Action">
+                              ⚡
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {fileHistory.map((file) => (
+                            <tr key={file._id}>
+                              <td>{file.fileName}</td>
+                              <td>
+                                {new Date(file.uploadedAt).toLocaleString()}
+                              </td>
+                              <td>
+                                <button
+                                  className="download-button1"
+                                  title="Download File"
+                                  onClick={() =>
+                                    handleDownloadFile(file.filePath)
+                                  }
+                                >
+                                  ⬇️
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                   <div className="right">
                     <img src="new linkedin.png" alt="" />
@@ -427,9 +437,8 @@ const BulkLookup = () => {
             </section>
           </div>
         </div>
-      
+      </div>
     </div>
-  </div>
-);
+  );
 };
 export default BulkLookup;

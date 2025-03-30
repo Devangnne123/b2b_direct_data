@@ -1,8 +1,9 @@
 /* Form Container */
 .add-user-form-container {
   max-width: 400px;
-  margin: 50px auto;
+  justify-content: center;
   padding: 30px;
+  margin: 0px auto;
   background-color: #f9f9f9;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -12,7 +13,7 @@
 .add-user-form-container h1 {
   text-align: center;
   color: #333;
-  margin-bottom: 20px;
+  
 }
 
 .add-user-form-container form {
@@ -25,6 +26,7 @@
 .add-user-form-container input[type="password"],
 .add-user-form-container input[type="number"] {
   padding: 12px 15px;
+  
   font-size: 16px;
   border: 1px solid #dcdcdc;
   border-radius: 8px;
@@ -154,8 +156,8 @@
 
 /* Styling the Update button */
 button {
-  background-color: #4caf50; /* Green background */
-  color: white; /* White text */
+   /* Green background */
+  color: rgb(0, 0, 0); /* White text */
   padding: 10px 10px; /* Padding for the button */
   border: none; /* Remove border */
   border-radius: 5px; /* Rounded corners */
@@ -163,9 +165,7 @@ button {
   transition: background-color 0.3s ease; /* Smooth background color transition */
 }
 
-button:hover {
-  background-color: #45a049; /* Darker green on hover */
-}
+
 
 /* Styling the textbox for entering credits */
 input[type="number"] {

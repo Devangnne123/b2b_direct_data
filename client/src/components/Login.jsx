@@ -106,7 +106,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
                   
                 /><button
                 type="button"
-                className="password-toggle"
+                className="password-toggl"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <IoMdEyeOff /> : <IoMdEye />}
