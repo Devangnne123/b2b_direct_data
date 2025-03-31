@@ -296,10 +296,10 @@ const AllStatistics = () => {
                           </div>
 
                           {/* Mobile View */}
-                          <div className="mobile-view">
+                          <div className="mobile-view_credit">
                             {currentRows.length > 0 ? (
                               currentRows.map((stat, index) => (
-                                <div key={index} className="stat-card">
+                                <div key={index} className="stat-card_credit">
                                   <div className="card-header">
                                     <div className="task-info">
                                       {stat.task === "Bulk Upload" ? (
@@ -315,7 +315,7 @@ const AllStatistics = () => {
                                     </div>
                                   </div>
 
-                                  <div className="card-body">
+                                  <div className="card-body_credit">
                                     <div className="stat-row">
                                       <span className="stat-label">Email:</span>
                                       <span className="stat-value">{stat.email || "N/A"}</span>

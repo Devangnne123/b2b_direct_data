@@ -86,12 +86,7 @@ const AdminCreditReport = () => {
               <div className="main-title">
                 <li className="profile">
                   <p className="title">Credit Transactions</p>
-                  <li className="credits-main1">
-                    <h5 className="credits 1">
-                      <CreditCard className="h-5 w-5" />
-                      Total Transactions: {transactions.length}
-                    </h5>
-                  </li>
+                  
                 </li>
                 <li>
                   <p className="title-des2">
@@ -264,10 +259,10 @@ const AdminCreditReport = () => {
                           </div>
 
                           {/* Mobile View */}
-                          <div className="mobile-view">
+                          <div className="mobile-view_credit_t">
                             {currentRows.length > 0 ? (
                               currentRows.map((txn, index) => (
-                                <div key={index} className="txn-card">
+                                <div key={index} className="stat-card_credit_t">
                                   <div className="card-header">
                                     <div className="txn-type">
                                       <CreditCard className="h-4 w-4" />
@@ -279,7 +274,7 @@ const AdminCreditReport = () => {
                                     </div>
                                   </div>
 
-                                  <div className="card-body">
+                                  <div className="card-body_credit_t">
                                     <div className="txn-flow">
                                       <div className="sender">
                                         <span className="label">From:</span>

@@ -63,3 +63,6 @@ app.use('/excel', excelRoutes);
 
 const superAdminRoutes = require('./routes/superAdminRoutes')
 app.use('/super-admin', superAdminRoutes);
+
+const uploadedLinksRoutes = require("./routes/uploadedLinksRoutes");
+app.use("/uploadedLinks", uploadedLinksRoutes);

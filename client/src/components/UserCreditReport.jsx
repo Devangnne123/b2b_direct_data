@@ -264,7 +264,7 @@ const UserCreditReport = () => {
                             <div className="mobile-view11">
                               {currentRows.length > 0 ? (
                                 currentRows.map((transaction, index) => (
-                                  <div key={index} className="stat-card">
+                                  <div key={index} className="stat-card_credit">
                                     <div className="card-header">
                                       <div className="transaction-type">
                                         <CreditCard className="h-4 w-4 mr-2" />

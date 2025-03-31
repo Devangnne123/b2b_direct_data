@@ -118,6 +118,16 @@
   gap: 1rem;
   padding: 1rem;
 }
+.mobile-view_credit_t {
+  display: none;
+  gap: 1rem;
+  padding: 1rem;
+}
+.mobile-view_Users {
+  display: none;
+  gap: 1rem;
+  padding: 1rem;
+}
 .mobile-view_credit {
   display: none;
   gap: 1rem;
@@ -143,6 +153,7 @@
   justify-content: space-between;
   flex-direction: column;
   align-items: center;
+  border-radius: 30px;
   padding: 2rem;
   background-color: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
@@ -175,6 +186,20 @@
 }
 .card-body11 {
   padding: 1rem;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+
+}
+  
+.card-body_Users {
+  padding: 1rem;
+}
+
+.card-body_credit {
+  padding: 1rem;
   
 
   display: flex;
@@ -183,7 +208,7 @@
 
 
 }
-.card-body_credit {
+.card-body_credit_t {
   padding: 1rem;
   
 
@@ -281,7 +306,15 @@
     display: flex;
     flex-direction: column;
   }
+  .mobile-view_credit_t {
+    display: flex;
+    flex-direction: column;
+  }
   .mobile-view11 {
+    display: flex;
+    flex-direction: column;
+  }
+  .mobile-view_Users {
     display: flex;
     flex-direction: column;
   }
@@ -290,6 +323,14 @@
     flex-direction: column;
   }
 
+ 
+   .stat-card_credit_t {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    
+    max-width: 500px;
+  }
   .stat-card_credit {
     background-color: white;
     border-radius: 0.75rem;
@@ -298,6 +339,7 @@
     max-width: 500px;
   }
 
+
   .stat-card_admin {
     background-color: white;
     border-radius: 0.75rem;
@@ -305,12 +347,12 @@
     
     max-width: 500px;
   }
-  .stat-card {
+  .stat-card_Users {
     background-color: white;
     border-radius: 0.75rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     overflow: hidden;
-    max-width: 500px;
+    
   }
 
 

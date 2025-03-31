@@ -272,10 +272,10 @@ const Statistics = () => {
                             </div>
 
                             {/* Mobile View */}
-                            <div className="mobile-view">
+                            <div className="mobile-view_Users">
                               {currentRows.length > 0 ? (
                                 currentRows.map((stat, index) => (
-                                  <div key={index} className="stat-card">
+                                  <div key={index} className="stat-card_Users">
                                     <div className="card-header">
                                       <div className="task-info">
                                         {stat.task === "Bulk Upload" ? (
@@ -291,7 +291,7 @@ const Statistics = () => {
                                       </div>
                                     </div>
 
-                                    <div className="card-body">
+                                    <div className="card-body_Users">
                                       <div className="stat-row">
                                         <span className="stat-label">File:</span>
                                         <span className="stat-value truncate">{stat.filename || "N/A"}</span>

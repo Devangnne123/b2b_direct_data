@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Import the useNavigate hook
 import "../App.css"; // Assuming you are using your existing CSS
 
+
 function MobileEnrichment() {
   const [showModal, setShowModal] = useState(false); // State to toggle modal visibility
   const [email, setEmail] = useState(""); // State to hold email input value
   const navigate = useNavigate();
 
   const handleSignUpClick = () => {
-    navigate("/signup"); // Navigate to the login page
+    navigate("/"); // Navigate to the login page
   };
 
   const handleSearch = () => {

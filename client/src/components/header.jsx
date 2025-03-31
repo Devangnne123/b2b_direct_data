@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Login from "./Login";
 import SignUp from "./SignUp";
+
 import "../css/Index.css"; // Import the CSS file
 
 function Header() {

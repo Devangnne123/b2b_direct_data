@@ -175,16 +175,19 @@ const SignUp = ({ closeModal, setShowModal }) => {
           <div className="right-panel">
             <div className="logo-container">
               <img src="new.png" alt="Company Logo" className="login-logo" />
+              
               <a className="svg" onClick={closeModal}><IoMdClose /></a>
             </div>
             <div className="logo-container1">
+           
               <h2 className="login-logo1">Sign up</h2>
+             
             </div>
             
             <form className="form" onSubmit={handleSubmit}>
               {error && <h3 className="error-message">{error}</h3>}
               {captchaError && <h3 className="error-message">{captchaError}</h3>}
-              {successMessage && <p className="success-message">{successMessage}</p>}
+              {successMessage && <p className="success-message_S">{successMessage}</p>}
               
               <input 
                 type="email" 

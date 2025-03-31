@@ -346,14 +346,17 @@
 }
 
 /* Success message styles */
-.success-message {
-  color: #4CAF50;
+.success-message_S {
+  color: #4CAF50; /* Green color for success */
   font-size: 16px;
   font-weight: 500;
+  top:20px;
+  left: 100px;
   text-align: center;
-  margin: 15px 30px;
+  margin: 15px 0;
+  background-color: antiquewhite;
   background-color: rgba(76, 175, 80, 0.1);
-  padding: 10px;
+  padding: 5px;
   border-radius: 5px;
   border-left: 4px solid #4CAF50;
   animation: fadeInOut 2s ease-in-out;
