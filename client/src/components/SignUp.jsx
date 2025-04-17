@@ -100,12 +100,18 @@ const SignUp = ({ closeModal, setShowModal }) => {
     // Field validation
     if (!email || !password || !companyName || !phoneNumber || !captchaInput) {
       setError("All fields are mandatory.");
+      setTimeout(() => {
+        setError("");
+      }, 1000);
       return;
     }
 
     // CAPTCHA validation
     if (captchaInput !== captchaText) {
       setCaptchaError("CAPTCHA does not match.");
+      setTimeout(() => {
+        setCaptchaError("");
+      }, 1000)
       return;
     }
 
@@ -147,6 +153,9 @@ const SignUp = ({ closeModal, setShowModal }) => {
         }, 2000);
       } else if (response.status === 409) {
         setError("User already exists.");
+        setTimeout(() => {
+          setError("");
+        }, 2000)
       } else {
         setError(data.message || "An error occurred during signup.");
       }

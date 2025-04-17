@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"; // Import the useNavigate hook
 import { StarFilled } from "@ant-design/icons";
 import "../css/Index.css";
 
+
 function Index() {
   const [showModal, setShowModal] = useState(false); // State to toggle modal visibility
   const [email, setEmail] = useState(""); // State to hold email input value
@@ -93,7 +94,7 @@ function Index() {
         <div className="right-r">
        <div className="section-m">
         <h1 className="heroText">
-          Verify & Enrich
+          Verify & Enrich 
           <span className="blueText"> Linkedin </span>
           connections effortlessly
         </h1>

@@ -38,7 +38,7 @@
   display: flex;
   width: 100%;
   max-width: 800px;
-  margin-top:20px ;
+  margin-top:0px ;
   border-radius: 30px;
   
   flex-direction: column;
@@ -50,7 +50,7 @@
   flex-direction: column;
   background: linear-gradient(to bottom, rgba(64, 64, 67, 0.5), rgba(182, 201, 226, 0.5));
   box-shadow: 2px 2px 30px rgb(80, 80, 80);
- 
+  
   border-radius: 30px;
 }
 
@@ -78,6 +78,7 @@
   padding: 20px;
   background-color: #f8f9fa;
   border-radius: 30px;
+
  
 }
 
@@ -109,8 +110,8 @@
 .form input {
   width: 80%;
   
-  padding: 8px;
-  margin: 5px 35px;
+  padding: 6px;
+  margin: 3px 35px;
   border: 1px solid #ccc;
   border-radius: 5px;
 }
@@ -190,7 +191,7 @@
 }
 
 .login-logo1 {
- 
+  margin: 0px;
   z-index: 4;
   position: absolute;
   
@@ -318,7 +319,7 @@
   .login_main1{
     display: flex;
    
-    width: 101%;
+    width: 100%;
   }
 
 }
@@ -348,7 +349,7 @@
 /* Success message styles */
 .success-message_S {
   color: #4CAF50; /* Green color for success */
-  font-size: 16px;
+  font-size: 5px;
   font-weight: 500;
   top:20px;
   left: 100px;
@@ -370,7 +371,7 @@
 }
 @media(max-width:500px){
   .form input {
-    width: 80%;
+    width: 83%;
     
     padding: 5px;
     margin: 5px 18px;
@@ -378,7 +379,7 @@
     border-radius: 5px;
   }
   .login-button {
-    width: 85%;
+    width: 88%;
     padding: 10px;
     background-color:  rgb(6, 152, 230);
     color: white;
@@ -389,7 +390,35 @@
   }
   .login_main1{
     display: flex;
-   margin: 0%;
+    justify-content: left;
+    margin: 0px;
     width: 100%;
   }
 }
+@media(max-width:340px){
+  .form input {
+    width: 83%;
+    
+    padding: 5px;
+    margin: 5px 18px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  .login-button {
+    width: 90%;
+    padding: 10px;
+    background-color:  rgb(6, 152, 230);
+    color: white;
+    border: none;
+    margin: 5px 18px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .login_main1{
+    display: flex;
+    justify-content: left;
+    margin: 0px;
+    width: 103%;
+  }
+}
+

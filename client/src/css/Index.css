@@ -1,3 +1,8 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
+
+
 body{
   background-color: #f6f6f6;
     margin: 0px;
@@ -221,19 +226,23 @@ body{
    
    
    .heroText{
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-     font-weight: 400;
-     font-size: 35px;
-     width: 20rem;
+    font-family: "Bebas Neue", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+     font-size: 38px;
+     width: 21rem;
+     text-align: center;
      
-     margin: 50px 50px 10px 50px;
+     margin: 100px 50px 10px 50px;
    
      }
      .sub-text1{
         font-size: small;
-        padding: 0px 40px;
+        padding: 10px 50px;
         color: #60656d;
         text-align: justify;
+        width: 320px;
+        
      }
    
    
@@ -310,6 +319,7 @@ body{
      .SERVICES{
        display: flex;
        justify-content: center;
+       
        font-size: 25px;
        margin-top: -18px;
        margin-bottom: 15px;
@@ -380,6 +390,7 @@ body{
      flex-direction: column;
      width: 380px;
      
+     
    }
   
    .blueText{
@@ -402,11 +413,14 @@ body{
      .section-m{
        display: flex;
        flex-direction: row;
+       align-items: center;
        justify-content: space-evenly;
        height: 300px;
-       width: 100%;
+       width: 90vw;
+       margin: 0px;
        
      }
+     
      .search-email{
         display: flex;
         flex-direction: column;
@@ -414,51 +428,74 @@ body{
         justify-content: center;
      }
      .heroText{
-      width: 400px;
+      width: 700px;
+      margin: 2%;
      }
      .search-email{
-      display: none;
+      
       
       align-items: center;
       justify-content: center;
+   }
+   .input-container{
+    margin: 0%;
    }
      
    }
    
    @media (max-width: 778px){
    
-   .heroText{
-     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    font-weight: 300;
-    font-size: 35px;
-    margin-top: 50px;
-    width: 15rem;
-    justify-content: center;
-    height: 300px;
-    line-height: 1.4;
-    z-index: 10;
+   
+   
+    .heroContainer{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
    
     }
+  
     
-    .heroImage{
-    
-     display: flex;
-     left: -30px;
-     text-align: center;
-     opacity: 0.1;
-     top:0;
-     position: absolute;
-     margin-top: 20px;
-     z-index: 0;
-   }
-   
-   .section-m{
-     display: flex;
-     flex-direction: column;
-     height: 300px;
-     width: 200px;
+    .section-m{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      width: 50px;
      
-   }
+      
+    }
+    .right-r{
+      width: 50px;
+    }
+    
+    .search-email{
+       display: flex;
+       flex-direction: column;
+       align-items: center;
+       display: none;
+       justify-content: center;
+    }
+    .heroText{
+      font-family: "Bebas Neue", sans-serif;
+      font-weight: 400;
+      font-style: normal;
+       font-size: 30px;
+       width: 18rem;
+       text-align: center;
+       margin: 0%;
+       
+      
+     
+       }
+    .search-email{
+     
+     
+     align-items: center;
+     justify-content: center;
+  }
+ 
 
    
    }
@@ -680,9 +717,7 @@ body{
        gap: 10px;
        
      }
-     .right-r{
-      max-width: 500px;
-     }
+     
      .service{
       flex-direction: column;
       align-items: center;
@@ -764,16 +799,7 @@ body{
     gap: 40px;
   
   }
-  .right-r{
-    display: flex;
-    flex-direction: column;
-    width: auto;
-
-    
-  }
-  .heroText{
-    margin-left: 30px;
-  }
+  
   .serviceCard1{
     margin: 0%;
     width: 250px;
@@ -795,11 +821,13 @@ body{
     top: 0;
     left: 0;
     width: 100%;
+    height: 200vh;
+  
    
     background: rgba(255, 255, 255,0.2); /* Dark overlay */
     backdrop-filter: blur(5px); /* Blur effect */
     display: flex;
-    align-items: center;
+    
     justify-content: center;
     z-index: 1000000;
   }
@@ -807,7 +835,7 @@ body{
   .modal {
     
     padding: 20px;
-   
+    
     border-radius: 10px;
   }
   

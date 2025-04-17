@@ -10,14 +10,14 @@ const AboutUs = () => {
         <p>Your Trusted Partner in B2B Data Solutions</p>
       </header>
 
-      <section className="about-section">
+      {/* <section className="about-section">
         <h2>Who We Are</h2>
         <p>
           At <strong>B2B Direct Data</strong>, we provide high-quality business data to fuel growth, 
           optimize marketing, and drive sales. Our mission is to help businesses make data-driven 
           decisions with confidence.
         </p>
-      </section>
+      </section> */}
 
       
 
@@ -36,10 +36,7 @@ const AboutUs = () => {
             <h3>📁 Business Data Solutions</h3>
             <p>Clean, structured, and updated business data to enhance your CRM.</p>
           </div>
-          <div className="service-card">
-            <h3>🛠️ Custom Data Services</h3>
-            <p>Industry-specific data solutions customized for your business needs.</p>
-          </div>
+         
         </div>
       </section>
 

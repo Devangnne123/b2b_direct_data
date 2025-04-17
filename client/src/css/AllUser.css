@@ -183,10 +183,10 @@
 .error-message {
   color: #ef4444;
   background-color: #fee2e2;
-  padding: 12px 16px;
+  padding: 2px 2px;
   border-radius: 6px;
-  margin-bottom: 16px;
-  font-size: 14px;
+  margin-bottom: 0px;
+  font-size: 10px;
 }
 
 /* Pagination Controls */

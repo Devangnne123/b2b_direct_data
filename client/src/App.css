@@ -230,13 +230,15 @@ body{
   display: flex;
  justify-content: center;
   align-items: center;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 30px;
+  
+  margin: 20px;
 }
 
 .input-field {
-  width: 140px;
+  width: 150px;
   padding: 5px 30px;
+  margin-left: 40px;
   background-color: white;
   border: 1px groove #a2a2a2; /* Light border */
   border-radius: 10px; /* Fully rounded border */
@@ -317,10 +319,7 @@ body{
     text-align: center; /* Center the text on smaller screens */
   }
 
-  .input-container {
-    flex-direction: column; /* Stack input and button vertically */
-    align-items: center;
-  }
+
 
   .input-field {
     width: 90%; /* Make the input field wider for smaller screens */
@@ -451,10 +450,7 @@ body{
     padding: 0 10px; /* Adjust padding for smaller screens */
   }
 
-  .footer-section {
-    flex: 1 1 100%; /* Footer sections will stack on smaller screens */
-    margin-bottom: 20px; /* Add space between sections */
-  }
+
 
   .footer-bottom {
     padding: 15px 0;
