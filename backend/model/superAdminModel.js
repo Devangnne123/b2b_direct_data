@@ -1,5 +1,5 @@
 const { DataTypes } = require("sequelize");
-const sequelize = require("../config/db"); // Import Sequelize connection
+const { sequelize } = require('../config/db');// Import Sequelize connection
 
 const SuperAdminTransaction = sequelize.define("SuperAdminTransaction", {
   senderEmail: {

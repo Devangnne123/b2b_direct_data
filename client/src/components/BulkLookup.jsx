@@ -242,10 +242,10 @@ const BulkLookup = () => {
         }));
 
         setBulkResults(bulkData);
-        await saveStatistics(file.name, fetchedLinks, fetchedLinks.length);
+        await saveStatistics(filename, matchCount, matchCount.length);
         await saveFileToDatabase(bulkData);
 
-        const creditDeduction = fetchedLinks.length * 5;
+        const creditDeduction = matchCount.length * 5;
         if (creditDeduction > 0) {
           const newCredits = Math.max(
             0,
@@ -268,7 +268,7 @@ const BulkLookup = () => {
     }
   };
 
-  const saveStatistics = async (filename, validLinks, linkUploadCount) => {
+  const saveStatistics = async (filename, matchCount, linkUploadCount) => {
     const userStats =
       JSON.parse(sessionStorage.getItem("statisticsData")) || {};
     const userPreviousUploads = userStats[userEmail]?.uploadedLinks || [];

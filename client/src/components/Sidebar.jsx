@@ -34,7 +34,7 @@ function Sidebar() {
   }, []);
 
   const adminMenuItems = [
-    { name: "Direct Number Enrichment", icon: <FaUserPlus />, options: [{ name: "Single Lookup", path: "/profile-lookup" }, { name: "Bulk Lookup", path: "/bulk-lookup" }] },
+    { name: "Direct Number Enrichment", icon: <FaUserPlus />, options: [{ name: "Single Lookup", path: "/profile-lookup" }, { name: "Bulk Lookup", path: "/bulk-lookup" },{ name: "bulk", path: "/bulk" },] },
     { name: "Linkedin Contact Verification", icon: <FaUserPlus />, options: [{ name: "Upload contact Link", path: "/profile-lookup" }, { name: "Contact Statistics", path: "/bulk-lookup" }] },
     { name: "Linkedin Company Details", icon: <FaUserPlus />, options: [{ name: "Upload Company link", path: "/profile-lookup" }, { name: "Company Statistics", path: "/bulk-lookup" }] },
     {
