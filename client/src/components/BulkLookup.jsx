@@ -1,572 +1,538 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import Papa from "papaparse";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import * as XLSX from "xlsx";
-import { IoArrowBackCircle } from "react-icons/io5";
+import TempLinkMobileForm from "../components/TempLinkMobileForm";
+import SingleLinkLookup from "../components/SingleLinkLookup";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { FaCoins } from 'react-icons/fa';
+import { Download, Calendar, Users, Link as LinkIcon, FileSpreadsheet, Database, Loader2, ChevronLeft, ChevronRight, Hash } from 'lucide-react';
 import Sidebar from "../components/Sidebar";
 import "../css/BulkLookup.css";
+import "../css/UserS.css";
 
-const BulkLookup = () => {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [bulkResults, setBulkResults] = useState([]);
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Error caught by boundary:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div className="error-fallback">Something went wrong. Please try again.</div>;
+    }
+    return this.props.children;
+  }
+}
+
+function BulkLookup() {
   const [file, setFile] = useState(null);
-  const [fileHistory, setFileHistory] = useState([]);
+  const [email, setEmail] = useState("");
+  const [savedEmail, setSavedEmail] = useState("Guest");
+  const [uploadedData, setUploadedData] = useState([]);
+  const [searchId, setSearchId] = useState("");
+  const [filteredData, setFilteredData] = useState([]);
+  const [credits, setCredits] = useState(null);
+  const [deductedCreditsMap, setDeductedCreditsMap] = useState({});
+  const [loading, setLoading] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
-  const user = JSON.parse(sessionStorage.getItem("user"));
-  const userEmail = user?.email || "Guest";
-  const [statistics, setStatistics] = useState(() => {
-    const allStats = JSON.parse(sessionStorage.getItem("statisticsData")) || {};
-    return (
-      allStats[userEmail] || {
-        duplicateCount: 0,
-        netNewCount: 0,
-        newEnrichedCount: 0,
-        creditUsed: 0,
-        remainingCredits: 0,
-        uploadedLinks: [],
-      }
-    );
-  });
-  const [linkCounts, setLinkCounts] = useState(null);
-  const [confirmProcess, setConfirmProcess] = useState(false);
-  // New state variables
-  const [totalLinksInFile, setTotalLinksInFile] = useState(0);
-  const [availableMobileLinksInFile, setAvailableMobileLinksInFile] =
-    useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage] = useState(30);
+
+  const creditCost = 5;
 
   useEffect(() => {
-    if (!user) {
-      window.location.href = "/";
-    } else {
-      fetchUserCredits();
+    const user = JSON.parse(sessionStorage.getItem("user"));
+    if (user?.email) {
+      setSavedEmail(user.email);
+      fetchUserLinks(user.email);
+      fetchCredits(user.email);
     }
   }, []);
 
-  const fetchUserCredits = async () => {
+  const fetchCredits = async (email) => {
     try {
-      const response = await fetch(`http://localhost:3000/users/user`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user?.token}`,
-        },
+      const res = await axios.get(`http://localhost:3000/api/user/${email}`);
+      setCredits(res.data.credits);
+    } catch (err) {
+      toast.error("Failed to fetch credits");
+      console.error(err);
+    }
+  };
+
+  const handleEmailSave = () => {
+    if (!email.trim()) return toast.error("Please enter a valid email");
+    const user = { email };
+    sessionStorage.setItem("user", JSON.stringify(user));
+    setSavedEmail(email);
+    toast.success("Email saved successfully!");
+    fetchUserLinks(email);
+    fetchCredits(email);
+  };
+
+  const fetchUserLinks = async (email) => {
+    setLoading(true);
+    try {
+      const res = await axios.get("http://localhost:3000/get-links", {
+        headers: { "user-email": email },
       });
-      if (!response.ok) throw new Error("Failed to fetch lookup credits");
-
-      const data = await response.json();
-      console.log("API Response:", data);
-      // Debugging log
-
-      // Ensure correct data structure
-      let usersArray = data?.data || data?.users || data; // Handle different response structures
-
-      if (!Array.isArray(usersArray)) {
-        console.error(
-          "Invalid API response: expected an array but got",
-          usersArray
-        );
-        return;
-      }
-
-      const currentUser = usersArray.find((u) => u.userEmail === userEmail);
-      if (currentUser) {
-        setStatistics((prevState) => ({
-          ...prevState,
-          remainingCredits: currentUser.credits || 0,
-        }));
-      } else {
-        console.warn("User not found in API response");
-      }
-    } catch (error) {
-      console.error("Error fetching user credits:", error);
-    }
-  };
-
-  const updateUserCredits = async (newCredits) => {
-    try {
-      await fetch(`http://localhost:3000/users/update-credits`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({ userEmail, credits: newCredits }),
-      });
-    } catch (error) {
-      console.error("Error updating user credits:", error);
-    }
-  };
-
-  const handleFileUpload = async () => {
-    if (!file) {
-      alert("Please upload a file first.");
-      return;
-    }
-
-    if (statistics.remainingCredits <= 0) {
-      alert("You have no remaining credits. Please contact support.");
-      return;
-    }
-
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const fileData = e.target.result;
-        let links = [];
-
-        try {
-          if (file.name.endsWith(".csv")) {
-            const parsedData = Papa.parse(fileData, { header: false }).data;
-            // Flatten and filter out empty values
-            links = parsedData
-              .flat()
-              .filter((value) => value)
-              .map((link) => String(link).trim());
-          } else if (file.name.endsWith(".xlsx")) {
-            const workbook = XLSX.read(fileData, { type: "array" });
-            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(firstSheet, {
-              header: 1,
-            });
-            // Improved Excel extraction: Iterate through rows and columns
-            for (const row of jsonData) {
-              for (const cell of row) {
-                if (cell && typeof cell === "string") {
-                  links.push(cell.trim());
-                }
-              }
-            }
-          }
-        } catch (parseError) {
-          console.error("Error parsing file:", parseError);
-          alert("Error parsing file. Please check the file format.");
-          setIsLoading(false);
-          return;
-        }
-
-        // Enhanced link validation
-        const linkedinRegex =
-          /^https?:\/\/(www\.)?linkedin\.com\/(in|pub|company)\/[\w-]+\/?/;
-        const validLinks = links
-          .filter(
-            (link) => link && typeof link === "string" && link.trim() !== ""
-          )
-          .map((link) => link.trim())
-          .filter((link) => linkedinRegex.test(link));
-
-        if (validLinks.length === 0) {
-          alert("No valid LinkedIn links found in the file.");
-          return;
-        }
-
-        // 1. Count total links in the uploaded file
-        setTotalLinksInFile(validLinks.length);
-
-        setIsLoading(true);
-        try {
-          await saveLinksToDatabase(validLinks);
-          await fetchLinkCounts();
-          // After saving links, fetch the counts including available mobile
-        } catch (error) {
-          console.error("Error processing file:", error);
-          alert("Error processing file. Please try again later.");
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      if (file.name.endsWith(".csv")) {
-        reader.readAsText(file);
-      } else if (file.name.endsWith(".xlsx")) {
-        reader.readAsArrayBuffer(file);
-      }
-    } catch (error) {
-      console.error("Error processing file:", error);
-      alert("Error processing file. Please try again later.");
-    }
-  };
-
-  const fetchLinkCounts = async () => {
-    try {
-      const response = await fetch(
-        `http://localhost:3000/uploadedLinks/link-counts?userEmail=${userEmail}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch link counts");
-      }
-      const data = await response.json();
-      // Destructure the data to match the controller's response structure
-      const {
-        total_uploaded_links,
-        available_mobile_numbers,
-        newLinksCount,
-        duplicateLinksCount,
-      } = data;
-      // Update state with the destructured data
-      setLinkCounts({
-        totalUploadedLinks: total_uploaded_links,
-        availableMobileNumbers: available_mobile_numbers,
-        newLinksCount: newLinksCount,
-        duplicateLinksCount: duplicateLinksCount,
-      });
-
-      // 2. Count available mobile links (from the database query)
-      setAvailableMobileLinksInFile(available_mobile_numbers);
-    } catch (error) {
-      console.error("Error fetching link counts:", error);
-      alert("Error fetching link counts. Please try again later.");
-    }
-  };
-
-  const handleConfirmProcess = async () => {
-    if (!linkCounts) return;
-    setIsLoading(true);
-    setConfirmProcess(true);
-    try {
-      const apiUrl = `http://localhost:3000/uploadedLinks/data`;
-      const response = await fetch(apiUrl);
-      if (!response.ok) throw new Error("Failed to fetch bulk data");
-
-      const data = await response.json();
-      if (data.data && data.data.length > 0) {
-        const fetchedLinks = data.data.filter((item) => item !== null);
-        const bulkData = fetchedLinks.map((result) => ({
-          ID: result.id,
-          Email: result.user_email,
-          LinkedIn_Link: result.clean_linkedin_link,
-          Mobile_1: result.mobile_number || "Not Available",
-          Mobile_2: result.mobile_number_2 || "Not Available",
-          Name: result.person_name || "Not Available",
-          Location: result.person_location || "Not Available",
-        }));
-
-        setBulkResults(bulkData);
-        await saveStatistics(filename, matchCount, matchCount.length);
-        await saveFileToDatabase(bulkData);
-
-        const creditDeduction = matchCount.length * 5;
-        if (creditDeduction > 0) {
-          const newCredits = Math.max(
-            0,
-            statistics.remainingCredits - creditDeduction
-          );
-          await updateUserCredits(newCredits);
-        }
-
-        alert("Bulk data fetched successfully and statistics saved!");
-        await updateUploadedLinks();
-      } else {
-        alert("No data found for the provided LinkedIn URLs.");
-      }
-    } catch (error) {
-      console.error("Error fetching bulk data:", error);
-      alert("Error fetching bulk data. Please try again later.");
+      setUploadedData(res.data || []);
+      setFilteredData(res.data || []);
+    } catch (err) {
+      toast.error("Failed to fetch uploaded links");
+      console.error(err);
     } finally {
-      setIsLoading(false);
-      setConfirmProcess(false);
+      setLoading(false);
     }
   };
 
-  const saveStatistics = async (filename, matchCount, linkUploadCount) => {
-    const userStats =
-      JSON.parse(sessionStorage.getItem("statisticsData")) || {};
-    const userPreviousUploads = userStats[userEmail]?.uploadedLinks || [];
+  const handleUpload = async () => {
+    if (!file) return toast.error("Please choose a file to upload.");
+    if (!savedEmail || savedEmail === "Guest")
+      return toast.error("Please save your email first");
+    if (credits < creditCost) return toast.error("Not enough credits");
 
-    const newLinks = validLinks.filter(
-      (link) => !userPreviousUploads.includes(link)
-    );
-    const duplicateLinks = validLinks.filter((link) =>
-      userPreviousUploads.includes(link)
-    );
-    const duplicateCount = statistics.duplicateCount + duplicateLinks.length;
-    const netNewCount = statistics.netNewCount + newLinks.length;
-
-    const creditUsed = linkUploadCount * 5;
-    const remainingCredits = Math.max(
-      0,
-      statistics.remainingCredits - creditUsed
-    );
-    const updatedStatistics = {
-      task: "Bulk Lookup",
-      email: userEmail,
-      filename,
-      duplicateCount,
-      netNewCount,
-      newEnrichedCount: statistics.newEnrichedCount || 0,
-      creditUsed,
-      remainingCredits,
-      uploadedLinks: [...userPreviousUploads, ...newLinks],
-      linkUpload: linkUploadCount, // Store the count here
-    };
-    userStats[userEmail] = updatedStatistics;
-    sessionStorage.setItem("statisticsData", JSON.stringify(userStats));
-
-    setStatistics(updatedStatistics);
-
-    try {
-      const response = await fetch("http://localhost:3000/bulkUpload/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedStatistics),
-      });
-      if (!response.ok)
-        throw new Error(`Error saving statistics: ${response.statusText}`);
-      alert("Statistics saved successfully!");
-    } catch (error) {
-      console.error("Error saving statistics:", error);
-      alert(`Error saving statistics: ${error.message}`);
-    }
-  };
-
-  const handleDownloadExcel = () => {
-    if (bulkResults.length === 0) {
-      alert("No bulk data available to download.");
-      return;
-    }
-
-    const worksheet = XLSX.utils.json_to_sheet(bulkResults);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Bulk Data Results");
-
-    XLSX.writeFile(workbook, "Bulk_Data_Results.xlsx");
-  };
-
-  const fetchFileHistory = async () => {
-    try {
-      const response = await fetch(
-        `http://localhost:3000/excel/history/${userEmail}`
-      );
-      if (!response.ok) throw new Error("Failed to fetch file history");
-
-      const data = await response.json();
-      setFileHistory(data);
-    } catch (error) {
-      console.error("Error fetching file history:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchFileHistory();
-  }, []);
-
-  const handleDownloadFile = async (filePath) => {
-    window.open(`http://localhost:3000/${filePath}`, "_blank");
-  };
-
-  const saveFileToDatabase = async (bulkData) => {
-    if (bulkData.length === 0) return;
-
-    const worksheet = XLSX.utils.json_to_sheet(bulkData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Bulk Data Results");
-
-    const excelBuffer = XLSX.write(workbook, {
-      bookType: "xlsx",
-      type: "array",
-    });
-    const blob = new Blob([excelBuffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
+    setLoading(true);
     const formData = new FormData();
-    formData.append("file", blob, "Bulk_Data_Results.xlsx");
-    formData.append("userEmail", userEmail);
-    // Pass user email for tracking
+    formData.append("file", file);
 
     try {
-      const response = await fetch("http://localhost:3000/excel/saveFile", {
-        method: "POST",
-        body: formData,
-      });
-      if (!response.ok) throw new Error("Failed to save file");
-
-      alert("File saved successfully in history!");
-    } catch (error) {
-      console.error("Error saving file:", error);
-      alert("Error saving file to database.");
-    }
-  };
-
-  const saveLinksToDatabase = async (validLinks) => {
-    try {
-      const response = await fetch("http://localhost:3000/uploadedLinks/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userEmail, links: validLinks }),
-      });
-      if (!response.ok) throw new Error("Failed to save links");
-
-      const data = await response.json();
-      console.log("Response:", data);
-      alert(data.message || "Links saved successfully!");
-      // ✅ Call the new API to update uploaded_links from temp_mobile_data
-      await updateUploadedLinks();
-    } catch (error) {
-      console.error("Error saving links:", error);
-      alert("Error saving links to database.");
-    }
-  };
-
-  // ✅ New function to call the update API
-  const updateUploadedLinks = async () => {
-    try {
-      const response = await fetch(
-        "http://localhost:3000/uploadedLinks/updateUploadedLinks",
+      const res = await axios.post(
+        "http://localhost:3000/upload-excel",
+        formData,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "user-email": savedEmail },
         }
       );
-      if (!response.ok) throw new Error("Failed to update uploaded links");
 
-      const data = await response.json();
-      console.log("Update Response:", data);
-      alert(data.message || "Uploaded links updated successfully!");
-    } catch (error) {
-      console.error("Error updating uploaded links:", error);
-      alert("Error updating uploaded links.");
+      const { matchCount, uniqueId } = res.data;
+      const creditToDeduct = matchCount * creditCost;
+
+      const creditRes = await axios.post(
+        "http://localhost:3000/api/upload-file",
+        {
+          userEmail: savedEmail,
+          creditCost: creditToDeduct,
+          uniqueId,
+        }
+      );
+
+      const newCredits = creditRes.data.updatedCredits;
+      setCredits(newCredits);
+
+      setDeductedCreditsMap((prev) => ({
+        ...prev,
+        [uniqueId]: creditToDeduct,
+      }));
+
+      toast.success(
+        <div>
+          <h4>✅ Upload Successful!</h4>
+          <table className="toast-table">
+            <tbody>
+              <tr>
+                <td><strong>📌 Unique ID:</strong></td>
+                <td>{uniqueId}</td>
+              </tr>
+              <tr>
+                <td><strong>💳 Credits Deducted:</strong></td>
+                <td>{creditToDeduct}</td>
+              </tr>
+              <tr>
+                <td><strong>💸 Remaining Credits:</strong></td>
+                <td>{newCredits}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>,
+        {
+          position: "top-center",
+          autoClose: 5000,
+        }
+      );
+
+      setFile(null);
+      document.querySelector('input[type="file"]').value = null;
+      fetchUserLinks(savedEmail);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Upload failed");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleSearch = () => {
+    if (searchId.trim() === "") {
+      setFilteredData(uploadedData);
+    } else {
+      const result = uploadedData.filter((item) =>
+        item?.uniqueId?.toLowerCase().includes(searchId.toLowerCase())
+      );
+      setFilteredData(result || []);
+    }
+  };
+
+  const groupByUniqueId = (data) => {
+    const grouped = {};
+    (data || []).forEach((item) => {
+      if (!item?.uniqueId) return;
+      if (!grouped[item.uniqueId]) {
+        grouped[item.uniqueId] = [];
+      }
+      // Only add if not already present
+      if (!grouped[item.uniqueId].some(existing => existing._id === item._id)) {
+        grouped[item.uniqueId].push(item);
+      }
+    });
+    return grouped;
+  };
+
+  const downloadGroupedEntry = (group) => {
+    const rowData = (group || []).map((entry) => ({
+      fileName: entry?.fileName || 'Unknown',
+      uniqueId: entry?.uniqueId || 'Unknown',
+      matchCount: entry?.matchCount || 0,
+      totallinks: entry?.totallink || 0,
+      date: entry?.date ? new Date(entry.date).toLocaleString() : 'Unknown',
+      link: entry?.matchLink || 'N/A',
+      mobile_number: entry?.mobile_number || 'N/A',
+      mobile_number_2: entry?.mobile_number_2 || 'N/A',
+      person_name: entry?.person_name || 'N/A',
+      person_location: entry?.person_location || 'N/A',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rowData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "LinkData");
+    XLSX.writeFile(workbook, `LinkData_${group[0]?.uniqueId || 'data'}.xlsx`);
+  };
+
+  const groupedData = groupByUniqueId(filteredData);
+  const groupedEntries = Object.entries(groupedData);
+  
+  // Get current entries for pagination
+  const indexOfLastRow = currentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const currentEntries = groupedEntries.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.ceil(groupedEntries.length / rowsPerPage);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const nextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
+  const prevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown date';
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
   };
 
   return (
-    <div className="main">
-      <div className="main-con">
-        {showSidebar && <Sidebar userEmail={userEmail} />}
+    <ErrorBoundary>
+      <div className="main">
+        <div className="main-con">
+          {showSidebar && <Sidebar userEmail={savedEmail} />}
 
-        <div className="right-side">
-          <div className="right-p">
-            <nav className="main-head">
-              <li className="back1">
-                {/* <IoArrowBackCircle className="back1" onClick={() => setShowSidebar(!showSidebar)} />  */}
-              </li>
-
-              <div className="main-title">
-                <li className="profile">
-                  <p className="title">Bulk Lookup</p>
-                  <li className="credits-main1">
-                    <h5 className="credits1">
-                      <img
-                        src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
-                        alt="external-credits-university-flaticons-flat-flat-icons"
-                      />
-                      Credits:{statistics.remainingCredits}
-                    </h5>
+          <div className="right-side">
+            <div className="right-p">
+              <nav className="main-head">
+                <div className="main-title">
+                  <li className="profile">
+                    <p className="title">Bulk LinkedIn Lookup</p>
+                    <li className="credits-main1">
+                      <h5 className="credits">
+                        <img
+                          src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
+                          alt="credits"
+                          className="credits-icon"
+                        />
+                        Credits: {credits !== null ? credits : "Loading..."}
+                      </h5>
+                    </li>
                   </li>
-                </li>
-                <li>
-                  <p className="title-des2">
-                    Enrich your data in bulk with our lookup tool
-                  </p>
-                </li>
+                  <li>
+                    <p className="title-des2">
+                      Upload Excel files containing LinkedIn URLs for bulk processing
+                    </p>
+                  </li>
+                </div>
+              </nav>
+              
+              <section>
+                <div className="main-body0">
+                  <div className="main-body1">
+                    <div className="left">
+                      <div className="upload-section">
+                        <p className="logged-in-as">
+                          <strong>Logged in as:</strong> {savedEmail}
+                        </p>
 
-                <h1 className="title-head">Bulk Data in Real-Time</h1>
-              </div>
-            </nav>
-            <section>
-              <div className="main-body0">
-                <div className="main-body1">
-                  <div className="left">
-                    <div className="left-main">Linkedin URL Excel File</div>
-
-                    <div className="url-input">
-                      <div className="form">
-                      <label htmlFor="file-input" className="label">
-                        Choose File
-                      </label>
-                      {file && <span className="file-name">{file.name}</span>}
-
-                      <input
-                        type="file"
-                        placeholder="Choose file"
-                        id="file-input"
-                        accept=".csv,.xlsx"
-                        onChange={(e) => setFile(e.target.files[0])}
-                      />
-                      </div>
-
-                      <button className="search-url" onClick={handleFileUpload}>
-                        {isLoading ? "Uploading..." : "Upload & Fetch"}
-                      </button>
-                      {linkCounts && (
-                        <div>
-                          {/* Display the counts here */}
-                          <p>
-                            Total Links in Uploaded File: {totalLinksInFile}
-                          </p>
-                          <p>
-                            Available Mobile Numbers for Uploaded Links:{" "}
-                            {availableMobileLinksInFile}
-                          </p>
-                          <button onClick={handleConfirmProcess}>
-                            Confirm & Process
+                        <div className="file-upload-group">
+                          <label htmlFor="file-input" className="file-upload-label">
+                            <FileSpreadsheet className="file-icon" />
+                            <span>{file ? file.name : "Choose Excel File"}</span>
+                          </label>
+                          <input
+                            type="file"
+                            id="file-input"
+                            accept=".xlsx, .xls"
+                            onChange={(e) => setFile(e.target.files[0])}
+                            className="file-input"
+                          />
+                          <button
+                            onClick={handleUpload}
+                            className="upload-btn"
+                            disabled={!savedEmail || savedEmail === "Guest" || credits < creditCost || loading}
+                          >
+                            {loading ? (
+                              <Loader2 className="animate-spin h-4 w-4" />
+                            ) : (
+                              "Upload File"
+                            )}
                           </button>
                         </div>
-                      )}
-                      {bulkResults.length > 0 && (
-                        <button
-                          className="download-button"
-                          onClick={handleDownloadExcel}
-                        >
-                          Download Excel
-                        </button>
-                      )}
-                    </div>
+                      </div>
 
-                    <div className="url-des">
-                      <p>
-                        Retrieve all profile or company data on LinkedIn using
-                        our LinkedIn Finder URL.
-                      </p>
+                      {uploadedData.length > 0 && (
+                        <div className="history-table">
+                          <div className="search-section">
+                            <div className="search-input-group">
+                              <input
+                                type="text"
+                                placeholder="Search by Unique ID"
+                                value={searchId}
+                                onChange={(e) => setSearchId(e.target.value)}
+                                className="search-input"
+                              />
+                              <button onClick={handleSearch} className="search-btn">
+                                Search
+                              </button>
+                            </div>
+                          </div>
+
+                          <h3 className="section-title">Your Uploaded Files</h3>
+
+                          {loading ? (
+                            <div className="loading-state">
+                              <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
+                              <p className="text-gray-600 mt-2">Loading data...</p>
+                            </div>
+                          ) : (
+                            <>
+                              {/* Desktop View */}
+                              <div className="desktop-view">
+                                <div className="table-container">
+                                  <table className="link-data-table">
+                                    <thead>
+                                      <tr>
+                                        <th className="text-center">SR</th>
+                                        <th>Unique ID</th>
+                                        <th>Filename</th>
+                                        <th className="text-center">Total Links</th>
+                                        <th className="text-center">Matches</th>
+                                        <th>Date</th>
+                                        <th className="text-center">Credits Used</th>
+                                        <th className="text-center">Action</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {currentEntries.map(([uniqueId, group], idx) => {
+                                        const first = group[0] || {};
+                                        const serialNumber = indexOfFirstRow + idx + 1;
+                                        
+                                        return (
+                                          <tr key={uniqueId}>
+                                            <td className="text-center">{serialNumber}</td>
+                                            <td className="font-mono text-sm">{uniqueId}</td>
+                                            <td>
+                                              <div className="flex items-center gap-2">
+                                                <FileSpreadsheet className="h-4 w-4 text-blue-500" />
+                                                <span className="truncate max-w-[180px]">
+                                                  {first.fileName || 'Unknown'}
+                                                </span>
+                                              </div>
+                                            </td>
+                                            <td className="text-center">{first.totallink || 0}</td>
+                                            <td className="text-center">{first.matchCount || 0}</td>
+                                            <td>{formatDate(first.date)}</td>
+                                            <td className="text-center">
+                                              <div className="flex items-center gap-1 justify-center">
+                                                <FaCoins className="text-yellow-500" />
+                                                <span>{first.creditDeducted || 0}</span>
+                                              </div>
+                                            </td>
+                                            <td className="text-center">
+                                              <button
+                                                onClick={() => downloadGroupedEntry(group)}
+                                                className="download-btn"
+                                              >
+                                                <Download className="h-4 w-4" />
+                                                <span className="hidden md:inline">Download</span>
+                                              </button>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+
+                                {groupedEntries.length > rowsPerPage && (
+                                  <div className="pagination-controls">
+                                    <button 
+                                      onClick={prevPage} 
+                                      disabled={currentPage === 1}
+                                      className={`pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
+                                    >
+                                      <ChevronLeft className="h-4 w-4" /> Prev
+                                    </button>
+                                    
+                                    <span className="page-info">
+                                      Page {currentPage} of {totalPages}
+                                    </span>
+                                    
+                                    <button 
+                                      onClick={nextPage} 
+                                      disabled={currentPage === totalPages}
+                                      className={`pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+                                    >
+                                      Next <ChevronRight className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Mobile View */}
+                              <div className="mobile-view">
+                                {currentEntries.length > 0 ? (
+                                  currentEntries.map(([uniqueId, group], idx) => {
+                                    const first = group[0] || {};
+                                    return (
+                                      <div key={uniqueId} className="mobile-upload-card">
+                                        <div className="mobile-card-header">
+                                          <h4 className="mobile-unique-id">{uniqueId}</h4>
+                                          <div className="mobile-meta">
+                                            <span className="mobile-meta-item">
+                                              <FileSpreadsheet className="h-4 w-4" />
+                                              {first.fileName || 'Unknown file'}
+                                            </span>
+                                            <span className="mobile-meta-item">
+                                              <Users className="h-4 w-4" />
+                                              {first.matchCount || 0} matches
+                                            </span>
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="mobile-card-body">
+                                          {group.slice(0, 2).map((entry, i) => (
+                                            <div key={`${uniqueId}-${i}`} className="mobile-link-item">
+                                              <div className="mobile-link-row">
+                                                <span className="mobile-label">Profile:</span>
+                                                {entry.matchLink ? (
+                                                  <a
+                                                    href={entry.matchLink}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="mobile-profile-link"
+                                                  >
+                                                    {entry.matchLink.substring(0, 30)}...
+                                                  </a>
+                                                ) : (
+                                                  <span className="no-link">No link</span>
+                                                )}
+                                              </div>
+                                              <div className="mobile-info-grid">
+                                                <div className="mobile-info-item">
+                                                  <span className="mobile-label">Mobile:</span>
+                                                  <span>{entry.mobile_number || "-"}</span>
+                                                </div>
+                                                <div className="mobile-info-item">
+                                                  <span className="mobile-label">Name:</span>
+                                                  <span>{entry.person_name || "-"}</span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                          
+                                          {group.length > 2 && (
+                                            <div className="mobile-more-items">
+                                              + {group.length - 2} more profiles
+                                            </div>
+                                          )}
+                                        </div>
+                                        
+                                        <div className="mobile-card-footer">
+                                          <button
+                                            onClick={() => downloadGroupedEntry(group)}
+                                            className="mobile-download-btn"
+                                          >
+                                            <Download className="h-4 w-4" />
+                                            Download
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                ) : (
+                                  <div className="mobile-no-data">
+                                    No uploaded files found.
+                                  </div>
+                                )}
+                                
+                                {groupedEntries.length > rowsPerPage && (
+                                  <div className="mobile-pagination">
+                                    <button 
+                                      onClick={prevPage} 
+                                      disabled={currentPage === 1}
+                                      className={`pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
+                                    >
+                                      <ChevronLeft className="h-4 w-4" /> Prev
+                                    </button>
+                                    <span className="page-info">
+                                      Page {currentPage} of {totalPages}
+                                    </span>
+                                    <button 
+                                      onClick={nextPage} 
+                                      disabled={currentPage === totalPages}
+                                      className={`pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+                                    >
+                                      Next <ChevronRight className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="history-table">
-                      <table border="1">
-                        <thead>
-                          <tr>
-                            <th className="header12" title="File Name">
-                              📁
-                            </th>
-                            <th className="header12" title="Uploaded At">
-                              📅
-                            </th>
-                            <th className="header12" title="Action">
-                              ⚡
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {fileHistory.map((file) => (
-                            <tr key={file._id}>
-                              <td>{file.fileName}</td>
-                              <td>
-                                {new Date(file.uploadedAt).toLocaleString()}
-                              </td>
-                              <td>
-                                <button
-                                  className="download-button1"
-                                  title="Download File"
-                                  onClick={() =>
-                                    handleDownloadFile(file.filePath)
-                                  }
-                                >
-                                  ⬇️
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  <div className="right">
-                    <img src="new linkedin.png" alt="" />
                   </div>
                 </div>
-              </div>
-            </section>
+              </section>
+              
+              <TempLinkMobileForm />
+              <SingleLinkLookup />
+              <ToastContainer position="top-center" autoClose={5000} />
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
-};
+}
+
 export default BulkLookup;

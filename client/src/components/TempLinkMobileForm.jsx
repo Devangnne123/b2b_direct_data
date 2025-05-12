@@ -13,8 +13,8 @@ const UpdateLinkDetails = () => {
   const fetchData = async () => {
     if (!uniqueId) return alert('Please enter a Unique ID');
 
+    setLoading(true);
     try {
-      setLoading(true);
       const res = await fetch('http://localhost:3000/api/get-templink', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -22,17 +22,18 @@ const UpdateLinkDetails = () => {
       });
 
       if (!res.ok) {
-        setMessage('No record found');
+        setMessage('No data found for the given ID');
         setMatchLinks([]);
         return;
       }
 
       const data = await res.json();
-      setMatchLinks(data.matchLinks || []);
-      setMobileNumbers(data.mobile_numbers || Array(data.matchLinks.length).fill(''));
-      setMobileNumbers2(data.mobile_numbers_2 || Array(data.matchLinks.length).fill(''));
-      setPersonNames(data.person_names || Array(data.matchLinks.length).fill(''));
-      setPersonLocations(data.person_locations || Array(data.matchLinks.length).fill(''));
+
+      setMatchLinks(data.matchLinks);
+      setMobileNumbers(data.mobile_numbers);
+      setMobileNumbers2(data.mobile_numbers_2);
+      setPersonNames(data.person_names);
+      setPersonLocations(data.person_locations);
       setMessage('');
     } catch (error) {
       console.error(error);
@@ -52,7 +53,7 @@ const UpdateLinkDetails = () => {
 
   const handleSubmit = async () => {
     if (!uniqueId || matchLinks.length === 0) {
-      return alert('No matchLinks to save');
+      return alert('No data to save');
     }
 
     try {
@@ -69,11 +70,11 @@ const UpdateLinkDetails = () => {
         }),
       });
 
-      const data = await res.json();
-      setMessage(data.message || 'Data saved successfully');
-    } catch (err) {
-      console.error(err);
-      setMessage('Failed to save data');
+      const result = await res.json();
+      setMessage(result.message || 'Saved successfully');
+    } catch (error) {
+      console.error(error);
+      setMessage('Error saving data');
     }
   };
 
@@ -81,14 +82,15 @@ const UpdateLinkDetails = () => {
     <div style={{ padding: '20px' }}>
       <h2>Search and Update LinkedIn Link Details</h2>
 
-      <div>
+      <div style={{ marginBottom: '20px' }}>
         <input
           type="text"
           placeholder="Enter Unique ID"
           value={uniqueId}
           onChange={e => setUniqueId(e.target.value)}
+          style={{ padding: '8px', width: '300px', marginRight: '10px' }}
         />
-        <button onClick={fetchData}>Search</button>
+        <button onClick={fetchData} style={{ padding: '8px 16px' }}>Search</button>
       </div>
 
       {loading && <p>Loading...</p>}
@@ -96,7 +98,7 @@ const UpdateLinkDetails = () => {
 
       {matchLinks.length > 0 && (
         <>
-          <table border="1" cellPadding="8" style={{ marginTop: '20px' }}>
+          <table border="1" cellPadding="8" cellSpacing="0" style={{ marginTop: '20px', width: '100%' }}>
             <thead>
               <tr>
                 <th>#</th>
@@ -145,7 +147,7 @@ const UpdateLinkDetails = () => {
             </tbody>
           </table>
 
-          <button onClick={handleSubmit} style={{ marginTop: '20px' }}>
+          <button onClick={handleSubmit} style={{ marginTop: '20px', padding: '10px 20px' }}>
             Save All
           </button>
         </>

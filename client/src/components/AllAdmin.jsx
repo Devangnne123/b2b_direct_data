@@ -74,27 +74,64 @@ const AllAdmin = () => {
     setUsers(updatedUsers);
   };
 
-  const handleUpdateCredits = async (email, credits) => {
-    if (!credits || isNaN(credits)) return;
+  const handleUpdateCredits = async (userEmail, newCredits) => {
+    if (newCredits === "") {
+      alert("Please enter credits");
+      return;
+    }
+
+    const user = users.find((user) => user.userEmail === userEmail);
+    if (!user) {
+      alert("User not found");
+      return;
+    }
+
+    const updatedCredits = Number(user.credits) + Number(newCredits);
+    const senderEmail =
+      JSON.parse(sessionStorage.getItem("user"))?.email || "Super Admin";
 
     try {
       const response = await fetch(
-        "http://localhost:3000/users/updateCredits",
+        "http://localhost:3000/users/update-credits",
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, credits: parseInt(credits) }),
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userEmail, credits: updatedCredits }),
         }
       );
 
-      if (!response.ok) throw new Error("Failed to update credits");
+      const result = await response.json();
+      if (!response.ok) {
+        alert(result.message);
+        return;
+      }
 
-      fetchUsersWithCredits(); // Refresh the list
+      // ✅ Fix: Ensure transaction entry is created
+      const transactionResponse = await fetch(
+        "http://localhost:3000/super-admin/assign-credits",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            senderEmail,
+            recipientEmail: userEmail,
+            amount: Number(newCredits),
+            remainingCredits: updatedCredits,
+          }),
+        }
+      );
+
+      const transactionResult = await transactionResponse.json();
+      if (!transactionResponse.ok) {
+        alert(transactionResult.message);
+        return;
+      }
+
+      alert("Credits assigned successfully!");
+      fetchUsersWithCredits(); // Refresh user list
     } catch (error) {
       console.error("Error updating credits:", error);
-      setError("Failed to update credits");
+      alert("Failed to update credits. Try again later.");
     }
   };
 

@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from "react";
+import axios from 'axios';
 import Sidebar from "../components/Sidebar";
 import { IoArrowBackCircle } from "react-icons/io5";
 import "../css/ProfileLookup.css";
 
 const ProfileLookup = () => {
+  const [matchLink, setMatchLink] = useState('');
+    const [result, setResult] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [notFound, setNotFound] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [linkedinLink, setLinkedinLink] = useState("");
-  const [resultData, setResultData] = useState(null);
+
   const [showModal, setShowModal] = useState(false);
   const [lookupCount, setLookupCount] = useState(0);
   const [showSidebar, setShowSidebar] = useState(true);
@@ -22,6 +26,79 @@ const ProfileLookup = () => {
       fetchUserStatistics();
     }
   }, []);
+const handleSearch = async () => {
+  if (!matchLink) return;
+
+  if (lookupCount <= 0) {
+    alert("You have no remaining lookups.");
+    return;
+  }
+
+  setLoading(true);
+  setResult(null);
+  setNotFound(false);
+
+  try {
+    const res = await axios.get(`http://localhost:3000/api/links/search-match?matchLink=${matchLink}`);
+
+    if (res.data.result) {
+      setResult(res.data.result);
+      setShowModal(true);
+
+      // Deduct credits and update
+      const creditUsed = 5;
+      const remainingCredits = Math.max(0, lookupCount - creditUsed);
+
+      await updateUserCredits(remainingCredits);
+      setLookupCount(remainingCredits);
+
+      // Save statistics (optional)
+      let userStats = JSON.parse(sessionStorage.getItem("statisticsData")) || {};
+      const previousLinks = userStats[userEmail]?.uploadedLinks || [];
+      const isDuplicate = previousLinks.includes(matchLink);
+      const duplicateCount = (userStats[userEmail]?.duplicateCount || 0) + (isDuplicate ? 1 : 0);
+      const netNewCount = (userStats[userEmail]?.netNewCount || 0) + (isDuplicate ? 0 : 1);
+      const newEnrichedCount = (userStats[userEmail]?.newEnrichedCount || 0) + 1;
+
+      const updatedStats = {
+        task: "Search Match",
+        email: userEmail,
+        filename: matchLink,
+        linkUpload: 1,
+        duplicateCount,
+        netNewCount,
+        newEnrichedCount,
+        creditUsed,
+        remainingCredits,
+        uploadedLinks: [...previousLinks, matchLink],
+      };
+
+      userStats[userEmail] = updatedStats;
+      sessionStorage.setItem("statisticsData", JSON.stringify(userStats));
+
+      await fetch(`http://localhost:3000/bulkUpload/add`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify(updatedStats),
+      });
+
+    } else {
+      setNotFound(true);
+    }
+  } catch (error) {
+    if (error.response?.status === 404) {
+      setNotFound(true);
+    } else {
+      console.error("Search error:", error);
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // Fetch user credits from the database
   const fetchUserCredits = async () => {
@@ -76,7 +153,7 @@ const ProfileLookup = () => {
   };
 
   // Handle LinkedIn Profile Lookup
-  const handleSearch = async () => {
+  const handleSearch0 = async () => {
     if (!linkedinLink.match(/([a-z]{2,3}\.)?linkedin\.com\/.+$/)) {
       alert("Invalid LinkedIn link. Please try again.");
       return;
@@ -202,15 +279,15 @@ const ProfileLookup = () => {
                
                   <div className="url-input">
                     <input type="url" placeholder="Enter your url" 
-                    value={linkedinLink}
-                    onChange={(e) => setLinkedinLink(e.target.value)}
+                     value={matchLink}
+                    onChange={(e) => setMatchLink(e.target.value)}
                     />
                   </div>
-                  <button className="search-url" 
-                  onClick={handleSearch}
-                  disabled={lookupCount <= 0}>
-                  {isLoading ? "Searching..." : "Search"}
-                  </button>
+                 <button className="search-url" onClick={handleSearch} disabled={lookupCount <= 0}>
+  {loading ? "Searching..." : "Search"}
+</button>
+{notFound && <p className="text-red-600 mt-2">No result found.</p>}
+
                   <div className="url-des">
                     <p>
                       Retrieve all profile or company data on LinkedIn using our LinkedIn Finder URL.
@@ -227,7 +304,7 @@ const ProfileLookup = () => {
       </div>
       </div>
 
-        {showModal && resultData && (
+        {showModal && result && (
           <div className="modal-overlay-1">
             <div className="modal-container-1">
               <button
@@ -243,32 +320,30 @@ const ProfileLookup = () => {
                 <div className="info-row-1">
                   <strong>LinkedIn Link:</strong>{" "}
                   <a
-                    href={resultData.linkedin_url}
+                    href={result.matchLink}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    {resultData.linkedin_url || "Not Available"}
+                    {result.matchLink || "Not Available"}
                   </a>
                 </div>
                 <div className="info-row-1">
                   <strong>Full Name:</strong>{" "}
-                  <span>{resultData.full_name || "N/A"}</span>
+                  <span>{result.person_name || "N/A"}</span>
                 </div>
                 <div className="info-row-1">
                   <strong>Lead Location:</strong>{" "}
                   <span>
-                    {Array.isArray(resultData.lead_location)
-                      ? resultData.lead_location.join(", ")
-                      : "Not Available"}
+                    {result.person_location || "Not Available"}
                   </span>
                 </div>
                 <div className="info-row-1">
                   <strong>Mobile 1:</strong>{" "}
-                  <span>{resultData.mobile_1 || "Not Available"}</span>
+                  <span>{result.mobile_number || "Not Available"}</span>
                 </div>
                 <div className="info-row-1">
                   <strong>Mobile 2:</strong>{" "}
-                  <span>{resultData.mobile_2 || "Not Available"}</span>
+                  <span>{result.mobile_number_2 || "Not Available"}</span>
                 </div>
               </div>
               <div className="modal-footer-1">

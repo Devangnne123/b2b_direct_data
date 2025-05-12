@@ -1,83 +1,62 @@
 const express = require('express');
 const router = express.Router();
 const TempLinkMobile = require('../model/TempLinkMobile');
-const Link = require('../model/Link');
 
-// Get temp link by uniqueId
-router.post('/get-templink', async (req, res) => {
+// ✅ Fetch all rows with the same uniqueId
+router.post('/api/get-templink', async (req, res) => {
   const { uniqueId } = req.body;
-  try {
-    const record = await TempLinkMobile.findOne({ where: { uniqueId } });
 
-    if (!record) {
-      return res.status(404).json({ message: 'No data found for this uniqueId' });
-    }
+  try {
+    const rows = await TempLinkMobile.findAll({ where: { uniqueId } });
+
+    if (!rows.length) return res.status(404).json({ message: 'No data found' });
 
     res.json({
-      matchLinks: record.matchLinks || [],
-      mobile_numbers: record.mobile_numbers || [],
-      mobile_numbers_2: record.mobile_numbers_2 || [],
-      person_names: record.person_names || [],
-      person_locations: record.person_locations || [],
+      matchLinks: rows.map(r => r.matchLink),
+      mobile_numbers: rows.map(r => r.mobile_number || ''),
+      mobile_numbers_2: rows.map(r => r.mobile_number_2 || ''),
+      person_names: rows.map(r => r.person_name || ''),
+      person_locations: rows.map(r => r.person_location || ''),
     });
   } catch (err) {
-    console.error(err);
+    console.error('Error fetching data:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Update or create temp link, and sync to Link table
-router.post('/update-templink', async (req, res) => {
+// ✅ Update all rows by uniqueId + matchLink
+router.post('/api/update-templink', async (req, res) => {
   const {
     uniqueId,
     matchLinks,
     mobile_numbers,
     mobile_numbers_2,
     person_names,
-    person_locations,
+    person_locations
   } = req.body;
 
   try {
-    // Update or create in TempLinkMobile
-    let record = await TempLinkMobile.findOne({ where: { uniqueId } });
-
-    if (record) {
-      await record.update({
-        matchLinks,
-        mobile_numbers,
-        mobile_numbers_2,
-        person_names,
-        person_locations,
-      });
-    } else {
-      await TempLinkMobile.create({
-        uniqueId,
-        matchLinks,
-        mobile_numbers,
-        mobile_numbers_2,
-        person_names,
-        person_locations,
-      });
+    for (let i = 0; i < matchLinks.length; i++) {
+      await TempLinkMobile.update(
+        {
+          mobile_number: mobile_numbers[i],
+          mobile_number_2: mobile_numbers_2[i],
+          person_name: person_names[i],
+          person_location: person_locations[i],
+        },
+        {
+          where: {
+            uniqueId,
+            matchLink: matchLinks[i],
+          },
+        }
+      );
     }
 
-    // Update Link table with same data
-    const linkRecord = await Link.findOne({ where: { uniqueId } });
-
-    if (linkRecord) {
-      await linkRecord.update({
-        matchLinks,
-        matchCount: matchLinks?.length || 0,
-        mobile_numbers,
-        mobile_numbers_2,
-        person_names,
-        person_locations,
-      });
-    }
-
-    res.json({ message: 'Data updated in both TempLinkMobile and Link tables' });
+    res.json({ message: 'Data updated successfully' });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error updating data:', err);
+    res.status(500).json({ message: 'Failed to update data' });
   }
 });
 

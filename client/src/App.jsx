@@ -26,7 +26,7 @@ import Services from "./components/Services";
 import UserCreditReport from "./components/UserCreditReport";
 import Api from "./components/Api";
 import ContactUs from "./components/ContactUs";
-import Bulk from "./components/Bulk";
+// import Bulk from "./components/Bulk";
 import TempLinkMobileForm from "./components/TempLinkMobileForm";
 import "./App.css";
 import AboutUs from "./components/AboutUs";
@@ -40,7 +40,7 @@ function App() {
     "/bulk-lookup",
     "/statistic",
     "/add-user",
-    "/bulk",
+    // "/bulk",
     "/temp",
     "/user-list",
     "/UserStatistics",
@@ -62,7 +62,7 @@ function App() {
         <Route path="/services" element={<Services />} />
         <Route path="/profile-lookup" element={<ProfileLookup />} />
         <Route path="/bulk-lookup" element={<BulkLookup />} />
-        <Route path="/bulk" element={<Bulk />} />
+        {/* <Route path="/bulk" element={<Bulk />} /> */}
         <Route path="/statistic" element={<Statistic />} />
         <Route path="/Temp" element={<TempLinkMobileForm />} />
         <Route path="/" element={<Login />} />

@@ -1,4 +1,3 @@
-// models/Link.js
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 
@@ -7,36 +6,35 @@ const Link = sequelize.define('Link', {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     allowNull: false,
-    unique: true,
   },
-  totalLinks: {
+  credits: {
     type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  link: {
+    type: DataTypes.STRING,
     allowNull: false,
   },
-  links: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+  totallink: {
+    type: DataTypes.STRING,
     allowNull: false,
   },
-  clean_links: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+  clean_link: {
+    type: DataTypes.STRING,
     allowNull: true,
   },
-  // models/Link.js
-matchLinks: {
-  type: DataTypes.ARRAY(DataTypes.STRING),
-  allowNull: true,
-},
-matchCount: {
-  type: DataTypes.INTEGER,
-  defaultValue: 0,
-},
-
-
+  matchLink: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  matchCount: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
   remark: {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  
   email: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -46,31 +44,34 @@ matchCount: {
     defaultValue: DataTypes.NOW,
   },
   fileName: {
-    type: DataTypes.STRING, // ✅ Store filename
+    type: DataTypes.STRING,
     allowNull: true,
   },
-
-
-
-
-  // models/Link.js
-mobile_numbers: {
-  type: DataTypes.ARRAY(DataTypes.STRING),
-  allowNull: true,
-},
-person_names: {
-  type: DataTypes.ARRAY(DataTypes.STRING),
-  allowNull: true,
-},
-person_locations: {
-  type: DataTypes.ARRAY(DataTypes.STRING),
-  allowNull: true,
-},
-mobile_numbers_2: {
-  type: DataTypes.ARRAY(DataTypes.STRING),
-  allowNull: true,
-},
-
+  mobile_number: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  mobile_number_2: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  person_name: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  person_location: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  creditDeducted: {
+    type: DataTypes.INTEGER,
+    allowNull: true, // allowNull true in case it's not deducted immediately
+  },
+  remainingCredits: {
+    type: DataTypes.INTEGER, // <-- Add this field
+    defaultValue: 0,
+  },
+  
 }, {
   tableName: 'links',
   timestamps: false,

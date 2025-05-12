@@ -1,4 +1,4 @@
-// models/TempLinkMobile.js
+// model/TempLinkMobile.js
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 
@@ -7,31 +7,30 @@ const TempLinkMobile = sequelize.define('TempLinkMobile', {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     allowNull: false,
-    unique: true,
   },
-  matchLinks: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+  matchLink: {
+    type: DataTypes.STRING,
     allowNull: true,
   },
-  mobile_numbers: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+  mobile_number: {
+    type: DataTypes.STRING,
     allowNull: true,
   },
-  person_names: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+  mobile_number_2: {
+    type: DataTypes.STRING,
     allowNull: true,
   },
-  person_locations: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+  person_name: {
+    type: DataTypes.STRING,
     allowNull: true,
   },
-  mobile_numbers_2: {
-    type: DataTypes.ARRAY(DataTypes.STRING),
+  person_location: {
+    type: DataTypes.STRING,
     allowNull: true,
   },
 }, {
   tableName: 'temp_link_mobile',
-  timestamps: false, // Disable timestamps for simplicity
+  timestamps: false,
 });
 
 module.exports = TempLinkMobile;
