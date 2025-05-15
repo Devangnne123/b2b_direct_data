@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
-import TempLinkMobileForm from "../components/TempLinkMobileForm";
+// import TempLinkMobileForm from "../components/TempLinkMobileForm";
 import SingleLinkLookup from "../components/SingleLinkLookup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaCoins } from 'react-icons/fa';
-import { Download, Calendar, Users, Link as LinkIcon, FileSpreadsheet, Database, Loader2, ChevronLeft, ChevronRight, Hash } from 'lucide-react';
+import { Download, Calendar, Users, Link as LinkIcon, FileSpreadsheet, Star, Database, Loader2, ChevronLeft, ChevronRight, Hash } from 'lucide-react';
 import Sidebar from "../components/Sidebar";
 import "../css/BulkLookup.css";
 import "../css/UserS.css";
@@ -45,7 +45,10 @@ function BulkLookup() {
   const [loading, setLoading] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage] = useState(30);
+  const [rowsPerPage] = useState(10);
+  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [uploadDetails, setUploadDetails] = useState(null);
 
   const creditCost = 5;
 
@@ -57,6 +60,16 @@ function BulkLookup() {
       fetchCredits(user.email);
     }
   }, []);
+
+  const getGroupStatus = (group) => {
+    if (group.some(item => item.status === 'pending')) {
+      return 'pending';
+    }
+    if (group.some(item => !item.matchLink)) {
+      return 'incompleted';
+    }
+    return 'completed';
+  };
 
   const fetchCredits = async (email) => {
     try {
@@ -113,15 +126,31 @@ function BulkLookup() {
         }
       );
 
-      const { matchCount, uniqueId } = res.data;
-      const creditToDeduct = matchCount * creditCost;
+      setUploadDetails({
+        matchCount: res.data.matchCount,
+        uniqueId: res.data.uniqueId,
+        creditToDeduct: res.data.matchCount * creditCost
+      });
+      
+      setShowConfirmation(true);
+      
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Upload failed");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const confirmUpload = async () => {
+    setLoading(true);
+    try {
       const creditRes = await axios.post(
         "http://localhost:3000/api/upload-file",
         {
           userEmail: savedEmail,
-          creditCost: creditToDeduct,
-          uniqueId,
+          creditCost: uploadDetails.creditToDeduct,
+          uniqueId: uploadDetails.uniqueId,
         }
       );
 
@@ -130,21 +159,21 @@ function BulkLookup() {
 
       setDeductedCreditsMap((prev) => ({
         ...prev,
-        [uniqueId]: creditToDeduct,
+        [uploadDetails.uniqueId]: uploadDetails.creditToDeduct,
       }));
 
       toast.success(
         <div>
-          <h4>✅ Upload Successful!</h4>
+          <h4>✅ Processing Complete!</h4>
           <table className="toast-table">
             <tbody>
               <tr>
                 <td><strong>📌 Unique ID:</strong></td>
-                <td>{uniqueId}</td>
+                <td>{uploadDetails.uniqueId}</td>
               </tr>
               <tr>
                 <td><strong>💳 Credits Deducted:</strong></td>
-                <td>{creditToDeduct}</td>
+                <td>{uploadDetails.creditToDeduct}</td>
               </tr>
               <tr>
                 <td><strong>💸 Remaining Credits:</strong></td>
@@ -163,11 +192,19 @@ function BulkLookup() {
       document.querySelector('input[type="file"]').value = null;
       fetchUserLinks(savedEmail);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Upload failed");
+      toast.error("Failed to confirm processing");
       console.error(err);
     } finally {
       setLoading(false);
+      setShowConfirmation(false);
+      setUploadDetails(null);
     }
+  };
+
+  const cancelUpload = () => {
+    setShowConfirmation(false);
+    setUploadDetails(null);
+    toast.info("Upload canceled");
   };
 
   const handleSearch = () => {
@@ -181,34 +218,102 @@ function BulkLookup() {
     }
   };
 
+  const requestSort = (key) => {
+    let direction = 'desc';
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
+    }
+    setSortConfig({ key, direction });
+  };
+
   const groupByUniqueId = (data) => {
     const grouped = {};
     (data || []).forEach((item) => {
       if (!item?.uniqueId) return;
-      if (!grouped[item.uniqueId]) {
-        grouped[item.uniqueId] = [];
-      }
-      // Only add if not already present
-      if (!grouped[item.uniqueId].some(existing => existing._id === item._id)) {
-        grouped[item.uniqueId].push(item);
-      }
+      if (!grouped[item.uniqueId]) grouped[item.uniqueId] = [];
+      grouped[item.uniqueId].push(item);
     });
     return grouped;
   };
 
+  const sortedGroupedEntries = useMemo(() => {
+    const grouped = groupByUniqueId(filteredData);
+    let entries = Object.entries(grouped);
+
+    return entries.sort((a, b) => {
+      if (sortConfig.key === 'status') {
+        const aStatus = getGroupStatus(a[1]);
+        const bStatus = getGroupStatus(b[1]);
+        return sortConfig.direction === 'desc' 
+          ? bStatus.localeCompare(aStatus)
+          : aStatus.localeCompare(bStatus);
+      }
+
+      const aValue = a[1][0]?.[sortConfig.key] || '';
+      const bValue = b[1][0]?.[sortConfig.key] || '';
+      
+      if (sortConfig.key === 'date') {
+        const dateA = new Date(aValue);
+        const dateB = new Date(bValue);
+        return sortConfig.direction === 'desc' ? dateB - dateA : dateA - dateB;
+      }
+      
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortConfig.direction === 'desc' 
+          ? bValue.localeCompare(aValue) 
+          : aValue.localeCompare(bValue);
+      }
+      
+      return sortConfig.direction === 'desc' 
+        ? bValue - aValue 
+        : aValue - bValue;
+    });
+  }, [filteredData, sortConfig]);
+
   const downloadGroupedEntry = (group) => {
-    const rowData = (group || []).map((entry) => ({
-      fileName: entry?.fileName || 'Unknown',
-      uniqueId: entry?.uniqueId || 'Unknown',
-      matchCount: entry?.matchCount || 0,
-      totallinks: entry?.totallink || 0,
-      date: entry?.date ? new Date(entry.date).toLocaleString() : 'Unknown',
-      link: entry?.matchLink || 'N/A',
-      mobile_number: entry?.mobile_number || 'N/A',
-      mobile_number_2: entry?.mobile_number_2 || 'N/A',
-      person_name: entry?.person_name || 'N/A',
-      person_location: entry?.person_location || 'N/A',
-    }));
+    const sortedGroup = [...group].sort((a, b) => {
+      const dateA = new Date(a.date || 0);
+      const dateB = new Date(b.date || 0);
+      return dateA - dateB;
+    });
+
+    const rowData = sortedGroup.map((entry) => {
+  const matchLink = entry?.matchLink || null;
+
+  const mobile_number = entry?.mobile_number || 'N/A';
+  const mobile_number_2 = entry?.mobile_number_2 || 'N/A';
+  const person_name = entry?.person_name || 'N/A';
+  const person_location = entry?.person_location || 'N/A';
+
+  let status = 'Completed';
+
+  if (!matchLink) {
+    status = 'Incompleted';
+  } else if (
+    mobile_number === 'N/A' ||
+    mobile_number_2 === 'N/A' ||
+    person_name === 'N/A' ||
+    person_location === 'N/A'
+  ) {
+    status = 'Pending';
+  }
+
+  return {
+    fileName: entry?.fileName || 'Unknown',
+    uniqueId: entry?.uniqueId || 'Unknown',
+    matchCount: entry?.matchCount || 0,
+    totallinks: entry?.totallink || 0,
+    date: entry?.date ? new Date(entry.date).toLocaleString() : 'Unknown',
+    status,
+    link: matchLink || 'N/A',
+    mobile_number,
+    mobile_number_2,
+    person_name,
+    person_location,
+  };
+});
+
+
 
     const worksheet = XLSX.utils.json_to_sheet(rowData);
     const workbook = XLSX.utils.book_new();
@@ -216,14 +321,10 @@ function BulkLookup() {
     XLSX.writeFile(workbook, `LinkData_${group[0]?.uniqueId || 'data'}.xlsx`);
   };
 
-  const groupedData = groupByUniqueId(filteredData);
-  const groupedEntries = Object.entries(groupedData);
-  
-  // Get current entries for pagination
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentEntries = groupedEntries.slice(indexOfFirstRow, indexOfLastRow);
-  const totalPages = Math.ceil(groupedEntries.length / rowsPerPage);
+  const currentEntries = sortedGroupedEntries.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.ceil(sortedGroupedEntries.length / rowsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
   const nextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
@@ -241,6 +342,25 @@ function BulkLookup() {
     });
   };
 
+  const SortableHeader = ({ children, sortKey }) => {
+    const isActive = sortConfig.key === sortKey;
+    const isDesc = sortConfig.direction === 'desc';
+
+    return (
+      <th 
+        onClick={() => requestSort(sortKey)}
+        className={`cursor-pointer hover:bg-gray-100 ${isActive ? 'font-bold' : ''}`}
+      >
+        <div className="flex items-center gap-1">
+          {children}
+          {isActive && (
+            <span>{isDesc ? '↓' : '↑'}</span>
+          )}
+        </div>
+      </th>
+    );
+  };
+
   return (
     <ErrorBoundary>
       <div className="main">
@@ -250,6 +370,9 @@ function BulkLookup() {
           <div className="right-side">
             <div className="right-p">
               <nav className="main-head">
+                <li className="back1">
+                  {/* Back button can be added here if needed */}
+                </li>
                 <div className="main-title">
                   <li className="profile">
                     <p className="title">Bulk LinkedIn Lookup</p>
@@ -269,6 +392,7 @@ function BulkLookup() {
                       Upload Excel files containing LinkedIn URLs for bulk processing
                     </p>
                   </li>
+                  <h1 className="title-head">LinkedIn Data Enrichment</h1>
                 </div>
               </nav>
               
@@ -277,6 +401,22 @@ function BulkLookup() {
                   <div className="main-body1">
                     <div className="left">
                       <div className="upload-section">
+                        <div className="email-input-group">
+                          <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="you@example.com"
+                            className="email-input"
+                          />
+                          <button 
+                            onClick={handleEmailSave} 
+                            className="save-email-btn"
+                          >
+                            Save Email
+                          </button>
+                        </div>
+
                         <p className="logged-in-as">
                           <strong>Logged in as:</strong> {savedEmail}
                         </p>
@@ -307,13 +447,46 @@ function BulkLookup() {
                         </div>
                       </div>
 
+                      {showConfirmation && (
+                        <div className="confirmation-modal">
+                          <div className="confirmation-content">
+                            <h3>Confirm Processing</h3>
+                            <div className="confirmation-details">
+                              <p><strong>File matches found:</strong> {uploadDetails.matchCount}</p>
+                              <p><strong>Credits to deduct:</strong> {uploadDetails.creditToDeduct}</p>
+                              <p><strong>Remaining credits after:</strong> {credits - uploadDetails.creditToDeduct}</p>
+                            </div>
+                            <div className="confirmation-buttons">
+                              <button 
+                                onClick={cancelUpload}
+                                className="cancel-btn"
+                                disabled={loading}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={confirmUpload}
+                                className="confirm-btn"
+                                disabled={loading}
+                              >
+                                {loading ? (
+                                  <Loader2 className="animate-spin h-4 w-4" />
+                                ) : (
+                                  "Confirm & Process"
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {uploadedData.length > 0 && (
                         <div className="history-table">
                           <div className="search-section">
                             <div className="search-input-group">
                               <input
                                 type="text"
-                                placeholder="Search by Unique ID"
+                                placeholder="Search by Email, Filename or Task"
                                 value={searchId}
                                 onChange={(e) => setSearchId(e.target.value)}
                                 className="search-input"
@@ -331,191 +504,147 @@ function BulkLookup() {
                               <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
                               <p className="text-gray-600 mt-2">Loading data...</p>
                             </div>
-                          ) : (
+                          ) : currentEntries.length > 0 ? (
                             <>
-                              {/* Desktop View */}
-                              <div className="desktop-view">
-                                <div className="table-container">
-                                  <table className="link-data-table">
-                                    <thead>
-                                      <tr>
-                                        <th className="text-center">SR</th>
-                                        <th>Unique ID</th>
-                                        <th>Filename</th>
-                                        <th className="text-center">Total Links</th>
-                                        <th className="text-center">Matches</th>
-                                        <th>Date</th>
-                                        <th className="text-center">Credits Used</th>
-                                        <th className="text-center">Action</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {currentEntries.map(([uniqueId, group], idx) => {
-                                        const first = group[0] || {};
-                                        const serialNumber = indexOfFirstRow + idx + 1;
-                                        
-                                        return (
-                                          <tr key={uniqueId}>
-                                            <td className="text-center">{serialNumber}</td>
-                                            <td className="font-mono text-sm">{uniqueId}</td>
-                                            <td>
-                                              <div className="flex items-center gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-blue-500" />
-                                                <span className="truncate max-w-[180px]">
-                                                  {first.fileName || 'Unknown'}
-                                                </span>
-                                              </div>
-                                            </td>
-                                            <td className="text-center">{first.totallink || 0}</td>
-                                            <td className="text-center">{first.matchCount || 0}</td>
-                                            <td>{formatDate(first.date)}</td>
-                                            <td className="text-center">
-                                              <div className="flex items-center gap-1 justify-center">
-                                                <FaCoins className="text-yellow-500" />
-                                                <span>{first.creditDeducted || 0}</span>
-                                              </div>
-                                            </td>
-                                            <td className="text-center">
-                                              <button
-                                                onClick={() => downloadGroupedEntry(group)}
-                                                className="download-btn"
-                                              >
-                                                <Download className="h-4 w-4" />
-                                                <span className="hidden md:inline">Download</span>
-                                              </button>
-                                            </td>
-                                          </tr>
-                                        );
-                                      })}
-                                    </tbody>
-                                  </table>
+                              <div className="table-container">
+                                <table className="link-data-table">
+                                  <thead>
+                                    <tr>
+                                      <th>
+                                        <div className="flex items-center gap-1">
+                                          <Hash className="h-4 w-4" />
+                                          {/* <span>SR</span> */}
+                                        </div>
+                                      </th>
+                                      <SortableHeader sortKey="uniqueId">
+                                        <Database className="h-4 w-4" />
+                                        {/* <span>Unique ID</span> */}
+                                      </SortableHeader>
+                                      <SortableHeader sortKey="fileName">
+                                        <FileSpreadsheet className="h-4 w-4" />
+                                        {/* <span>Filename</span> */}
+                                      </SortableHeader>
+                                      <SortableHeader sortKey="totallink">
+                                        <LinkIcon className="h-4 w-4" />
+                                        {/* <span>Total Links</span> */}
+                                      </SortableHeader>
+                                      <SortableHeader sortKey="matchCount">
+                                        <Users className="h-4 w-4" />
+                                        {/* <span>Matches</span> */}
+                                      </SortableHeader>
+                                      <SortableHeader sortKey="status">
+                                        <Star className="h-4 w-4" />
+                                        {/* <span>Status</span> */}
+                                      </SortableHeader>
+                                      <SortableHeader sortKey="date">
+                                        <Calendar className="h-4 w-4" />
+                                        {/* <span>Date</span> */}
+                                      </SortableHeader>
+                                      <th>
+                                        <div className="flex items-center gap-1">
+                                          <FaCoins className="h-4 w-4 text-yellow-500" />
+                                          {/* <span>Credits Used</span> */}
+                                        </div>
+                                      </th>
+                                      <th>
+                                        <div className="flex items-center gap-1">
+                                          <Download className="h-4 w-4" />
+                                          {/* <span>Action</span> */}
+                                        </div>
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {currentEntries.map(([uniqueId, group], idx) => {
+                                      const first = group[0] || {};
+                                      const status = getGroupStatus(group);
+                                      
+                                      return (
+                                        <tr key={idx}>
+                                          <td>{indexOfFirstRow + idx + 1}</td>
+                                          <td className="font-mono text-sm">{uniqueId}</td>
+                                          <td>
+                                            <div className="flex items-center gap-2">
+                                              <FileSpreadsheet className="h-4 w-4 text-blue-500" />
+                                              <span className="truncate max-w-[180px]">
+                                                {first.fileName || 'Unknown'}
+                                              </span>
+                                            </div>
+                                          </td>
+                                          <td>{first.totallink || 0}</td>
+                                          <td>{first.matchCount || 0}</td>
+                                          <td>
+                                            <div className={`status-badge ${
+                                              status === 'pending' ? 'pending' : 
+                                              status === 'incompleted' ? 'completed' : 'completed'
+                                            }`}>
+                                              {status === 'pending' ? 'Pending' : 
+                                               status === 'incompleted' ? 'completed' : 'Completed'}
+                                            </div>
+                                          </td>
+                                          <td>{formatDate(first.date)}</td>
+                                          <td>
+                                            <div className="flex items-center gap-1">
+                                              <FaCoins className="text-yellow-500" />
+                                              <span>{first.creditDeducted || 0}</span>
+                                            </div>
+                                          </td>
+                                          <td>
+                                            <button
+                                              onClick={() => downloadGroupedEntry(group)}
+                                              className="download-btn"
+                                              // disabled={status !== 'completed'}
+                                              title={status !== 'completed' ? 
+                                                `Download available only when status is Completed (Current: ${status})` : ""}
+                                            >
+                                              <Download className="h-4 w-4" />
+                                              <span className="hidden md:inline">Download</span>
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+
+                              {sortedGroupedEntries.length > rowsPerPage && (
+                                <div className="pagination-controls">
+                                  <button 
+                                    onClick={prevPage} 
+                                    disabled={currentPage === 1}
+                                    className={`pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
+                                    aria-label="Previous page"
+                                  >
+                                    <ChevronLeft className="h-4 w-4" />
+                                  </button>
+                                  
+                                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+                                    <button
+                                      key={number}
+                                      onClick={() => paginate(number)}
+                                      className={`pagination-btn ${currentPage === number ? 'active' : ''}`}
+                                      aria-label={`Page ${number}`}
+                                    >
+                                      {number}
+                                    </button>
+                                  ))}
+                                  
+                                  <button 
+                                    onClick={nextPage} 
+                                    disabled={currentPage === totalPages}
+                                    className={`pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+                                    aria-label="Next page"
+                                  >
+                                    <ChevronRight className="h-4 w-4" />
+                                  </button>
                                 </div>
-
-                                {groupedEntries.length > rowsPerPage && (
-                                  <div className="pagination-controls">
-                                    <button 
-                                      onClick={prevPage} 
-                                      disabled={currentPage === 1}
-                                      className={`pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
-                                    >
-                                      <ChevronLeft className="h-4 w-4" /> Prev
-                                    </button>
-                                    
-                                    <span className="page-info">
-                                      Page {currentPage} of {totalPages}
-                                    </span>
-                                    
-                                    <button 
-                                      onClick={nextPage} 
-                                      disabled={currentPage === totalPages}
-                                      className={`pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
-                                    >
-                                      Next <ChevronRight className="h-4 w-4" />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Mobile View */}
-                              <div className="mobile-view">
-                                {currentEntries.length > 0 ? (
-                                  currentEntries.map(([uniqueId, group], idx) => {
-                                    const first = group[0] || {};
-                                    return (
-                                      <div key={uniqueId} className="mobile-upload-card">
-                                        <div className="mobile-card-header">
-                                          <h4 className="mobile-unique-id">{uniqueId}</h4>
-                                          <div className="mobile-meta">
-                                            <span className="mobile-meta-item">
-                                              <FileSpreadsheet className="h-4 w-4" />
-                                              {first.fileName || 'Unknown file'}
-                                            </span>
-                                            <span className="mobile-meta-item">
-                                              <Users className="h-4 w-4" />
-                                              {first.matchCount || 0} matches
-                                            </span>
-                                          </div>
-                                        </div>
-                                        
-                                        <div className="mobile-card-body">
-                                          {group.slice(0, 2).map((entry, i) => (
-                                            <div key={`${uniqueId}-${i}`} className="mobile-link-item">
-                                              <div className="mobile-link-row">
-                                                <span className="mobile-label">Profile:</span>
-                                                {entry.matchLink ? (
-                                                  <a
-                                                    href={entry.matchLink}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="mobile-profile-link"
-                                                  >
-                                                    {entry.matchLink.substring(0, 30)}...
-                                                  </a>
-                                                ) : (
-                                                  <span className="no-link">No link</span>
-                                                )}
-                                              </div>
-                                              <div className="mobile-info-grid">
-                                                <div className="mobile-info-item">
-                                                  <span className="mobile-label">Mobile:</span>
-                                                  <span>{entry.mobile_number || "-"}</span>
-                                                </div>
-                                                <div className="mobile-info-item">
-                                                  <span className="mobile-label">Name:</span>
-                                                  <span>{entry.person_name || "-"}</span>
-                                                </div>
-                                              </div>
-                                            </div>
-                                          ))}
-                                          
-                                          {group.length > 2 && (
-                                            <div className="mobile-more-items">
-                                              + {group.length - 2} more profiles
-                                            </div>
-                                          )}
-                                        </div>
-                                        
-                                        <div className="mobile-card-footer">
-                                          <button
-                                            onClick={() => downloadGroupedEntry(group)}
-                                            className="mobile-download-btn"
-                                          >
-                                            <Download className="h-4 w-4" />
-                                            Download
-                                          </button>
-                                        </div>
-                                      </div>
-                                    );
-                                  })
-                                ) : (
-                                  <div className="mobile-no-data">
-                                    No uploaded files found.
-                                  </div>
-                                )}
-                                
-                                {groupedEntries.length > rowsPerPage && (
-                                  <div className="mobile-pagination">
-                                    <button 
-                                      onClick={prevPage} 
-                                      disabled={currentPage === 1}
-                                      className={`pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
-                                    >
-                                      <ChevronLeft className="h-4 w-4" /> Prev
-                                    </button>
-                                    <span className="page-info">
-                                      Page {currentPage} of {totalPages}
-                                    </span>
-                                    <button 
-                                      onClick={nextPage} 
-                                      disabled={currentPage === totalPages}
-                                      className={`pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
-                                    >
-                                      Next <ChevronRight className="h-4 w-4" />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
+                              )}
                             </>
+                          ) : (
+                            <div className="no-data">
+                              No statistics found matching your search.
+                            </div>
                           )}
                         </div>
                       )}
@@ -524,7 +653,7 @@ function BulkLookup() {
                 </div>
               </section>
               
-              <TempLinkMobileForm />
+              {/* <TempLinkMobileForm /> */}
               <SingleLinkLookup />
               <ToastContainer position="top-center" autoClose={5000} />
             </div>

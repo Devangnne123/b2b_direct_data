@@ -23,8 +23,8 @@ app.use(express.json()); // middleware
 app.use(express.urlencoded({ extended: false })); // middleware
 // app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-const tempLinkMobileRoutes = require('./routes/tempLinkRoutes');
-app.use('/', tempLinkMobileRoutes);
+// const tempLinkMobileRoutes = require('./routes/tempLinkRoutes');
+// app.use('/', tempLinkMobileRoutes);
 
 // Middleware
 
@@ -35,78 +35,90 @@ app.use('/', tempLinkMobileRoutes);
   // upload file 
   const upload = multer({ dest: 'uploads/' });
 
-  app.post('/upload-excel', upload.single('file'), async (req, res) => {
-    try {
-      const email = req.headers['user-email'];
-      if (!email) return res.status(400).json({ error: "Email required" });
-  
-      const filePath = req.file.path;
-      const workbook = xlsx.readFile(filePath);
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
-  
-      const links = rows.flat().filter(cell =>
-        typeof cell === 'string' && cell.includes('linkedin.com/in')
-      );
-      if (links.length === 0) {
-        return res.status(400).json({ message: 'No valid LinkedIn links found.' });
-      }
-  
-      const uniqueId = uuidv4();
-      let matchCount = 0;
-  
-      for (const link of links) {
-        const cleanedLink = link.replace(/linkedin\.com\/+in\//i, 'linkedin.com/in/').toLowerCase();
-        const remark = cleanedLink.includes('linkedin.com/in/') ? 'ok' : 'invalid';
-  
-        let matchLink = null;
-        const matched = await MasterUrl.findOne({ where: { clean_linkedin_link: cleanedLink } });
-        if (matched) {
-          matchLink = cleanedLink;
-          matchCount++;
-        }
-  
-        await Link.create({
-          uniqueId,
-          email,
-          link,
-          totallink:links.length,
-          clean_link: cleanedLink,
-          remark,
-          fileName: req.file.originalname,
-          matchLink,
-          matchCount:  matchCount,
-          
+app.post('/upload-excel', upload.single('file'), async (req, res) => {
+  try {
+    const email = req.headers['user-email'];
+    if (!email) return res.status(400).json({ error: "Email required" });
+
+    const filePath = req.file.path;
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+    const links = rows.flat().filter(cell =>
+      typeof cell === 'string' && cell.toLowerCase().includes('linkedin.com/in')
+    );
+
+    if (links.length === 0) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ message: 'No valid LinkedIn links found.' });
+    }
+
+    const uniqueId = uuidv4();
+    let matchCount = 0;
+
+    for (const link of links) {
+      const cleanedLink = link.replace(/linkedin\.com\/+in\//i, 'linkedin.com/in/').toLowerCase();
+      const remark = cleanedLink.includes('linkedin.com/in/') ? 'ok' : 'invalid';
+
+      let matchLink = null;
+      let linkedinLinkId = null;
+
+      const matched = await MasterUrl.findOne({
+        where: { clean_linkedin_link: cleanedLink },
+        attributes: ['linkedin_link_id', 'clean_linkedin_link'],
+      });
+
+      if (matched) {
+        matchLink = cleanedLink;
+        linkedinLinkId = matched.linkedin_link_id;
+
+        // 🔁 Check if linkedin_link_id already exists in TempLinkMobile
+        const alreadyExists = await TempLinkMobile.findOne({
+          where: { linkedin_link_id: linkedinLinkId }
         });
-  
-        // Save matched link in TempLinkMobile
-        if (matchLink) {
+
+        if (!alreadyExists) {
           await TempLinkMobile.create({
             uniqueId,
             matchLink,
+            linkedin_link_id: linkedinLinkId,
           });
+
+          matchCount++; // count only when actually inserted
+        } else {
+          console.log(`Skipped duplicate linkedin_link_id: ${linkedinLinkId}`);
         }
       }
-  
-      fs.unlinkSync(filePath);
-  
-      res.json({
-        message: 'Upload successful',
+
+      // ✅ Always store in Link table (to track file import)
+      await Link.create({
         uniqueId,
+        email,
+        link,
+        totallink: links.length,
+        clean_link: cleanedLink,
+        remark,
         fileName: req.file.originalname,
-        
+        matchLink,
         matchCount,
       });
-  
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Upload failed' });
     }
-  });
-  
-  
-  
-  
+
+    fs.unlinkSync(filePath);
+
+    res.json({
+      message: 'Upload successful',
+      uniqueId,
+      fileName: req.file.originalname,
+      matchCount,
+    });
+
+  } catch (err) {
+    console.error('Upload error:', err);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
   
   
   
@@ -263,56 +275,69 @@ app.use('/api/links', linkRoutes);
   
   const cron = require('node-cron');
   
-  cron.schedule('*/30 * * * * *', async () => {
-    try {
-      console.log('⏳ Syncing TempLinkMobile to Link based on matchLink (excluding nulls)...');
-  
-      const tempRecords = await TempLinkMobile.findAll();
-  
-      for (const temp of tempRecords) {
-        const {
-          matchLink,
-          mobile_number,
-          mobile_number_2,
-          person_name,
-          person_location
-        } = temp;
-  
-        // ✅ Skip if any field is null
-        if (
-          !matchLink ||
-          mobile_number === null ||
-          mobile_number_2 === null ||
-          person_name === null ||
-          person_location === null
-        ) {
-          console.log(`⏭️ Skipping matchLink ${matchLink} due to null values.`);
-          continue;
-        }
-  
-        const [updatedCount] = await Link.update(
-          {
-            mobile_number,
-            mobile_number_2,
-            person_name,
-            person_location
-          },
-          {
-            where: { matchLink }
-          }
-        );
-  
-        if (updatedCount > 0) {
-          console.log(`✅ Updated ${updatedCount} Link record(s) for matchLink: ${matchLink}`);
-        }
+cron.schedule('*/10 * * * * *', async () => {
+  try {
+    console.log('🔄 Cron Job: Syncing TempLinkMobile ➝ Link...');
+
+    // Fetch all records from TempLinkMobile table
+    const tempRecords = await TempLinkMobile.findAll();
+
+    for (const temp of tempRecords) {
+      const {
+        matchLink,
+        mobile_number,
+        mobile_number_2,
+        person_name,
+        person_location
+      } = temp;
+
+      // Skip if matchLink is missing
+      if (!matchLink) continue;
+
+      // Check if matching record exists in Link table
+      const linkRecord = await Link.findOne({ where: { matchLink } });
+
+      if (!linkRecord) {
+        console.log(`⚠️ No Link found for matchLink: ${matchLink}`);
+        continue;
       }
-  
-      console.log('✅ Sync complete.');
-    } catch (err) {
-      console.error('❌ Error during sync:', err);
+
+      // Calculate status: completed if all values are present, otherwise pending
+      const status =
+        mobile_number &&
+        mobile_number_2 &&
+        person_name &&
+        person_location
+          ? 'completed'
+          : 'pending';
+
+      // Update Link table fields from TempLinkMobile
+      const updateData = {
+        mobile_number,
+        mobile_number_2,
+        person_name,
+        person_location,
+        status,
+      };
+
+      const [updated] = await Link.update(updateData, { where: { matchLink } });
+
+      if (updated > 0) {
+        console.log(`✅ Link updated for matchLink: ${matchLink} | Status: ${status}`);
+      }
     }
-  });
-  
+
+    console.log('✅ Sync complete.\n');
+  } catch (err) {
+    console.error('❌ Error during sync:', err);
+  }
+});
+
+
+
+
+
+
 
 
 

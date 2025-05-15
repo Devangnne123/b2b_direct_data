@@ -8,6 +8,11 @@ const TempLinkMobile = sequelize.define('TempLinkMobile', {
     defaultValue: DataTypes.UUIDV4,
     allowNull: false,
   },
+  linkedin_link_id: {
+  type: DataTypes.INTEGER,
+  allowNull: true,
+},
+
   matchLink: {
     type: DataTypes.STRING,
     allowNull: true,

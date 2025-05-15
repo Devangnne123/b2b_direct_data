@@ -3,9 +3,11 @@ const { sequelize } = require('../config/db');
 
 const MasterUrl = sequelize.define("masterurl", {
   linkedin_link_id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-  },
+  type: DataTypes.INTEGER,
+  primaryKey: true,
+  autoIncrement: true,
+},
+
   linkedin_link: {
     type: DataTypes.TEXT,
     allowNull: false,  // Prevent null values

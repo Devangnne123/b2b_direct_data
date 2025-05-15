@@ -71,7 +71,12 @@ const Link = sequelize.define('Link', {
     type: DataTypes.INTEGER, // <-- Add this field
     defaultValue: 0,
   },
-  
+status: {
+  type: DataTypes.STRING,
+  allowNull: true, // or false, based on your preference
+  // 🚫 No defaultValue here
+}
+
 }, {
   tableName: 'links',
   timestamps: false,
