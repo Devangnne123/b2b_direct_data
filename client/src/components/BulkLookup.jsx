@@ -2,11 +2,23 @@ import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 // import TempLinkMobileForm from "../components/TempLinkMobileForm";
-import SingleLinkLookup from "../components/SingleLinkLookup";
+// import SingleLinkLookup from "../components/SingleLinkLookup";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { FaCoins } from 'react-icons/fa';
-import { Download, Calendar, Users, Link as LinkIcon, FileSpreadsheet, Star, Database, Loader2, ChevronLeft, ChevronRight, Hash } from 'lucide-react';
+import { FaCoins } from "react-icons/fa";
+import {
+  Download,
+  Calendar,
+  Users,
+  Link as LinkIcon,
+  FileSpreadsheet,
+  Star,
+  Database,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Hash,
+} from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import "../css/BulkLookup.css";
 import "../css/UserS.css";
@@ -27,7 +39,11 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return <div className="error-fallback">Something went wrong. Please try again.</div>;
+      return (
+        <div className="error-fallback">
+          Something went wrong. Please try again.
+        </div>
+      );
     }
     return this.props.children;
   }
@@ -46,9 +62,14 @@ function BulkLookup() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
-  const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
+  const [sortConfig, setSortConfig] = useState({
+    key: "date",
+    direction: "desc",
+  });
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [uploadDetails, setUploadDetails] = useState(null);
+  const [pendingUpload, setPendingUpload] = useState(null);
+  const [processingStatus, setProcessingStatus] = useState({});
 
   const creditCost = 5;
 
@@ -61,15 +82,44 @@ function BulkLookup() {
     }
   }, []);
 
+  useEffect(() => {
+    const savedPendingUpload = localStorage.getItem("pendingUpload");
+    if (savedPendingUpload) {
+      setPendingUpload(JSON.parse(savedPendingUpload));
+      setShowConfirmation(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (pendingUpload) {
+      localStorage.setItem("pendingUpload", JSON.stringify(pendingUpload));
+    } else {
+      localStorage.removeItem("pendingUpload");
+    }
+  }, [pendingUpload]);
+
+
+
+
+
   const getGroupStatus = (group) => {
-    if (group.some(item => item.status === 'pending')) {
-      return 'pending';
-    }
-    if (group.some(item => !item.matchLink)) {
-      return 'incompleted';
-    }
-    return 'completed';
-  };
+  if (!group || group.length === 0) return "completed"; // Changed to "completed"
+  
+  const firstItem = group[0] || {};
+  
+  // Explicitly check for matchCount === 0 and return "completed"
+  if (firstItem.matchCount === 0) return "completed"; 
+  
+  if (group.some((item) => item.status === "pending")) {
+    return "pending";
+  }
+  if (group.some((item) => !item.matchLink)) {
+    return "incompleted";
+  }
+  return "completed";
+};
+
+
 
   const fetchCredits = async (email) => {
     try {
@@ -107,6 +157,21 @@ function BulkLookup() {
     }
   };
 
+
+  // When starting processing (in your upload/processing function)
+const startProcessing = (uniqueId) => {
+  setProcessingStatus(prev => ({...prev, [uniqueId]: true}));
+  
+  // After 15 seconds, remove processing status
+  setTimeout(() => {
+    setProcessingStatus(prev => {
+      const newState = {...prev};
+      delete newState[uniqueId];
+      return newState;
+    });
+  }, 15000);
+};
+
   const handleUpload = async () => {
     if (!file) return toast.error("Please choose a file to upload.");
     if (!savedEmail || savedEmail === "Guest")
@@ -121,19 +186,20 @@ function BulkLookup() {
       const res = await axios.post(
         "http://localhost:3000/upload-excel",
         formData,
-        {
-          headers: { "user-email": savedEmail },
-        }
+        { headers: { "user-email": savedEmail } }
       );
 
-      setUploadDetails({
+      const uploadData = {
+        file: file.name, // Store just the name, not the File object
         matchCount: res.data.matchCount,
         uniqueId: res.data.uniqueId,
-        creditToDeduct: res.data.matchCount * creditCost
-      });
-      
+        creditToDeduct: res.data.matchCount * creditCost,
+        timestamp: new Date().toISOString(),
+      };
+
+      setPendingUpload(uploadData);
       setShowConfirmation(true);
-      
+      startProcessing(res.data.uniqueId);
     } catch (err) {
       toast.error(err.response?.data?.message || "Upload failed");
       console.error(err);
@@ -143,70 +209,111 @@ function BulkLookup() {
   };
 
   const confirmUpload = async () => {
+    if (!pendingUpload) return;
+
     setLoading(true);
     try {
       const creditRes = await axios.post(
         "http://localhost:3000/api/upload-file",
         {
           userEmail: savedEmail,
-          creditCost: uploadDetails.creditToDeduct,
-          uniqueId: uploadDetails.uniqueId,
+          creditCost: pendingUpload.creditToDeduct,
+          uniqueId: pendingUpload.uniqueId,
         }
       );
 
       const newCredits = creditRes.data.updatedCredits;
       setCredits(newCredits);
 
-      setDeductedCreditsMap((prev) => ({
-        ...prev,
-        [uploadDetails.uniqueId]: uploadDetails.creditToDeduct,
-      }));
-
       toast.success(
-        <div>
-          <h4>✅ Processing Complete!</h4>
-          <table className="toast-table">
-            <tbody>
-              <tr>
-                <td><strong>📌 Unique ID:</strong></td>
-                <td>{uploadDetails.uniqueId}</td>
-              </tr>
-              <tr>
-                <td><strong>💳 Credits Deducted:</strong></td>
-                <td>{uploadDetails.creditToDeduct}</td>
-              </tr>
-              <tr>
-                <td><strong>💸 Remaining Credits:</strong></td>
-                <td>{newCredits}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>,
-        {
-          position: "top-center",
-          autoClose: 5000,
-        }
+        `Processing complete! Deducted ${pendingUpload.creditToDeduct} credits`
       );
 
+      // Clear the pending state
+      setPendingUpload(null);
       setFile(null);
       document.querySelector('input[type="file"]').value = null;
-      fetchUserLinks(savedEmail);
+
+      // Refresh data
+      await fetchUserLinks(savedEmail);
     } catch (err) {
       toast.error("Failed to confirm processing");
       console.error(err);
     } finally {
       setLoading(false);
       setShowConfirmation(false);
-      setUploadDetails(null);
     }
   };
 
-  const cancelUpload = () => {
-    setShowConfirmation(false);
-    setUploadDetails(null);
-    toast.info("Upload canceled");
+  const cancelUpload = async () => {
+    if (!pendingUpload?.uniqueId) {
+      setShowConfirmation(false);
+      setPendingUpload(null);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Call API to clean up the canceled upload
+      await axios.delete(
+        `http://localhost:3000/cancel-upload/${pendingUpload.uniqueId}`
+      );
+
+      toast.info("Upload canceled - all data removed");
+    } catch (err) {
+      toast.error("Failed to completely cancel upload");
+      console.error(err);
+    } finally {
+      // Clear state regardless of API success
+      setPendingUpload(null);
+      setFile(null);
+      document.querySelector('input[type="file"]').value = null;
+      setLoading(false);
+      setShowConfirmation(false);
+    }
   };
 
+  function PendingUploadAlert({ onConfirm, onCancel, pendingUpload }) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-6 rounded-lg max-w-md w-full">
+          <h3 className="text-lg font-bold mb-4">Confirm Upload</h3>
+          <div className="space-y-4 mb-6">
+            <p>You have an unconfirmed upload:</p>
+            <div className="bg-gray-100 p-4 rounded">
+              <p>
+                <strong>File:</strong> {pendingUpload.file}
+              </p>
+              <p>
+                <strong>Matches:</strong> {pendingUpload.matchCount}
+              </p>
+              <p>
+                <strong>Credits to deduct:</strong>{" "}
+                {pendingUpload.creditToDeduct}
+              </p>
+            </div>
+            <p className="text-sm text-gray-600">
+              This dialog will persist until you choose an option.
+            </p>
+          </div>
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+            >
+              Cancel Upload
+            </button>
+            <button
+              onClick={onConfirm}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Confirm & Process
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const handleSearch = () => {
     if (searchId.trim() === "") {
       setFilteredData(uploadedData);
@@ -219,9 +326,9 @@ function BulkLookup() {
   };
 
   const requestSort = (key) => {
-    let direction = 'desc';
-    if (sortConfig.key === key && sortConfig.direction === 'desc') {
-      direction = 'asc';
+    let direction = "desc";
+    if (sortConfig.key === key && sortConfig.direction === "desc") {
+      direction = "asc";
     }
     setSortConfig({ key, direction });
   };
@@ -241,31 +348,31 @@ function BulkLookup() {
     let entries = Object.entries(grouped);
 
     return entries.sort((a, b) => {
-      if (sortConfig.key === 'status') {
+      if (sortConfig.key === "status") {
         const aStatus = getGroupStatus(a[1]);
         const bStatus = getGroupStatus(b[1]);
-        return sortConfig.direction === 'desc' 
+        return sortConfig.direction === "desc"
           ? bStatus.localeCompare(aStatus)
           : aStatus.localeCompare(bStatus);
       }
 
-      const aValue = a[1][0]?.[sortConfig.key] || '';
-      const bValue = b[1][0]?.[sortConfig.key] || '';
-      
-      if (sortConfig.key === 'date') {
+      const aValue = a[1][0]?.[sortConfig.key] || "";
+      const bValue = b[1][0]?.[sortConfig.key] || "";
+
+      if (sortConfig.key === "date") {
         const dateA = new Date(aValue);
         const dateB = new Date(bValue);
-        return sortConfig.direction === 'desc' ? dateB - dateA : dateA - dateB;
+        return sortConfig.direction === "desc" ? dateB - dateA : dateA - dateB;
       }
-      
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortConfig.direction === 'desc' 
-          ? bValue.localeCompare(aValue) 
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortConfig.direction === "desc"
+          ? bValue.localeCompare(aValue)
           : aValue.localeCompare(bValue);
       }
-      
-      return sortConfig.direction === 'desc' 
-        ? bValue - aValue 
+
+      return sortConfig.direction === "desc"
+        ? bValue - aValue
         : aValue - bValue;
     });
   }, [filteredData, sortConfig]);
@@ -278,84 +385,81 @@ function BulkLookup() {
     });
 
     const rowData = sortedGroup.map((entry) => {
-  const matchLink = entry?.matchLink || null;
+      const matchLink = entry?.matchLink || null;
 
-  const mobile_number = entry?.mobile_number || 'N/A';
-  const mobile_number_2 = entry?.mobile_number_2 || 'N/A';
-  const person_name = entry?.person_name || 'N/A';
-  const person_location = entry?.person_location || 'N/A';
+      const mobile_number = entry?.mobile_number || "N/A";
+      const mobile_number_2 = entry?.mobile_number_2 || "N/A";
+      const person_name = entry?.person_name || "N/A";
+      const person_location = entry?.person_location || "N/A";
 
-  let status = 'Completed';
+      let status = "Completed";
 
-  if (!matchLink) {
-    status = 'Incompleted';
-  } else if (
-    mobile_number === 'N/A' ||
-    mobile_number_2 === 'N/A' ||
-    person_name === 'N/A' ||
-    person_location === 'N/A'
-  ) {
-    status = 'Pending';
-  }
+      if (!matchLink) {
+        status = "Incompleted";
+      } else if (mobile_number === "N/A") {
+        status = "Pending";
+      }
 
-  return {
-    fileName: entry?.fileName || 'Unknown',
-    uniqueId: entry?.uniqueId || 'Unknown',
-    matchCount: entry?.matchCount || 0,
-    totallinks: entry?.totallink || 0,
-    date: entry?.date ? new Date(entry.date).toLocaleString() : 'Unknown',
-    status,
-    link: matchLink || 'N/A',
-    mobile_number,
-    mobile_number_2,
-    person_name,
-    person_location,
-  };
-});
-
-
+      return {
+        fileName: entry?.fileName || "Unknown",
+        uniqueId: entry?.uniqueId || "Unknown",
+        matchCount: entry?.matchCount || 0,
+        totallinks: entry?.totallink || 0,
+        date: entry?.date ? new Date(entry.date).toLocaleString() : "Unknown",
+        status,
+        link: matchLink || "N/A",
+        mobile_number,
+        mobile_number_2,
+        person_name,
+        person_location,
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(rowData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "LinkData");
-    XLSX.writeFile(workbook, `LinkData_${group[0]?.uniqueId || 'data'}.xlsx`);
+    XLSX.writeFile(workbook, `LinkData_${group[0]?.uniqueId || "data"}.xlsx`);
   };
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentEntries = sortedGroupedEntries.slice(indexOfFirstRow, indexOfLastRow);
+  const currentEntries = sortedGroupedEntries.slice(
+    indexOfFirstRow,
+    indexOfLastRow
+  );
   const totalPages = Math.ceil(sortedGroupedEntries.length / rowsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
-  const nextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
+  const nextPage = () =>
+    currentPage < totalPages && setCurrentPage(currentPage + 1);
   const prevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Unknown date';
+    if (!dateString) return "Unknown date";
     const date = new Date(dateString);
     return date.toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "2-digit",
       year: "2-digit",
       hour: "2-digit",
-      minute: "2-digit"
+      minute: "2-digit",
     });
   };
 
   const SortableHeader = ({ children, sortKey }) => {
     const isActive = sortConfig.key === sortKey;
-    const isDesc = sortConfig.direction === 'desc';
+    const isDesc = sortConfig.direction === "desc";
 
     return (
-      <th 
+      <th
         onClick={() => requestSort(sortKey)}
-        className={`cursor-pointer hover:bg-gray-100 ${isActive ? 'font-bold' : ''}`}
+        className={`cursor-pointer hover:bg-gray-100 ${
+          isActive ? "font-bold" : ""
+        }`}
       >
         <div className="flex items-center gap-1">
           {children}
-          {isActive && (
-            <span>{isDesc ? '↓' : '↑'}</span>
-          )}
+          {isActive && <span>{isDesc ? "↓" : "↑"}</span>}
         </div>
       </th>
     );
@@ -389,19 +493,20 @@ function BulkLookup() {
                   </li>
                   <li>
                     <p className="title-des2">
-                      Upload Excel files containing LinkedIn URLs for bulk processing
+                      Upload Excel files containing LinkedIn URLs for bulk
+                      processing
                     </p>
                   </li>
                   <h1 className="title-head">LinkedIn Data Enrichment</h1>
                 </div>
               </nav>
-              
+
               <section>
                 <div className="main-body0">
                   <div className="main-body1">
                     <div className="left">
                       <div className="upload-section">
-                        <div className="email-input-group">
+                        {/* <div className="email-input-group">
                           <input
                             type="email"
                             value={email}
@@ -409,34 +514,52 @@ function BulkLookup() {
                             placeholder="you@example.com"
                             className="email-input"
                           />
-                          <button 
-                            onClick={handleEmailSave} 
+                          <button
+                            onClick={handleEmailSave}
                             className="save-email-btn"
                           >
                             Save Email
                           </button>
-                        </div>
+                        </div> */}
 
-                        <p className="logged-in-as">
+                        {/* <p className="logged-in-as">
                           <strong>Logged in as:</strong> {savedEmail}
-                        </p>
+                        </p> */}
 
                         <div className="file-upload-group">
-                          <label htmlFor="file-input" className="file-upload-label">
+                          <label
+                            htmlFor="file-input"
+                            className={`file-upload-label ${
+                              showConfirmation ? "disabled" : ""
+                            }`}
+                          >
                             <FileSpreadsheet className="file-icon" />
-                            <span>{file ? file.name : "Choose Excel File"}</span>
+                            <span>
+                              {file ? file.name : "Choose Excel File"}
+                            </span>
                           </label>
                           <input
                             type="file"
                             id="file-input"
                             accept=".xlsx, .xls"
-                            onChange={(e) => setFile(e.target.files[0])}
+                            onChange={(e) =>
+                              !showConfirmation && setFile(e.target.files[0])
+                            }
                             className="file-input"
+                            disabled={showConfirmation}
                           />
                           <button
                             onClick={handleUpload}
-                            className="upload-btn"
-                            disabled={!savedEmail || savedEmail === "Guest" || credits < creditCost || loading}
+                            className={`upload-btn ${
+                              showConfirmation ? "disabled" : ""
+                            }`}
+                            disabled={
+                              !savedEmail ||
+                              savedEmail === "Guest" ||
+                              credits < creditCost ||
+                              loading ||
+                              showConfirmation
+                            }
                           >
                             {loading ? (
                               <Loader2 className="animate-spin h-4 w-4" />
@@ -447,42 +570,17 @@ function BulkLookup() {
                         </div>
                       </div>
 
-                      {showConfirmation && (
-                        <div className="confirmation-modal">
-                          <div className="confirmation-content">
-                            <h3>Confirm Processing</h3>
-                            <div className="confirmation-details">
-                              <p><strong>File matches found:</strong> {uploadDetails.matchCount}</p>
-                              <p><strong>Credits to deduct:</strong> {uploadDetails.creditToDeduct}</p>
-                              <p><strong>Remaining credits after:</strong> {credits - uploadDetails.creditToDeduct}</p>
-                            </div>
-                            <div className="confirmation-buttons">
-                              <button 
-                                onClick={cancelUpload}
-                                className="cancel-btn"
-                                disabled={loading}
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={confirmUpload}
-                                className="confirm-btn"
-                                disabled={loading}
-                              >
-                                {loading ? (
-                                  <Loader2 className="animate-spin h-4 w-4" />
-                                ) : (
-                                  "Confirm & Process"
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
+                      {showConfirmation && pendingUpload && (
+                        <PendingUploadAlert
+                          onConfirm={confirmUpload}
+                          onCancel={cancelUpload}
+                          pendingUpload={pendingUpload}
+                        />
                       )}
 
-                      {uploadedData.length > 0 && (
+                      {uploadedData.length > 0 && !showConfirmation && (
                         <div className="history-table">
-                          <div className="search-section">
+                          {/* <div className="search-section">
                             <div className="search-input-group">
                               <input
                                 type="text"
@@ -491,18 +589,23 @@ function BulkLookup() {
                                 onChange={(e) => setSearchId(e.target.value)}
                                 className="search-input"
                               />
-                              <button onClick={handleSearch} className="search-btn">
+                              <button
+                                onClick={handleSearch}
+                                className="search-btn"
+                              >
                                 Search
                               </button>
                             </div>
-                          </div>
+                          </div> */}
 
                           <h3 className="section-title">Your Uploaded Files</h3>
 
                           {loading ? (
                             <div className="loading-state">
                               <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
-                              <p className="text-gray-600 mt-2">Loading data...</p>
+                              <p className="text-gray-600 mt-2">
+                                Loading data...
+                              </p>
                             </div>
                           ) : currentEntries.length > 0 ? (
                             <>
@@ -555,85 +658,112 @@ function BulkLookup() {
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {currentEntries.map(([uniqueId, group], idx) => {
-                                      const first = group[0] || {};
-                                      const status = getGroupStatus(group);
-                                      
-                                      return (
-                                        <tr key={idx}>
-                                          <td>{indexOfFirstRow + idx + 1}</td>
-                                          <td className="font-mono text-sm">{uniqueId}</td>
-                                          <td>
-                                            <div className="flex items-center gap-2">
-                                              <FileSpreadsheet className="h-4 w-4 text-blue-500" />
-                                              <span className="truncate max-w-[180px]">
-                                                {first.fileName || 'Unknown'}
-                                              </span>
-                                            </div>
-                                          </td>
-                                          <td>{first.totallink || 0}</td>
-                                          <td>{first.matchCount || 0}</td>
-                                          <td>
-                                            <div className={`status-badge ${
-                                              status === 'pending' ? 'pending' : 
-                                              status === 'incompleted' ? 'completed' : 'completed'
-                                            }`}>
-                                              {status === 'pending' ? 'Pending' : 
-                                               status === 'incompleted' ? 'completed' : 'Completed'}
-                                            </div>
-                                          </td>
-                                          <td>{formatDate(first.date)}</td>
-                                          <td>
-                                            <div className="flex items-center gap-1">
-                                              <FaCoins className="text-yellow-500" />
-                                              <span>{first.creditDeducted || 0}</span>
-                                            </div>
-                                          </td>
-                                          <td>
-                                            <button
-                                              onClick={() => downloadGroupedEntry(group)}
-                                              className="download-btn"
-                                              // disabled={status !== 'completed'}
-                                              title={status !== 'completed' ? 
-                                                `Download available only when status is Completed (Current: ${status})` : ""}
-                                            >
-                                              <Download className="h-4 w-4" />
-                                              <span className="hidden md:inline">Download</span>
-                                            </button>
-                                          </td>
-                                        </tr>
-                                      );
-                                    })}
+                                    {currentEntries.map(
+                                      ([uniqueId, group], idx) => {
+                                        const first = group[0] || {};
+                                        const status = getGroupStatus(group);
+
+                                        return (
+                                          <tr key={idx}>
+                                            <td>{indexOfFirstRow + idx + 1}</td>
+                                            <td className="font-mono text-sm">
+                                              {uniqueId}
+                                            </td>
+                                            <td>
+                                              <div className="flex items-center gap-2">
+                                                <FileSpreadsheet className="h-4 w-4 text-blue-500" />
+                                                <span className="truncate max-w-[180px]">
+                                                  {first.fileName || "Unknown"}
+                                                </span>
+                                              </div>
+                                            </td>
+                                            <td>{first.totallink || 0}</td>
+                                            <td>{first.matchCount || 0}</td>
+                                           
+ <td>
+  <div className={`status-badge ${
+    processingStatus[uniqueId] ? 'processing' :
+    status === "pending" ? "pending" : 
+    status === "incompleted" ? "completed" : "incompleted"
+  }`}>
+    {processingStatus[uniqueId] ? "Processing..." :
+     status === "pending" ? "Pending" : 
+     status === "incompleted" ? "completed" : "inCompleted"}
+  </div>
+</td>
+                                            <td>{formatDate(first.date)}</td>
+                                            <td>
+                                              <div className="flex items-center gap-1">
+                                                <FaCoins className="text-yellow-500" />
+                                                <span>
+                                                  {first.creditDeducted || 0}
+                                                </span>
+                                              </div>
+                                            </td>
+                                            <td>
+                                              <button
+                                                onClick={() =>
+                                                  downloadGroupedEntry(group)
+                                                }
+                                                className="download-btn"
+                                                // disabled={status !== 'completed'}
+                                                title={
+                                                  status !== "completed"
+                                                    ? `Download available only when status is Completed (Current: ${status})`
+                                                    : ""
+                                                }
+                                              >
+                                                <Download className="h-4 w-4" />
+                                                <span className="hidden md:inline">
+                                                  Download
+                                                </span>
+                                              </button>
+                                            </td>
+                                          </tr>
+                                        );
+                                      }
+                                    )}
                                   </tbody>
                                 </table>
                               </div>
 
                               {sortedGroupedEntries.length > rowsPerPage && (
                                 <div className="pagination-controls">
-                                  <button 
-                                    onClick={prevPage} 
+                                  <button
+                                    onClick={prevPage}
                                     disabled={currentPage === 1}
-                                    className={`pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
+                                    className={`pagination-btn ${
+                                      currentPage === 1 ? "disabled" : ""
+                                    }`}
                                     aria-label="Previous page"
                                   >
                                     <ChevronLeft className="h-4 w-4" />
                                   </button>
-                                  
-                                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+
+                                  {Array.from(
+                                    { length: totalPages },
+                                    (_, i) => i + 1
+                                  ).map((number) => (
                                     <button
                                       key={number}
                                       onClick={() => paginate(number)}
-                                      className={`pagination-btn ${currentPage === number ? 'active' : ''}`}
+                                      className={`pagination-btn ${
+                                        currentPage === number ? "active" : ""
+                                      }`}
                                       aria-label={`Page ${number}`}
                                     >
                                       {number}
                                     </button>
                                   ))}
-                                  
-                                  <button 
-                                    onClick={nextPage} 
+
+                                  <button
+                                    onClick={nextPage}
                                     disabled={currentPage === totalPages}
-                                    className={`pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
+                                    className={`pagination-btn ${
+                                      currentPage === totalPages
+                                        ? "disabled"
+                                        : ""
+                                    }`}
                                     aria-label="Next page"
                                   >
                                     <ChevronRight className="h-4 w-4" />
@@ -652,9 +782,9 @@ function BulkLookup() {
                   </div>
                 </div>
               </section>
-              
+
               {/* <TempLinkMobileForm /> */}
-              <SingleLinkLookup />
+              {/* <SingleLinkLookup /> */}
               <ToastContainer position="top-center" autoClose={5000} />
             </div>
           </div>

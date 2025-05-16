@@ -72,26 +72,17 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
       if (matched) {
         matchLink = cleanedLink;
         linkedinLinkId = matched.linkedin_link_id;
+        matchCount++; // ✅ count all matches, including duplicates
 
-        // 🔁 Check if linkedin_link_id already exists in TempLinkMobile
-        const alreadyExists = await TempLinkMobile.findOne({
-          where: { linkedin_link_id: linkedinLinkId }
+        // ✅ Insert every matched link (even duplicates) into TempLinkMobile
+        await TempLinkMobile.create({
+          uniqueId,
+          matchLink,
+          linkedin_link_id: linkedinLinkId,
         });
-
-        if (!alreadyExists) {
-          await TempLinkMobile.create({
-            uniqueId,
-            matchLink,
-            linkedin_link_id: linkedinLinkId,
-          });
-
-          matchCount++; // count only when actually inserted
-        } else {
-          console.log(`Skipped duplicate linkedin_link_id: ${linkedinLinkId}`);
-        }
       }
 
-      // ✅ Always store in Link table (to track file import)
+      // ✅ Always store in Link table
       await Link.create({
         uniqueId,
         email,
@@ -101,7 +92,8 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
         remark,
         fileName: req.file.originalname,
         matchLink,
-        matchCount,
+        linkedin_link_id: linkedinLinkId,
+        matchCount, // optional
       });
     }
 
@@ -119,8 +111,17 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
     res.status(500).json({ error: 'Upload failed' });
   }
 });
-  
-  
+
+
+
+
+
+
+
+
+
+
+
   
   // backend/server.js
   app.get('/get-links', async (req, res) => {
@@ -143,6 +144,32 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
   
   
   
+
+
+  // Add this to your server routes
+app.delete('/cancel-upload/:uniqueId', async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+    
+    // Delete from both tables in a transaction
+    await sequelize.transaction(async (t) => {
+      await TempLinkMobile.destroy({ 
+        where: { uniqueId },
+        transaction: t 
+      });
+      
+      await Link.destroy({ 
+        where: { uniqueId },
+        transaction: t 
+      });
+    });
+
+    res.json({ success: true, message: 'Upload canceled and data deleted' });
+  } catch (err) {
+    console.error('Cancel upload error:', err);
+    res.status(500).json({ error: 'Failed to cancel upload' });
+  }
+});
   
   
   
@@ -284,34 +311,38 @@ cron.schedule('*/10 * * * * *', async () => {
 
     for (const temp of tempRecords) {
       const {
-        matchLink,
+        id, // required to delete
+        uniqueId,
+        linkedin_link_id,
         mobile_number,
         mobile_number_2,
         person_name,
         person_location
       } = temp;
 
-      // Skip if matchLink is missing
-      if (!matchLink) continue;
-
-      // Check if matching record exists in Link table
-      const linkRecord = await Link.findOne({ where: { matchLink } });
-
-      if (!linkRecord) {
-        console.log(`⚠️ No Link found for matchLink: ${matchLink}`);
+      // Skip if linkedin_link_id or uniqueId is missing
+      if (!linkedin_link_id || !uniqueId) {
+        console.log(`⚠️ Skipping record: Missing linkedin_link_id or uniqueId`);
         continue;
       }
 
-      // Calculate status: completed if all values are present, otherwise pending
-      const status =
-        mobile_number &&
-        mobile_number_2 &&
-        person_name &&
-        person_location
-          ? 'completed'
-          : 'pending';
+      // Find matching Link record
+      const linkRecord = await Link.findOne({
+        where: {
+          linkedin_link_id,
+          uniqueId,
+        }
+      });
 
-      // Update Link table fields from TempLinkMobile
+      if (!linkRecord) {
+        console.log(`⚠️ No Link found for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId}`);
+        continue;
+      }
+
+      // Determine status
+      const status = mobile_number ? 'completed' : 'pending';
+
+      // Prepare data for update
       const updateData = {
         mobile_number,
         mobile_number_2,
@@ -320,10 +351,21 @@ cron.schedule('*/10 * * * * *', async () => {
         status,
       };
 
-      const [updated] = await Link.update(updateData, { where: { matchLink } });
+      const [updated] = await Link.update(updateData, {
+        where: {
+          linkedin_link_id,
+          uniqueId,
+        },
+      });
 
       if (updated > 0) {
-        console.log(`✅ Link updated for matchLink: ${matchLink} | Status: ${status}`);
+        console.log(`✅ Link updated for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId} | Status: ${status}`);
+
+        // ✅ If status is completed, delete from TempLinkMobile
+        if (status === 'completed') {
+          await TempLinkMobile.destroy({ where: { id } });
+          console.log(`🗑️ Deleted TempLinkMobile record with id: ${id}`);
+        }
       }
     }
 
@@ -332,6 +374,7 @@ cron.schedule('*/10 * * * * *', async () => {
     console.error('❌ Error during sync:', err);
   }
 });
+
 
 
 

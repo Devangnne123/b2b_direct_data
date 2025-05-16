@@ -27,6 +27,10 @@ const Link = sequelize.define('Link', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+    linkedin_link_id: {
+  type: DataTypes.INTEGER,
+  allowNull: true,
+},
   matchCount: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
@@ -73,9 +77,10 @@ const Link = sequelize.define('Link', {
   },
 status: {
   type: DataTypes.STRING,
-  allowNull: true, // or false, based on your preference
-  // 🚫 No defaultValue here
+  allowNull: true,        // or true if you want to allow null values
+  // defaultValue: 'pending', // ✅ sets default value to 'pending'
 }
+
 
 }, {
   tableName: 'links',
