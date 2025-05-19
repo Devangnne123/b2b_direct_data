@@ -3,7 +3,9 @@ import axios from "axios";
 import * as XLSX from "xlsx";
 // import TempLinkMobileForm from "../components/TempLinkMobileForm";
 // import SingleLinkLookup from "../components/SingleLinkLookup";
+import Usertrans  from "../components/Usertrans";
 import { ToastContainer, toast } from "react-toastify";
+
 import "react-toastify/dist/ReactToastify.css";
 import { FaCoins } from "react-icons/fa";
 import {
@@ -785,12 +787,14 @@ const startProcessing = (uniqueId) => {
 
               {/* <TempLinkMobileForm /> */}
               {/* <SingleLinkLookup /> */}
+              
               <ToastContainer position="top-center" autoClose={5000} />
             </div>
           </div>
         </div>
       </div>
     </ErrorBoundary>
+   
   );
 }
 

@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import "../css/UserS.css";
 import { 
-  RefreshCw, Calendar, Mail, ArrowRight, 
+  RefreshCw, Calendar, Mail, ArrowRight, ArrowDownLeft, ArrowUpRight,
   CreditCard, Hash, ChevronLeft, ChevronRight, 
-  Loader2, Search 
+  Loader2, Search, Plus, Minus 
 } from 'lucide-react';
 
 const AdminCreditReport = () => {
@@ -25,7 +25,16 @@ const AdminCreditReport = () => {
       const data = await response.json();
 
       if (data.success) {
-        setTransactions(data.data);
+        // Process transactions to determine credit/debit
+        const processedTxns = data.data.map(txn => {
+          const isCredit = txn.recipientEmail === userEmail;
+          return {
+            ...txn,
+            isCredit,
+            displayAmount: isCredit ? Math.abs(txn.amount) : -Math.abs(txn.amount)
+          };
+        });
+        setTransactions(processedTxns);
       } else {
         setError("Failed to fetch transactions.");
       }
@@ -56,10 +65,6 @@ const AdminCreditReport = () => {
   const currentRows = filteredTxns.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(filteredTxns.length / rowsPerPage);
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-  const nextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
-  const prevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
-
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-GB", {
@@ -71,8 +76,22 @@ const AdminCreditReport = () => {
     });
   };
 
-  const getAmountClass = (amount) => {
-    return amount > 0 ? 'credit' : 'debit';
+  const renderAmountCell = (amount, isCredit) => {
+    return (
+      <div className={`flex items-center gap-1 ${isCredit ? 'text-green-500' : 'text-red-500'}`}>
+        {isCredit ? (
+          <>
+            <Plus className="h-4 w-4" />
+            <span>+{Math.abs(amount)}</span>
+          </>
+        ) : (
+          <>
+            <Minus className="h-4 w-4" />
+            <span>-{Math.abs(amount)}</span>
+          </>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -86,7 +105,6 @@ const AdminCreditReport = () => {
               <div className="main-title">
                 <li className="profile">
                   <p className="title">Credit Transactions</p>
-                  
                 </li>
                 <li>
                   <p className="title-des2">
@@ -193,7 +211,7 @@ const AdminCreditReport = () => {
                                     <th>
                                       <div className="flex items-center justify-center gap-1">
                                         <CreditCard className="h-4 w-4" />
-                                        <span>Remaining</span>
+                                        <span>Balance</span>
                                       </div>
                                     </th>
                                   </tr>
@@ -206,12 +224,16 @@ const AdminCreditReport = () => {
                                         <td>{formatDate(txn.date)}</td>
                                         <td>{txn.senderEmail || "System"}</td>
                                         <td>
-                                          <ArrowRight className="h-4 w-4 text-gray-500" />
+                                          {txn.isCredit ? (
+                                            <ArrowDownLeft className="h-4 w-4 text-green-500" />
+                                          ) : (
+                                            <ArrowUpRight className="h-4 w-4 text-red-500" />
+                                          )}
                                         </td>
                                         <td>{txn.recipientEmail || "N/A"}</td>
-                                        <td>{txn.transactionType || "Credit Assigned"}</td>
-                                        <td className={getAmountClass(txn.amount)}>
-                                          {txn.amount > 0 ? `+${txn.amount}` : txn.amount}
+                                        <td>{txn.transactionType || "Credit Transfer"}</td>
+                                        <td>
+                                          {renderAmountCell(txn.displayAmount, txn.isCredit)}
                                         </td>
                                         <td>{txn.remainingCredits || "N/A"}</td>
                                       </tr>
@@ -230,7 +252,7 @@ const AdminCreditReport = () => {
                             {filteredTxns.length > rowsPerPage && (
                               <div className="pagination-controls">
                                 <button 
-                                  onClick={prevPage} 
+                                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                   disabled={currentPage === 1}
                                   className={`pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
                                 >
@@ -240,7 +262,7 @@ const AdminCreditReport = () => {
                                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
                                   <button
                                     key={number}
-                                    onClick={() => paginate(number)}
+                                    onClick={() => setCurrentPage(number)}
                                     className={`pagination-btn ${currentPage === number ? 'active' : ''}`}
                                   >
                                     {number}
@@ -248,7 +270,7 @@ const AdminCreditReport = () => {
                                 ))}
                                 
                                 <button 
-                                  onClick={nextPage} 
+                                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                   disabled={currentPage === totalPages}
                                   className={`pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
                                 >
@@ -266,7 +288,7 @@ const AdminCreditReport = () => {
                                   <div className="card-header">
                                     <div className="txn-type">
                                       <CreditCard className="h-4 w-4" />
-                                      <span>{txn.transactionType || "Credit Assigned"}</span>
+                                      <span>{txn.transactionType || "Credit Transfer"}</span>
                                     </div>
                                     <div className="date-badge">
                                       <Calendar className="h-4 w-4" />
@@ -280,7 +302,11 @@ const AdminCreditReport = () => {
                                         <span className="label">From:</span>
                                         <span>{txn.senderEmail || "System"}</span>
                                       </div>
-                                      <ArrowRight className="h-4 w-4 text-gray-500" />
+                                      {txn.isCredit ? (
+                                        <ArrowDownLeft className="h-4 w-4 text-green-500" />
+                                      ) : (
+                                        <ArrowUpRight className="h-4 w-4 text-red-500" />
+                                      )}
                                       <div className="recipient">
                                         <span className="label">To:</span>
                                         <span>{txn.recipientEmail || "N/A"}</span>
@@ -288,12 +314,12 @@ const AdminCreditReport = () => {
                                     </div>
                                     
                                     <div className="txn-details">
-                                      <div className={`amount ${getAmountClass(txn.amount)}`}>
+                                      <div className={`amount ${txn.isCredit ? 'credit' : 'debit'}`}>
                                         <span>Amount:</span>
-                                        <span>{txn.amount > 0 ? `+${txn.amount}` : txn.amount}</span>
+                                        {renderAmountCell(txn.displayAmount, txn.isCredit)}
                                       </div>
                                       <div className="remaining">
-                                        <span>Remaining:</span>
+                                        <span>Balance:</span>
                                         <span>{txn.remainingCredits || "N/A"}</span>
                                       </div>
                                     </div>
@@ -309,7 +335,7 @@ const AdminCreditReport = () => {
                             {filteredTxns.length > rowsPerPage && (
                               <div className="mobile-pagination">
                                 <button 
-                                  onClick={prevPage} 
+                                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                   disabled={currentPage === 1}
                                   className={`pagination-btn ${currentPage === 1 ? 'disabled' : ''}`}
                                 >
@@ -319,7 +345,7 @@ const AdminCreditReport = () => {
                                   Page {currentPage} of {totalPages}
                                 </span>
                                 <button 
-                                  onClick={nextPage} 
+                                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                   disabled={currentPage === totalPages}
                                   className={`pagination-btn ${currentPage === totalPages ? 'disabled' : ''}`}
                                 >

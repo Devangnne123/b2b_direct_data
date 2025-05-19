@@ -1,9 +1,19 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { 
-  Users, ArrowUpDown, Database, Download, Calendar, 
-  CreditCard, ArrowUpRight, ArrowDownLeft, Loader2, 
-  ChevronLeft, ChevronRight, FileSpreadsheet,
-  FileText, FileInput, AlertCircle, Coins, Mail, Plus, Minus
+  Users, 
+  ArrowUpDown, 
+  Database, 
+  Download, 
+  Calendar, 
+  CreditCard, 
+  ArrowUpRight, 
+  ArrowDownLeft, 
+  Loader2, 
+  ChevronLeft, 
+  ChevronRight,
+  FileSpreadsheet,
+  FileText,
+  FileInput
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import axios from "axios";
@@ -12,13 +22,11 @@ import "react-toastify/dist/ReactToastify.css";
 
 const UserCreditReport = () => {
   const [transactions, setTransactions] = useState([]);
-  const [adminCredits, setAdminCredits] = useState([]);
   const [fileUploads, setFileUploads] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("all"); // 'all', 'transactions', 'uploads'
   const [sortConfig, setSortConfig] = useState({
     key: "date",
     direction: "desc",
@@ -32,56 +40,22 @@ const UserCreditReport = () => {
 
   const fetchCreditData = async () => {
     setLoading(true);
-    setError(null);
     try {
-      const [userTxnsRes, adminTxnsRes, uploadsRes] = await Promise.all([
+      // Fetch both transactions and file uploads in parallel
+      const [transactionsRes, uploadsRes] = await Promise.all([
         axios.get(`http://localhost:3000/transactions/credit-transactions/${userEmail}`),
-        axios.get(`http://localhost:3000/super-admin/get-credit-transactions`),
         axios.get(`http://localhost:3000/get-links`, {
           headers: { "user-email": userEmail }
         })
       ]);
 
-      // Process user transactions
-      const processedUserTxns = (userTxnsRes.data?.data || []).map(t => ({
-        ...t,
-        type: "USER_TRANSACTION",
-        sortKey: new Date(t.transactionDate || t.createdAt),
-        displayDate: t.transactionDate || t.createdAt,
-        description: t.transactionType,
-        icon: <CreditCard className="h-4 w-4 text-purple-500" />,
-        amount: t.receiverEmail === userEmail ? Math.abs(t.amount) : -Math.abs(t.amount),
-        isCredit: t.receiverEmail === userEmail,
-        sender: t.senderEmail,
-        receiver: t.receiverEmail
-      }));
-
-      // Process admin transactions where user is the recipient
-      const processedAdminCredits = (adminTxnsRes.data?.data || [])
-        .filter(txn => txn.recipientEmail === userEmail)
-        .map(txn => ({
-          ...txn,
-          type: "ADMIN_CREDIT",
-          sortKey: new Date(txn.date),
-          displayDate: txn.date,
-          description: "Admin Credit Assignment",
-          icon: <Mail className="h-4 w-4 text-blue-500" />,
-          amount: Math.abs(txn.amount),
-          isCredit: true,
-          sender: txn.senderEmail,
-          receiver: txn.recipientEmail
-        }));
-
-      // Process file uploads
+      setTransactions(transactionsRes.data.data || []);
+      
+      // Process file uploads to match transaction format
       const processedUploads = processFileUploads(uploadsRes.data || []);
-
-      setTransactions(processedUserTxns);
-      setAdminCredits(processedAdminCredits);
       setFileUploads(processedUploads);
-
     } catch (error) {
-      console.error("API Error:", error);
-      setError("Failed to load credit history. Please try again later.");
+      console.error("Error fetching credit data:", error);
       toast.error("Failed to load credit history");
     } finally {
       setLoading(false);
@@ -89,21 +63,15 @@ const UserCreditReport = () => {
   };
 
   const processFileUploads = (uploads) => {
-    if (!Array.isArray(uploads)) {
-      console.error("Uploads data is not an array:", uploads);
-      return [];
-    }
-
+    // Group uploads by uniqueId
     const groupedUploads = {};
-    uploads.forEach((item) => {
+    uploads.forEach(item => {
       if (!item?.uniqueId) return;
-      
       if (!groupedUploads[item.uniqueId]) {
         groupedUploads[item.uniqueId] = {
           ...item,
           count: 1,
-          totalCredits: item.creditDeducted || 0,
-          date: item.date || new Date().toISOString()
+          totalCredits: item.creditDeducted || 0
         };
       } else {
         groupedUploads[item.uniqueId].count += 1;
@@ -111,64 +79,78 @@ const UserCreditReport = () => {
       }
     });
 
+    // Convert to array and format for display
     return Object.values(groupedUploads).map(upload => ({
       id: upload.uniqueId,
+      date: upload.date,
       type: "FILE_UPLOAD",
-      sortKey: new Date(upload.date),
-      displayDate: upload.date,
-      description: `File Processing: ${upload.fileName || 'Unknown'}`,
+      description: `File: ${upload.fileName || 'Unknown'}`,
       details: `${upload.matchCount || 0} matches (${upload.count} links)`,
       amount: -(upload.totalCredits || 0),
       remainingCredits: upload.remainingCredits,
       fileName: upload.fileName,
-      matchCount: upload.matchCount,
-      icon: <FileInput className="h-4 w-4 text-orange-500" />,
-      isCredit: false
+      matchCount: upload.matchCount
     }));
   };
 
   const requestSort = (key) => {
-    setSortConfig(prev => ({
-      key,
-      direction: prev.key === key && prev.direction === "desc" ? "asc" : "desc"
-    }));
+    let direction = "desc";
+    if (sortConfig.key === key && sortConfig.direction === "desc") {
+      direction = "asc";
+    }
+    setSortConfig({ key, direction });
   };
 
   const sortedData = useMemo(() => {
-    let data = [];
+    const allData = [];
     
-    if (activeTab === "all") {
-      data = [...transactions, ...adminCredits, ...fileUploads];
-    } else if (activeTab === "transactions") {
-      data = [...transactions];
-    } else if (activeTab === "admin") {
-      data = [...adminCredits];
-    } else if (activeTab === "uploads") {
-      data = [...fileUploads];
+    if (activeTab === "all" || activeTab === "transactions") {
+      allData.push(...transactions.map(t => ({
+        ...t,
+        sortKey: new Date(t.transactionDate || t.createdAt),
+        type: "TRANSACTION"
+      })));
+    }
+    
+    if (activeTab === "all" || activeTab === "uploads") {
+      allData.push(...fileUploads.map(u => ({
+        ...u,
+        sortKey: new Date(u.date),
+        type: "FILE_UPLOAD"
+      })));
     }
 
-    return data.sort((a, b) => {
+    return allData.sort((a, b) => {
+      // Handle different date fields
+      const aValue = a.sortKey;
+      const bValue = b.sortKey;
+
       if (sortConfig.key === "amount") {
         return sortConfig.direction === "desc" 
           ? Math.abs(b.amount) - Math.abs(a.amount)
           : Math.abs(a.amount) - Math.abs(b.amount);
       }
-      
-      return sortConfig.direction === "desc" 
-        ? b.sortKey - a.sortKey 
-        : a.sortKey - b.sortKey;
-    });
-  }, [transactions, adminCredits, fileUploads, activeTab, sortConfig]);
 
+      return sortConfig.direction === "desc" 
+        ? bValue - aValue 
+        : aValue - aValue;
+    });
+  }, [transactions, fileUploads, activeTab, sortConfig]);
+
+  // Pagination logic
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
 
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const nextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
+  const prevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
+
   const formatDate = (dateString) => {
     if (!dateString) return "Unknown date";
     const date = new Date(dateString);
-    return isNaN(date) ? "Invalid date" : date.toLocaleDateString("en-GB", {
+    return date.toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -177,25 +159,23 @@ const UserCreditReport = () => {
     });
   };
 
-  const renderAmountCell = (amount, isCredit) => {
+  const getTransactionIcon = (type) => {
+    switch (type) {
+      case "FILE_UPLOAD":
+        return <FileInput className="h-4 w-4 text-blue-500" />;
+      case "TRANSACTION":
+        return <CreditCard className="h-4 w-4 text-purple-500" />;
+      default:
+        return <CreditCard className="h-4 w-4" />;
+    }
+  };
+
+  const renderAmountCell = (amount) => {
+    const isNegative = amount < 0;
     return (
-      <div className="flex items-center gap-1">
-        {isCredit ? (
-          <>
-            <ArrowDownLeft className="h-4 w-4 text-green-500" />
-            <span className="font-medium text-green-500">
-              +{Math.abs(amount)}
-            </span>
-          </>
-        ) : (
-          <>
-            <ArrowUpRight className="h-4 w-4 text-red-500" />
-            <span className="font-medium text-red-500">
-              -{Math.abs(amount)}
-            </span>
-          </>
-        )}
-      </div>
+      <span className={`font-medium ${isNegative ? "text-red-500" : "text-green-500"}`}>
+        {isNegative ? "" : "+"}{amount}
+      </span>
     );
   };
 
@@ -207,16 +187,19 @@ const UserCreditReport = () => {
         <div className="right-side">
           <div className="right-p">
             <nav className="main-head">
+              <li className="back1">
+                {/* Back button can be added here if needed */}
+              </li>
               <div className="main-title">
                 <li className="profile">
                   <p className="title">Credit Report</p>
                 </li>
                 <li>
                   <p className="title-des2">
-                    View your complete credit history including admin assignments
+                    View your credit transactions and file processing history
                   </p>
                 </li>
-                <h1 className="title-head">Complete Credit History</h1>
+                <h1 className="title-head">Credit History</h1>
               </div>
             </nav>
 
@@ -229,86 +212,80 @@ const UserCreditReport = () => {
                       <p>Detailed breakdown of all credit transactions including file processing deductions.</p>
                     </div>
 
-                    {process.env.NODE_ENV === "development" && (
-                      <div className="debug-info p-4 mb-4 bg-gray-100 rounded">
-                        <h3 className="font-bold mb-2">Debug Information</h3>
-                        <p>User: {userEmail}</p>
-                        <p>Transactions: {transactions.length}</p>
-                        <p>Admin Credits: {adminCredits.length}</p>
-                        <p>File Uploads: {fileUploads.length}</p>
-                        <p>Active Tab: {activeTab}</p>
-                        <p>Sorted Data: {sortedData.length}</p>
-                        <button 
-                          onClick={fetchCreditData}
-                          className="mt-2 px-3 py-1 bg-blue-500 text-white rounded"
-                        >
-                          Refresh Data
-                        </button>
-                      </div>
-                    )}
-
+                    {/* Tabs */}
                     <div className="credit-tabs">
-                      <button 
+                      <button
                         className={`tab-btn ${activeTab === "all" ? "active" : ""}`}
-                        onClick={() => { setActiveTab("all"); setCurrentPage(1); }}
+                        onClick={() => {
+                          setActiveTab("all");
+                          setCurrentPage(1);
+                        }}
                       >
                         All History
                       </button>
-                      <button 
+                      <button
                         className={`tab-btn ${activeTab === "transactions" ? "active" : ""}`}
-                        onClick={() => { setActiveTab("transactions"); setCurrentPage(1); }}
+                        onClick={() => {
+                          setActiveTab("transactions");
+                          setCurrentPage(1);
+                        }}
                       >
                         Transactions
                       </button>
-                      <button 
-                        className={`tab-btn ${activeTab === "admin" ? "active" : ""}`}
-                        onClick={() => { setActiveTab("admin"); setCurrentPage(1); }}
-                      >
-                        Admin Credits
-                      </button>
-                      <button 
+                      <button
                         className={`tab-btn ${activeTab === "uploads" ? "active" : ""}`}
-                        onClick={() => { setActiveTab("uploads"); setCurrentPage(1); }}
+                        onClick={() => {
+                          setActiveTab("uploads");
+                          setCurrentPage(1);
+                        }}
                       >
                         File Processing
                       </button>
                     </div>
 
-                    {error && (
-                      <div className="error-alert mb-4">
-                        <div className="flex items-center gap-2 p-3 bg-red-100 text-red-700 rounded">
-                          <AlertCircle className="h-5 w-5" />
-                          <span>{error}</span>
-                        </div>
-                      </div>
-                    )}
-
                     <div className="history-table">
                       {loading ? (
                         <div className="loading-state">
                           <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
-                          <p className="text-gray-600 mt-2">Loading credit history...</p>
+                          <p className="text-gray-600 mt-2">
+                            Loading credit history...
+                          </p>
                         </div>
                       ) : (
                         <>
+                          {/* Desktop View */}
                           <div className="desktop-view">
                             <div className="table-wrapper">
                               <table className="statistics-table">
                                 <thead>
                                   <tr>
-                                    <th onClick={() => requestSort("date")}>
-                                      <div className="flex items-center gap-1">
+                                    <th 
+                                      onClick={() => requestSort("date")}
+                                      className="cursor-pointer hover:bg-gray-100"
+                                    >
+                                      <div className="flex items-center justify-center gap-1">
                                         <Calendar className="h-4 w-4" />
-                                        Date
+                                        {sortConfig.key === "date" && (
+                                          <span>{sortConfig.direction === "desc" ? "↓" : "↑"}</span>
+                                        )}
                                       </div>
                                     </th>
-                                    <th>Type</th>
+                                    <th>
+                                      <div className="flex items-center justify-center gap-1">
+                                        <Database className="h-4 w-4" />
+                                        Type
+                                      </div>
+                                    </th>
                                     <th>Description</th>
-                                    <th>From/To</th>
-                                    <th onClick={() => requestSort("amount")}>
-                                      <div className="flex items-center gap-1">
-                                        <Coins className="h-4 w-4" />
-                                        Amount
+                                    <th 
+                                      onClick={() => requestSort("amount")}
+                                      className="cursor-pointer hover:bg-gray-100"
+                                    >
+                                      <div className="flex items-center justify-center gap-1">
+                                        <ArrowUpDown className="h-4 w-4" />
+                                        {sortConfig.key === "amount" && (
+                                          <span>{sortConfig.direction === "desc" ? "↓" : "↑"}</span>
+                                        )}
                                       </div>
                                     </th>
                                     <th>Balance</th>
@@ -317,17 +294,14 @@ const UserCreditReport = () => {
                                 <tbody>
                                   {currentRows.length > 0 ? (
                                     currentRows.map((item, index) => (
-                                      <tr key={index} className="hover:bg-gray-50">
-                                        <td>{formatDate(item.displayDate)}</td>
+                                      <tr key={index} className="hover:bg-gray-50 transition-colors">
+                                        <td>{formatDate(item.date || item.transactionDate || item.createdAt)}</td>
                                         <td>
                                           <div className="flex items-center gap-2">
-                                            {item.icon}
-                                            <span>
-                                              {item.type === "ADMIN_CREDIT" 
-                                                ? "Admin Credit" 
-                                                : item.type === "FILE_UPLOAD"
-                                                ? "File Process"
-                                                : "Transaction"}
+                                            {getTransactionIcon(item.type)}
+                                            <span className="capitalize">
+                                              {item.type === "FILE_UPLOAD" ? "File Process" : 
+                                               item.transactionType?.toLowerCase() || "Transaction"}
                                             </span>
                                           </div>
                                         </td>
@@ -336,36 +310,35 @@ const UserCreditReport = () => {
                                             <div>
                                               <div className="font-medium">{item.fileName || "Unknown file"}</div>
                                               <div className="text-sm text-gray-500">
-                                                {item.matchCount || 0} matches
+                                                {item.matchCount || 0} matches processed
                                               </div>
                                             </div>
                                           ) : (
-                                            <div>{item.description}</div>
+                                            <div>
+                                              <div className="font-medium">
+                                                {item.senderEmail === userEmail ? (
+                                                  <span>To: {item.userEmail || item.receiverEmail}</span>
+                                                ) : (
+                                                  <span>From: {item.senderEmail}</span>
+                                                )}
+                                              </div>
+                                              <div className="text-sm text-gray-500">
+                                                {item.transactionType}
+                                              </div>
+                                            </div>
                                           )}
                                         </td>
                                         <td>
-                                          {item.type === "ADMIN_CREDIT" ? (
-                                            <div>From Admin: {item.sender}</div>
-                                          ) : item.sender === userEmail ? (
-                                            <div>To: {item.receiver}</div>
-                                          ) : (
-                                            <div>From: {item.sender}</div>
-                                          )}
+                                          {renderAmountCell(item.amount)}
                                         </td>
                                         <td>
-                                          {renderAmountCell(item.amount, item.isCredit)}
-                                        </td>
-                                        <td>
-                                          <div className="flex items-center gap-1">
-                                            <CreditCard className="h-4 w-4 text-yellow-500" />
-                                            <span>{item.remainingCredits ?? "N/A"}</span>
-                                          </div>
+                                          {item.remainingCredits !== undefined ? item.remainingCredits : "N/A"}
                                         </td>
                                       </tr>
                                     ))
                                   ) : (
                                     <tr>
-                                      <td colSpan="6" className="no-data">
+                                      <td colSpan="5" className="no-data">
                                         No {activeTab === "all" ? "history" : activeTab} found.
                                       </td>
                                     </tr>
@@ -374,30 +347,40 @@ const UserCreditReport = () => {
                               </table>
                             </div>
 
+                            {/* Pagination Controls */}
                             {sortedData.length > rowsPerPage && (
                               <div className="pagination-controls">
-                                <button 
-                                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                <button
+                                  onClick={prevPage}
                                   disabled={currentPage === 1}
-                                  className={`pagination-btn ${currentPage === 1 ? "disabled" : ""}`}
+                                  className={`pagination-btn ${
+                                    currentPage === 1 ? "disabled" : ""
+                                  }`}
                                 >
                                   <ChevronLeft className="h-4 w-4" />
                                 </button>
 
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                                {Array.from(
+                                  { length: totalPages },
+                                  (_, i) => i + 1
+                                ).map((number) => (
                                   <button
                                     key={number}
-                                    onClick={() => setCurrentPage(number)}
-                                    className={`pagination-btn ${currentPage === number ? "active" : ""}`}
+                                    onClick={() => paginate(number)}
+                                    className={`pagination-btn ${
+                                      currentPage === number ? "active" : ""
+                                    }`}
                                   >
                                     {number}
                                   </button>
                                 ))}
 
-                                <button 
-                                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                <button
+                                  onClick={nextPage}
                                   disabled={currentPage === totalPages}
-                                  className={`pagination-btn ${currentPage === totalPages ? "disabled" : ""}`}
+                                  className={`pagination-btn ${
+                                    currentPage === totalPages ? "disabled" : ""
+                                  }`}
                                 >
                                   <ChevronRight className="h-4 w-4" />
                                 </button>
@@ -405,29 +388,29 @@ const UserCreditReport = () => {
                             )}
                           </div>
 
+                          {/* Mobile View */}
                           <div className="mobile-view11">
                             {currentRows.length > 0 ? (
                               currentRows.map((item, index) => (
                                 <div key={index} className="stat-card_credit">
                                   <div className="card-header">
                                     <div className="flex items-center gap-2">
-                                      {item.icon}
+                                      {getTransactionIcon(item.type)}
                                       <div>
                                         <div className="transaction-type">
-                                          {item.type === "ADMIN_CREDIT" 
-                                            ? "Admin Credit" 
-                                            : item.type === "FILE_UPLOAD"
-                                            ? "File Process"
-                                            : "Transaction"}
+                                          {item.type === "FILE_UPLOAD" ? "File Processing" : 
+                                           item.transactionType || "Transaction"}
                                         </div>
                                         <div className="date-badge">
                                           <Calendar className="h-4 w-4" />
-                                          <span>{formatDate(item.displayDate)}</span>
+                                          <span>
+                                            {formatDate(item.date || item.transactionDate || item.createdAt)}
+                                          </span>
                                         </div>
                                       </div>
                                     </div>
                                     <div className="amount-badge">
-                                      {renderAmountCell(item.amount, item.isCredit)}
+                                      {renderAmountCell(item.amount)}
                                     </div>
                                   </div>
 
@@ -443,20 +426,13 @@ const UserCreditReport = () => {
                                             </div>
                                           </>
                                         ) : (
-                                          <div>{item.description}</div>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    <div className="stat-row">
-                                      <span className="stat-label">Direction:</span>
-                                      <div>
-                                        {item.type === "ADMIN_CREDIT" ? (
-                                          <div>From Admin: {item.sender}</div>
-                                        ) : item.sender === userEmail ? (
-                                          <div>To: {item.receiver}</div>
-                                        ) : (
-                                          <div>From: {item.sender}</div>
+                                          <>
+                                            {item.senderEmail === userEmail ? (
+                                              <div>To: {item.userEmail || item.receiverEmail}</div>
+                                            ) : (
+                                              <div>From: {item.senderEmail}</div>
+                                            )}
+                                          </>
                                         )}
                                       </div>
                                     </div>
@@ -478,22 +454,27 @@ const UserCreditReport = () => {
                               </div>
                             )}
 
+                            {/* Mobile Pagination Controls */}
                             {sortedData.length > rowsPerPage && (
                               <div className="mobile-pagination">
-                                <button 
-                                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                <button
+                                  onClick={prevPage}
                                   disabled={currentPage === 1}
-                                  className={`pagination-btn ${currentPage === 1 ? "disabled" : ""}`}
+                                  className={`pagination-btn ${
+                                    currentPage === 1 ? "disabled" : ""
+                                  }`}
                                 >
                                   <ChevronLeft className="h-4 w-4" /> Prev
                                 </button>
                                 <span className="page-info">
                                   Page {currentPage} of {totalPages}
                                 </span>
-                                <button 
-                                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                <button
+                                  onClick={nextPage}
                                   disabled={currentPage === totalPages}
-                                  className={`pagination-btn ${currentPage === totalPages ? "disabled" : ""}`}
+                                  className={`pagination-btn ${
+                                    currentPage === totalPages ? "disabled" : ""
+                                  }`}
                                 >
                                   Next <ChevronRight className="h-4 w-4" />
                                 </button>
