@@ -348,9 +348,16 @@ cron.schedule('*/10 * * * * *', async () => {
         console.log(`⚠️ No Link found for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId}`);
         continue;
       }
+let status;
 
-      // Determine status
-      const status = (mobile_number || mobile_number_2) ? 'completed' : 'pending';
+if (
+  (mobile_number === null || mobile_number === "N/A") &&
+  (mobile_number_2 === null || mobile_number_2 === "N/A")
+) {
+  status = "pending";
+} else {
+  status = "completed";
+}
 
       // Prepare data for update
       const updateData = {
@@ -466,70 +473,34 @@ app.get('/api/credit-cost', async (req, res) => {
   try {
     const { email } = req.query;
 
-    // Validate email parameter
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: 'Email query parameter is required',
-        code: 'MISSING_EMAIL'
+        message: 'Email query parameter is required'
       });
     }
 
-    // Validate email format
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid email format',
-        code: 'INVALID_EMAIL'
-      });
-    }
-
-    // Normalize email to lowercase
-    const normalizedEmail = email.toLowerCase().trim();
-
-    // Find user with only the needed attribute
     const user = await User.findOne({
-      where: { userEmail: normalizedEmail },
-      attributes: ['creditCostPerLink'],
-      raw: true // Returns plain object instead of model instance
+      where: { userEmail: email },
+      attributes: ['creditCostPerLink']
     });
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found',
-        code: 'USER_NOT_FOUND'
+        message: 'User not found'
       });
     }
 
-    // Successful response
     res.json({
       success: true,
-      data: {
-        creditCostPerLink: user.creditCostPerLink
-      },
-      meta: {
-        requestedAt: new Date().toISOString()
-      }
+      creditCostPerLink: user.creditCostPerLink
     });
-
   } catch (error) {
     console.error('Error fetching credit cost:', error);
-    
-    // More specific error handling
-    if (error.name === 'SequelizeConnectionError') {
-      return res.status(503).json({
-        success: false,
-        message: 'Service unavailable - database error',
-        code: 'DB_CONNECTION_ERROR'
-      });
-    }
-
-    // Generic server error
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      code: 'INTERNAL_ERROR'
+      message: 'Server error'
     });
   }
 });

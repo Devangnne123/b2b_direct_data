@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
-import Usertrans from "../components/Usertrans";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaCoins } from "react-icons/fa";
@@ -53,34 +52,67 @@ function BulkLookup() {
   const [email, setEmail] = useState("");
   const [savedEmail, setSavedEmail] = useState("Guest");
   const [uploadedData, setUploadedData] = useState([]);
-  const [searchId, setSearchId] = useState("");
   const [filteredData, setFilteredData] = useState([]);
   const [credits, setCredits] = useState(null);
-  const [deductedCreditsMap, setDeductedCreditsMap] = useState({});
   const [loading, setLoading] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
-  const [loadingcost, setLoadingcost] = useState(true);
+    const [shouldRefresh, setShouldRefresh] = useState(false);
   const [sortConfig, setSortConfig] = useState({
     key: "date",
     direction: "desc",
   });
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [uploadDetails, setUploadDetails] = useState(null);
   const [pendingUpload, setPendingUpload] = useState(null);
   const [processingStatus, setProcessingStatus] = useState({});
-   const [creditCost, setCreditCost] = useState(null);
+  const [creditCost, setCreditCost] = useState(5);
+  const dataRef = useRef({ uploadedData: [], credits: null });
 
+  // Silent data refresh function
+  const silentRefresh = useCallback(async () => {
+    try {
+      if (!savedEmail || savedEmail === "Guest") return;
+      
+      const [linksRes, creditsRes] = await Promise.all([
+        axios.get("http://localhost:3000/get-links", {
+          headers: { "user-email": savedEmail },
+        }),
+        axios.get(`http://localhost:3000/api/user/${savedEmail}`)
+      ]);
 
+      // Only update state if data actually changed
+      if (JSON.stringify(linksRes.data) !== JSON.stringify(dataRef.current.uploadedData)) {
+        setUploadedData(linksRes.data || []);
+        setFilteredData(linksRes.data || []);
+        dataRef.current.uploadedData = linksRes.data || [];
+      }
+
+      if (creditsRes.data.credits !== dataRef.current.credits) {
+        setCredits(creditsRes.data.credits);
+        dataRef.current.credits = creditsRes.data.credits;
+      }
+    } catch (error) {
+      console.error("Silent refresh error:", error);
+    }
+  }, [savedEmail]);
+
+  // Set up silent refresh every 10 seconds
+  useEffect(() => {
+    // Initial load
+    silentRefresh();
+    
+    // Set up interval
+    const intervalId = setInterval(silentRefresh, 10000);
+    
+    // Clean up
+    return () => clearInterval(intervalId);
+  }, [silentRefresh]);
 
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
     if (user?.email) {
       setSavedEmail(user.email);
-      fetchUserLinks(user.email);
-      fetchCredits(user.email);
-      // fetchCreditCost(user.email);
+      fetchCreditCost(user.email);
     }
   }, []);
 
@@ -92,173 +124,99 @@ function BulkLookup() {
     }
   }, []);
 
-
-
-   useEffect(() => {
-    const fetchAdminCreditCost = async () => {
-      try {
-        const response = await axios.get("http://localhost:3000/users/getAllAdmin");
-        if (response.data && response.data.users) {
-          // Find the admin user matching the current email
-          const adminUser = response.data.users.find(
-            (user) => user.userEmail === savedEmail
-          );
-          if (adminUser) {
-            setCreditCost(adminUser.creditCostPerLink || 5);
-          }
+  const fetchCreditCost = async (email) => {
+    try {
+      const response = await axios.get("http://localhost:3000/users/getAllAdmin");
+      if (response.data && response.data.users) {
+        const adminUser = response.data.users.find(
+          (user) => user.userEmail === email
+        );
+        if (adminUser) {
+          setCreditCost(adminUser.creditCostPerLink || 5);
         }
-      } catch (error) {
-        console.error("Error fetching admin credit cost:", error);
-        toast.error("Failed to load credit cost settings");
-      } finally {
-        setLoadingCost(false);
       }
-    };
-
-    if (savedEmail && savedEmail !== "Guest") {
-      fetchAdminCreditCost();
+    } catch (error) {
+      console.error("Error fetching admin credit cost:", error);
     }
-  }, [savedEmail]);
-
-
-// const fetchCreditCost = async (email) => {
-//   if (!email) {
-//     console.error('Email is required');
-//     return;
-//   }
-
-//   setLoadingcost(true);
-  
-//   try {
-//     const response = await axios.get('http://localhost:3000/api/credit-cost', {
-//       params: { email } // This will create /api/credit-cost?email=user@example.com
-//     });
-    
-//     setCreditCost(response.data.creditCostPerLink);
-//   } catch (err) {
-//     console.error('Error fetching credit cost:', err);
-//     toast.error(err.response?.data?.message || 'Failed to fetch credit cost');
-//   } finally {
-//     setLoadingcost(false);
-//   }
-// };
-
-
-
-  useEffect(() => {
-    if (pendingUpload) {
-      localStorage.setItem("pendingUpload", JSON.stringify(pendingUpload));
-    } else {
-      localStorage.removeItem("pendingUpload");
-    }
-  }, [pendingUpload]);
+  };
 
   const getGroupStatus = (group) => {
-  if (!group || group.length === 0) return "completed"; // Changed to "completed"
-  
-  const firstItem = group[0] || {};
-  
-  // Explicitly check for matchCount === 0 and return "completed"
-  if (firstItem.matchCount === 0) return "completed"; 
-  
-  if (group.some((item) => item.status === "pending")) {
-    return "pending";
-  }
-  if (group.some((item) => !item.matchLink)) {
-    return "incompleted";
-  }
-  return "completed";
-};
-
-  const fetchCredits = async (email) => {
-    try {
-      const res = await axios.get(`http://localhost:3000/api/user/${email}`);
-      setCredits(res.data.credits);
-    } catch (err) {
-      toast.error("Failed to fetch credits");
-      console.error(err);
+    if (!group || group.length === 0) return "completed";
+    
+    const firstItem = group[0] || {};
+    const uniqueId = firstItem.uniqueId;
+    
+    // Check if we have processing status for this group
+    if (processingStatus[uniqueId]) {
+      return processingStatus[uniqueId].status;
     }
+    
+    // Original status logic
+    if (firstItem.matchCount === 0) return "completed";
+    if (group.some(item => item.status === "pending")) return "pending";
+    if (group.some(item => item.status === "processing")) return "processing";
+    if (group.every(item => item.matchLink)) return "pending";
+    return "incompleted";
   };
 
-  const handleEmailSave = () => {
-    if (!email.trim()) return toast.error("Please enter a valid email");
-    const user = { email };
-    sessionStorage.setItem("user", JSON.stringify(user));
-    setSavedEmail(email);
-    toast.success("Email saved successfully!");
-    fetchUserLinks(email);
-    fetchCredits(email);
-  };
+  const handleUpload = async () => {
+    if (!file) return toast.error("Please choose a file to upload.");
+    if (!savedEmail || savedEmail === "Guest")
+      return toast.error("Please save your email first");
+    if (credits < creditCost) return toast.error("Not enough credits");
 
-  const fetchUserLinks = async (email) => {
     setLoading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
     try {
-      const res = await axios.get("http://localhost:3000/get-links", {
-        headers: { "user-email": email },
-      });
-      setUploadedData(res.data || []);
-      setFilteredData(res.data || []);
+      const res = await axios.post(
+        "http://localhost:3000/upload-excel",
+        formData,
+        { headers: { "user-email": savedEmail } }
+      );
+
+      const totalLinks = res.data.totallink || res.data.totalLinks || 0;
+      const uploadData = {
+        file: file.name,
+        matchCount: res.data.matchCount || 0,
+        totallink: totalLinks,
+        uniqueId: res.data.uniqueId,
+        creditToDeduct: res.data.matchCount * creditCost,
+        timestamp: new Date().toISOString(),
+      };
+      
+      setPendingUpload(uploadData);
+      setShowConfirmation(true);
+      
+      // Set processing status with timeout
+      setProcessingStatus(prev => ({
+        ...prev,
+        [res.data.uniqueId]: {
+          status: "processing",
+          startTime: Date.now()
+        }
+      }));
+      
+      // Set timeout to update status after 20 seconds
+      setTimeout(() => {
+        setProcessingStatus(prev => ({
+          ...prev,
+          [res.data.uniqueId]: {
+            ...prev[res.data.uniqueId],
+            status: "completed"
+          }
+        }));
+      }, 30000); // 20 seconds
+
     } catch (err) {
-      toast.error("Failed to fetch uploaded links");
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const startProcessing = (uniqueId) => {
-    setProcessingStatus(prev => ({...prev, [uniqueId]: true}));
-    setTimeout(() => {
-      setProcessingStatus(prev => {
-        const newState = {...prev};
-        delete newState[uniqueId];
-        return newState;
-      });
-    }, 15000);
-  };
-
- const handleUpload = async () => {
-  if (!file) return toast.error("Please choose a file to upload.");
-  if (!savedEmail || savedEmail === "Guest")
-    return toast.error("Please save your email first");
-  if (credits < creditCost) return toast.error("Not enough credits");
-
-  setLoading(true);
-  const formData = new FormData();
-  formData.append("file", file);
-
-  try {
-    const res = await axios.post(
-      "http://localhost:3000/upload-excel",
-      formData,
-      { headers: { "user-email": savedEmail } }
-    );
-
-    // Calculate total credits to deduct based on creditCostPerLink (5 per link)
-    const totalLinks = res.data.totallink || res.data.totalLinks || 0;
-   
-
-    const uploadData = {
-      file: file.name,
-      matchCount: res.data.matchCount || 0,
-      totallink: totalLinks,
-      uniqueId: res.data.uniqueId,
-      creditToDeduct: res.data.matchCount * creditCost,
-      timestamp: new Date().toISOString(),
-    };
-    
-    setPendingUpload(uploadData);
-    setShowConfirmation(true);
-    startProcessing(res.data.uniqueId);
-  } catch (err) {
-    toast.error(err.response?.data?.message || "Upload failed");
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const confirmUpload = async () => {
+ const confirmUpload = async () => {
     if (!pendingUpload) return;
 
     setLoading(true);
@@ -269,21 +227,17 @@ function BulkLookup() {
           userEmail: savedEmail,
           creditCost: pendingUpload.creditToDeduct,
           uniqueId: pendingUpload.uniqueId,
-          
         }
       );
 
-      const newCredits = creditRes.data.updatedCredits;
-      setCredits(newCredits);
-
-      toast.success(
-        `Processing complete! Deducted ${pendingUpload.creditToDeduct} credits`
-      );
-
+      setCredits(creditRes.data.updatedCredits);
+      toast.success(`Processing complete! Deducted ${pendingUpload.creditToDeduct} credits`);
       setPendingUpload(null);
       setFile(null);
       document.querySelector('input[type="file"]').value = null;
-      await fetchUserLinks(savedEmail);
+      
+      // Set flag to refresh after 20 seconds
+      setShouldRefresh(true);
     } catch (err) {
       toast.error("Failed to confirm processing");
       console.error(err);
@@ -292,6 +246,17 @@ function BulkLookup() {
       setShowConfirmation(false);
     }
   };
+
+  // Add this useEffect to handle the refresh
+  useEffect(() => {
+    if (!shouldRefresh) return;
+    
+    const timer = setTimeout(() => {
+      window.location.reload();
+    }, 20000); // 20 seconds
+    
+    return () => clearTimeout(timer);
+  }, [shouldRefresh]);
 
   const cancelUpload = async () => {
     if (!pendingUpload?.uniqueId) {
@@ -306,6 +271,13 @@ function BulkLookup() {
         `http://localhost:3000/cancel-upload/${pendingUpload.uniqueId}`
       );
       toast.info("Upload canceled - all data removed");
+      
+      // Remove processing status if canceled
+      setProcessingStatus(prev => {
+        const newStatus = {...prev};
+        delete newStatus[pendingUpload.uniqueId];
+        return newStatus;
+      });
     } catch (err) {
       toast.error("Failed to completely cancel upload");
       console.error(err);
@@ -318,65 +290,49 @@ function BulkLookup() {
     }
   };
 
- function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits }) {
-  const totalLinks = pendingUpload.totallink || 0;
-  const matchCount = pendingUpload.matchCount || 0;
-  const notFoundCount = totalLinks - matchCount;
-  const creditsToDeduct = pendingUpload.creditToDeduct || 0;
-  const remainingCredits = currentCredits - creditsToDeduct;
+  function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits }) {
+    const totalLinks = pendingUpload.totallink || 0;
+    const matchCount = pendingUpload.matchCount || 0;
+    const notFoundCount = totalLinks - matchCount;
+    const creditsToDeduct = pendingUpload.creditToDeduct || 0;
+    const remainingCredits = currentCredits - creditsToDeduct;
 
- return (
- <div className="modal-container">
-  <h3 className="modal-heading">Confirm Upload</h3>
-
-  <div className="modal-content-space">
-    <p className="text-gray-800">You have an unconfirmed upload:</p>
-
-    <div className="info-box">
-      <p><strong>📄 File:</strong> {pendingUpload.file}</p>
-      <p><strong>🔗 Total Links:</strong> {totalLinks}</p>
-      <p className="text-green-600"><strong>✅ Matches Found:</strong> {matchCount}</p>
-      <p className="text-red-600"><strong>❌ Not Found:</strong> {notFoundCount}</p>
-      <p><strong>💳 Credits to Deduct:</strong> {creditsToDeduct}</p>
-      <p className="font-bold"><strong>🧮 Remaining Credits:</strong> {remainingCredits}</p>
-    </div>
-
-    <p className="text-sm text-gray-600 text-center">
-      This dialog will persist until you choose an option.
-    </p>
-  </div>
-
-  <div className="buttons-container">
-    <button onClick={onCancel} className="cancel-button">
-      <span>❌</span>
-      <span>Cancel Upload</span>
-    </button>
-
-    <button
-      onClick={onConfirm}
-      className="confirm-button"
-      disabled={remainingCredits < 0}
-      title={remainingCredits < 0 ? "Not enough credits" : ""}
-      style={remainingCredits < 0 ? {backgroundColor: '#9ca3af', cursor: 'not-allowed'} : {}}
-    >
-      <span>✅</span>
-      <span>Confirm & Process</span>
-    </button>
-  </div>
-</div>
-
-);
- }
-  const handleSearch = () => {
-    if (searchId.trim() === "") {
-      setFilteredData(uploadedData);
-    } else {
-      const result = uploadedData.filter((item) =>
-        item?.uniqueId?.toLowerCase().includes(searchId.toLowerCase())
-      );
-      setFilteredData(result || []);
-    }
-  };
+    return (
+      <div className="modal-container">
+        <h3 className="modal-heading">Confirm Upload</h3>
+        <div className="modal-content-space">
+          <p className="text-gray-800">You have an unconfirmed upload:</p>
+          <div className="info-box">
+            <p><strong>📄 File:</strong> {pendingUpload.file}</p>
+            <p><strong>🔗 Total Links:</strong> {totalLinks}</p>
+            <p className="text-green-600"><strong>✅ Matches Found:</strong> {matchCount}</p>
+            <p className="text-red-600"><strong>❌ Not Found:</strong> {notFoundCount}</p>
+            <p><strong>💳 Credits to Deduct:</strong> {creditsToDeduct}</p>
+            <p className="font-bold"><strong>🧮 Remaining Credits:</strong> {remainingCredits}</p>
+          </div>
+          <p className="text-sm text-gray-600 text-center">
+            This dialog will persist until you choose an option.
+          </p>
+        </div>
+        <div className="buttons-container">
+          <button onClick={onCancel} className="cancel-button">
+            <span>❌</span>
+            <span>Cancel Upload</span>
+          </button>
+          <button
+            onClick={onConfirm}
+            className="confirm-button"
+            disabled={remainingCredits < 0}
+            title={remainingCredits < 0 ? "Not enough credits" : ""}
+            style={remainingCredits < 0 ? {backgroundColor: '#9ca3af', cursor: 'not-allowed'} : {}}
+          >
+            <span>✅</span>
+            <span>Confirm & Process</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const requestSort = (key) => {
     let direction = "desc";
@@ -428,7 +384,7 @@ function BulkLookup() {
         ? bValue - aValue
         : aValue - bValue;
     });
-  }, [filteredData, sortConfig]);
+  }, [filteredData, sortConfig, processingStatus]);
 
   const downloadGroupedEntry = (group) => {
     const sortedGroup = [...group].sort((a, b) => {
@@ -439,17 +395,17 @@ function BulkLookup() {
 
     const rowData = sortedGroup.map((entry) => {
       const matchLink = entry?.matchLink || null;
-
       const mobile_number = entry?.mobile_number || "N/A";
       const mobile_number_2 = entry?.mobile_number_2 || "N/A";
       const person_name = entry?.person_name || "N/A";
       const person_location = entry?.person_location || "N/A";
 
       let status = "Completed";
-
       if (!matchLink) {
         status = "Incompleted";
-      } else if (mobile_number === "N/A") {
+      } else if (mobile_number !== "N/A" || mobile_number_2 !== "N/A") {
+        status = "Completed";
+      } else {
         status = "Pending";
       }
 
@@ -522,14 +478,10 @@ function BulkLookup() {
     <ErrorBoundary>
       <div className="main">
         <div className="main-con">
-          {showSidebar && <Sidebar userEmail={savedEmail} />}
-
+          <Sidebar userEmail={savedEmail} />
           <div className="right-side">
             <div className="right-p">
               <nav className="main-head">
-                <li className="back1">
-                  {/* Back button can be added here if needed */}
-                </li>
                 <div className="main-title">
                   <li className="profile">
                     <p className="title">Bulk LinkedIn Lookup</p>
@@ -546,8 +498,7 @@ function BulkLookup() {
                   </li>
                   <li>
                     <p className="title-des2">
-                      Upload Excel files containing LinkedIn URLs for bulk
-                      processing
+                      Upload Excel files containing LinkedIn URLs for bulk processing
                     </p>
                   </li>
                   <h1 className="title-head">LinkedIn Data Enrichment</h1>
@@ -559,26 +510,6 @@ function BulkLookup() {
                   <div className="main-body1">
                     <div className="left">
                       <div className="upload-section">
-                        {/* <div className="email-input-group">
-                          <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="you@example.com"
-                            className="email-input"
-                          />
-                          <button
-                            onClick={handleEmailSave}
-                            className="save-email-btn"
-                          >
-                            Save Email
-                          </button>
-                        </div> */}
-
-                        {/* <p className="logged-in-as">
-                          <strong>Logged in as:</strong> {savedEmail}
-                        </p> */}
-
                         <div className="file-upload-group">
                           <label
                             htmlFor="file-input"
@@ -634,28 +565,10 @@ function BulkLookup() {
 
                       {uploadedData.length > 0 && !showConfirmation && (
                         <div className="history-table">
-                          {/* <div className="search-section">
-                            <div className="search-input-group">
-                              <input
-                                type="text"
-                                placeholder="Search by Email, Filename or Task"
-                                value={searchId}
-                                onChange={(e) => setSearchId(e.target.value)}
-                                className="search-input"
-                              />
-                              <button
-                                onClick={handleSearch}
-                                className="search-btn"
-                              >
-                                Search
-                              </button>
-                            </div>
-                          </div> */}
-
                           <h3 className="section-title">Your Uploaded Files</h3>
-                           <p>
-            <strong>Cost per link:</strong> {creditCost} credits
-          </p>
+                          <p>
+                            <strong>Cost per link:</strong> {creditCost} credits
+                          </p>
 
                           {loading ? (
                             <div className="loading-state">
@@ -673,43 +586,34 @@ function BulkLookup() {
                                       <th>
                                         <div className="flex items-center gap-1">
                                           <Hash className="h-4 w-4" />
-                                          {/* <span>SR</span> */}
                                         </div>
                                       </th>
                                       <SortableHeader sortKey="uniqueId">
                                         <Database className="h-4 w-4" />
-                                        {/* <span>Unique ID</span> */}
                                       </SortableHeader>
                                       <SortableHeader sortKey="fileName">
                                         <FileSpreadsheet className="h-4 w-4" />
-                                        {/* <span>Filename</span> */}
                                       </SortableHeader>
                                       <SortableHeader sortKey="totallink">
                                         <LinkIcon className="h-4 w-4" />
-                                        {/* <span>Total Links</span> */}
                                       </SortableHeader>
                                       <SortableHeader sortKey="matchCount">
                                         <Users className="h-4 w-4" />
-                                        {/* <span>Matches</span> */}
                                       </SortableHeader>
                                       <SortableHeader sortKey="status">
                                         <Star className="h-4 w-4" />
-                                        {/* <span>Status</span> */}
                                       </SortableHeader>
                                       <SortableHeader sortKey="date">
                                         <Calendar className="h-4 w-4" />
-                                        {/* <span>Date</span> */}
                                       </SortableHeader>
                                       <th>
                                         <div className="flex items-center gap-1">
                                           <FaCoins className="h-4 w-4 text-yellow-500" />
-                                          {/* <span>Credits Used</span> */}
                                         </div>
                                       </th>
                                       <th>
                                         <div className="flex items-center gap-1">
                                           <Download className="h-4 w-4" />
-                                          {/* <span>Action</span> */}
                                         </div>
                                       </th>
                                     </tr>
@@ -736,18 +640,18 @@ function BulkLookup() {
                                             </td>
                                             <td>{first.totallink || 0}</td>
                                             <td>{first.matchCount || 0}</td>
-                                           
- <td>
-  <div className={`status-badge ${
-    processingStatus[uniqueId] ? 'processing' :
+                                            <td>
+                                               <div className={`status-badge ${
+    status === "processing" ? "processing" :
     status === "pending" ? "pending" : 
-    status === "incompleted" ? "incompleted" : "pending"
+    status === "incompleted" ? "completed" : "Incompleted"
   }`}>
-    {processingStatus[uniqueId] ? "Processing..." :
-     status === "pending" ? "pending" : 
-     status === "completed" ? "Completed" : "pending"}
+    {status === "processing" ? "Processing..." :
+     status === "pending" ? "Pending" : 
+     status === "completed" ? "pending" : "Completed"}
   </div>
 </td>
+        
                                             <td>{formatDate(first.date)}</td>
                                             <td>
                                               <div className="flex items-center gap-1">
@@ -763,7 +667,7 @@ function BulkLookup() {
                                                   downloadGroupedEntry(group)
                                                 }
                                                 className="download-btn"
-                                                // disabled={status !== 'completed'}
+                                                // disabled={status !== "completed"}
                                                 title={
                                                   status !== "completed"
                                                     ? `Download available only when status is Completed (Current: ${status})`
@@ -839,9 +743,6 @@ function BulkLookup() {
                   </div>
                 </div>
               </section>
-
-              {/* <TempLinkMobileForm /> */}
-              {/* <SingleLinkLookup /> */}
               
               <ToastContainer position="top-center" autoClose={5000} />
             </div>
@@ -849,7 +750,6 @@ function BulkLookup() {
         </div>
       </div>
     </ErrorBoundary>
-   
   );
 }
 

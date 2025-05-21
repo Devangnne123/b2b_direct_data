@@ -78,7 +78,7 @@ const Link = sequelize.define('Link', {
 status: {
   type: DataTypes.STRING,
   allowNull: true,        // or true if you want to allow null values
-  // defaultValue: 'pending', // ✅ sets default value to 'pending'
+  defaultValue: 'not avalable', // ✅ sets default value to 'pending'
 }
 
 
