@@ -1,11 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
-// import TempLinkMobileForm from "../components/TempLinkMobileForm";
-// import SingleLinkLookup from "../components/SingleLinkLookup";
-import Usertrans  from "../components/Usertrans";
+import Usertrans from "../components/Usertrans";
 import { ToastContainer, toast } from "react-toastify";
-
 import "react-toastify/dist/ReactToastify.css";
 import { FaCoins } from "react-icons/fa";
 import {
@@ -64,6 +61,7 @@ function BulkLookup() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
+  const [loadingcost, setLoadingcost] = useState(true);
   const [sortConfig, setSortConfig] = useState({
     key: "date",
     direction: "desc",
@@ -72,8 +70,9 @@ function BulkLookup() {
   const [uploadDetails, setUploadDetails] = useState(null);
   const [pendingUpload, setPendingUpload] = useState(null);
   const [processingStatus, setProcessingStatus] = useState({});
+   const [creditCost, setCreditCost] = useState(null);
 
-  const creditCost = 5;
+
 
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
@@ -81,6 +80,7 @@ function BulkLookup() {
       setSavedEmail(user.email);
       fetchUserLinks(user.email);
       fetchCredits(user.email);
+      // fetchCreditCost(user.email);
     }
   }, []);
 
@@ -92,6 +92,59 @@ function BulkLookup() {
     }
   }, []);
 
+
+
+   useEffect(() => {
+    const fetchAdminCreditCost = async () => {
+      try {
+        const response = await axios.get("http://localhost:3000/users/getAllAdmin");
+        if (response.data && response.data.users) {
+          // Find the admin user matching the current email
+          const adminUser = response.data.users.find(
+            (user) => user.userEmail === savedEmail
+          );
+          if (adminUser) {
+            setCreditCost(adminUser.creditCostPerLink || 5);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching admin credit cost:", error);
+        toast.error("Failed to load credit cost settings");
+      } finally {
+        setLoadingCost(false);
+      }
+    };
+
+    if (savedEmail && savedEmail !== "Guest") {
+      fetchAdminCreditCost();
+    }
+  }, [savedEmail]);
+
+
+// const fetchCreditCost = async (email) => {
+//   if (!email) {
+//     console.error('Email is required');
+//     return;
+//   }
+
+//   setLoadingcost(true);
+  
+//   try {
+//     const response = await axios.get('http://localhost:3000/api/credit-cost', {
+//       params: { email } // This will create /api/credit-cost?email=user@example.com
+//     });
+    
+//     setCreditCost(response.data.creditCostPerLink);
+//   } catch (err) {
+//     console.error('Error fetching credit cost:', err);
+//     toast.error(err.response?.data?.message || 'Failed to fetch credit cost');
+//   } finally {
+//     setLoadingcost(false);
+//   }
+// };
+
+
+
   useEffect(() => {
     if (pendingUpload) {
       localStorage.setItem("pendingUpload", JSON.stringify(pendingUpload));
@@ -99,10 +152,6 @@ function BulkLookup() {
       localStorage.removeItem("pendingUpload");
     }
   }, [pendingUpload]);
-
-
-
-
 
   const getGroupStatus = (group) => {
   if (!group || group.length === 0) return "completed"; // Changed to "completed"
@@ -120,8 +169,6 @@ function BulkLookup() {
   }
   return "completed";
 };
-
-
 
   const fetchCredits = async (email) => {
     try {
@@ -159,56 +206,57 @@ function BulkLookup() {
     }
   };
 
-
-  // When starting processing (in your upload/processing function)
-const startProcessing = (uniqueId) => {
-  setProcessingStatus(prev => ({...prev, [uniqueId]: true}));
-  
-  // After 15 seconds, remove processing status
-  setTimeout(() => {
-    setProcessingStatus(prev => {
-      const newState = {...prev};
-      delete newState[uniqueId];
-      return newState;
-    });
-  }, 15000);
-};
-
-  const handleUpload = async () => {
-    if (!file) return toast.error("Please choose a file to upload.");
-    if (!savedEmail || savedEmail === "Guest")
-      return toast.error("Please save your email first");
-    if (credits < creditCost) return toast.error("Not enough credits");
-
-    setLoading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await axios.post(
-        "http://localhost:3000/upload-excel",
-        formData,
-        { headers: { "user-email": savedEmail } }
-      );
-
-      const uploadData = {
-        file: file.name, // Store just the name, not the File object
-        matchCount: res.data.matchCount,
-        uniqueId: res.data.uniqueId,
-        creditToDeduct: res.data.matchCount * creditCost,
-        timestamp: new Date().toISOString(),
-      };
-
-      setPendingUpload(uploadData);
-      setShowConfirmation(true);
-      startProcessing(res.data.uniqueId);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Upload failed");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  const startProcessing = (uniqueId) => {
+    setProcessingStatus(prev => ({...prev, [uniqueId]: true}));
+    setTimeout(() => {
+      setProcessingStatus(prev => {
+        const newState = {...prev};
+        delete newState[uniqueId];
+        return newState;
+      });
+    }, 15000);
   };
+
+ const handleUpload = async () => {
+  if (!file) return toast.error("Please choose a file to upload.");
+  if (!savedEmail || savedEmail === "Guest")
+    return toast.error("Please save your email first");
+  if (credits < creditCost) return toast.error("Not enough credits");
+
+  setLoading(true);
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res = await axios.post(
+      "http://localhost:3000/upload-excel",
+      formData,
+      { headers: { "user-email": savedEmail } }
+    );
+
+    // Calculate total credits to deduct based on creditCostPerLink (5 per link)
+    const totalLinks = res.data.totallink || res.data.totalLinks || 0;
+   
+
+    const uploadData = {
+      file: file.name,
+      matchCount: res.data.matchCount || 0,
+      totallink: totalLinks,
+      uniqueId: res.data.uniqueId,
+      creditToDeduct: res.data.matchCount * creditCost,
+      timestamp: new Date().toISOString(),
+    };
+    
+    setPendingUpload(uploadData);
+    setShowConfirmation(true);
+    startProcessing(res.data.uniqueId);
+  } catch (err) {
+    toast.error(err.response?.data?.message || "Upload failed");
+    console.error(err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const confirmUpload = async () => {
     if (!pendingUpload) return;
@@ -221,6 +269,7 @@ const startProcessing = (uniqueId) => {
           userEmail: savedEmail,
           creditCost: pendingUpload.creditToDeduct,
           uniqueId: pendingUpload.uniqueId,
+          
         }
       );
 
@@ -231,12 +280,9 @@ const startProcessing = (uniqueId) => {
         `Processing complete! Deducted ${pendingUpload.creditToDeduct} credits`
       );
 
-      // Clear the pending state
       setPendingUpload(null);
       setFile(null);
       document.querySelector('input[type="file"]').value = null;
-
-      // Refresh data
       await fetchUserLinks(savedEmail);
     } catch (err) {
       toast.error("Failed to confirm processing");
@@ -256,17 +302,14 @@ const startProcessing = (uniqueId) => {
 
     setLoading(true);
     try {
-      // Call API to clean up the canceled upload
       await axios.delete(
         `http://localhost:3000/cancel-upload/${pendingUpload.uniqueId}`
       );
-
       toast.info("Upload canceled - all data removed");
     } catch (err) {
       toast.error("Failed to completely cancel upload");
       console.error(err);
     } finally {
-      // Clear state regardless of API success
       setPendingUpload(null);
       setFile(null);
       document.querySelector('input[type="file"]').value = null;
@@ -275,47 +318,55 @@ const startProcessing = (uniqueId) => {
     }
   };
 
-  function PendingUploadAlert({ onConfirm, onCancel, pendingUpload }) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-lg max-w-md w-full">
-          <h3 className="text-lg font-bold mb-4">Confirm Upload</h3>
-          <div className="space-y-4 mb-6">
-            <p>You have an unconfirmed upload:</p>
-            <div className="bg-gray-100 p-4 rounded">
-              <p>
-                <strong>File:</strong> {pendingUpload.file}
-              </p>
-              <p>
-                <strong>Matches:</strong> {pendingUpload.matchCount}
-              </p>
-              <p>
-                <strong>Credits to deduct:</strong>{" "}
-                {pendingUpload.creditToDeduct}
-              </p>
-            </div>
-            <p className="text-sm text-gray-600">
-              This dialog will persist until you choose an option.
-            </p>
-          </div>
-          <div className="flex justify-end space-x-3">
-            <button
-              onClick={onCancel}
-              className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-            >
-              Cancel Upload
-            </button>
-            <button
-              onClick={onConfirm}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Confirm & Process
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+ function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits }) {
+  const totalLinks = pendingUpload.totallink || 0;
+  const matchCount = pendingUpload.matchCount || 0;
+  const notFoundCount = totalLinks - matchCount;
+  const creditsToDeduct = pendingUpload.creditToDeduct || 0;
+  const remainingCredits = currentCredits - creditsToDeduct;
+
+ return (
+ <div className="modal-container">
+  <h3 className="modal-heading">Confirm Upload</h3>
+
+  <div className="modal-content-space">
+    <p className="text-gray-800">You have an unconfirmed upload:</p>
+
+    <div className="info-box">
+      <p><strong>📄 File:</strong> {pendingUpload.file}</p>
+      <p><strong>🔗 Total Links:</strong> {totalLinks}</p>
+      <p className="text-green-600"><strong>✅ Matches Found:</strong> {matchCount}</p>
+      <p className="text-red-600"><strong>❌ Not Found:</strong> {notFoundCount}</p>
+      <p><strong>💳 Credits to Deduct:</strong> {creditsToDeduct}</p>
+      <p className="font-bold"><strong>🧮 Remaining Credits:</strong> {remainingCredits}</p>
+    </div>
+
+    <p className="text-sm text-gray-600 text-center">
+      This dialog will persist until you choose an option.
+    </p>
+  </div>
+
+  <div className="buttons-container">
+    <button onClick={onCancel} className="cancel-button">
+      <span>❌</span>
+      <span>Cancel Upload</span>
+    </button>
+
+    <button
+      onClick={onConfirm}
+      className="confirm-button"
+      disabled={remainingCredits < 0}
+      title={remainingCredits < 0 ? "Not enough credits" : ""}
+      style={remainingCredits < 0 ? {backgroundColor: '#9ca3af', cursor: 'not-allowed'} : {}}
+    >
+      <span>✅</span>
+      <span>Confirm & Process</span>
+    </button>
+  </div>
+</div>
+
+);
+ }
   const handleSearch = () => {
     if (searchId.trim() === "") {
       setFilteredData(uploadedData);
@@ -577,6 +628,7 @@ const startProcessing = (uniqueId) => {
                           onConfirm={confirmUpload}
                           onCancel={cancelUpload}
                           pendingUpload={pendingUpload}
+                          currentCredits={credits}
                         />
                       )}
 
@@ -601,6 +653,9 @@ const startProcessing = (uniqueId) => {
                           </div> */}
 
                           <h3 className="section-title">Your Uploaded Files</h3>
+                           <p>
+            <strong>Cost per link:</strong> {creditCost} credits
+          </p>
 
                           {loading ? (
                             <div className="loading-state">
@@ -686,11 +741,11 @@ const startProcessing = (uniqueId) => {
   <div className={`status-badge ${
     processingStatus[uniqueId] ? 'processing' :
     status === "pending" ? "pending" : 
-    status === "incompleted" ? "completed" : "incompleted"
+    status === "incompleted" ? "incompleted" : "pending"
   }`}>
     {processingStatus[uniqueId] ? "Processing..." :
-     status === "pending" ? "Pending" : 
-     status === "incompleted" ? "completed" : "inCompleted"}
+     status === "pending" ? "pending" : 
+     status === "completed" ? "Completed" : "pending"}
   </div>
 </td>
                                             <td>{formatDate(first.date)}</td>

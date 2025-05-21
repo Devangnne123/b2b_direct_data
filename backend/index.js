@@ -10,6 +10,7 @@ const path = require('path');
 const fs = require('fs');
 const MasterUrl = require('./model/MasterUrl'); // MasterUrl model
 const TempLinkMobile = require('./model/TempLinkMobile');///tempmobile
+const User  = require('./model/userModel'); // Adjust path as needed
 
 
 const cors = require('cors');
@@ -81,7 +82,7 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
           linkedin_link_id: linkedinLinkId,
         });
       }
-
+   
       // ✅ Always store in Link table
       await Link.create({
         uniqueId,
@@ -92,6 +93,7 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
         remark,
         fileName: req.file.originalname,
         matchLink,
+        
         linkedin_link_id: linkedinLinkId,
         matchCount, // optional
       });
@@ -103,6 +105,7 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
       message: 'Upload successful',
       uniqueId,
       fileName: req.file.originalname,
+      totallink: links.length,
       matchCount,
     });
 
@@ -347,7 +350,7 @@ cron.schedule('*/10 * * * * *', async () => {
       }
 
       // Determine status
-      const status = mobile_number ? 'completed' : 'pending';
+      const status = (mobile_number || mobile_number_2) ? 'completed' : 'pending';
 
       // Prepare data for update
       const updateData = {
@@ -386,6 +389,150 @@ cron.schedule('*/10 * * * * *', async () => {
 
 
 
+
+// app.patch('/users/update-credit-cost', async (req, res) => {
+//   try {
+//     const { userEmail, creditCostPerLink } = req.body;
+
+//     // Validate input
+//     if (!userEmail || creditCostPerLink === undefined) {
+//       return res.status(400).json({ 
+//         success: false,
+//         message: 'Email and credit cost are required' 
+//       });
+//     }
+
+//     // Alternative update method that works better
+//     const user = await User.findOne({ where: { userEmail } });
+    
+//     if (!user) {
+//       return res.status(404).json({ 
+//         success: false,
+//         message: 'User not found' 
+//       });
+//     }
+
+//     user.creditCostPerLink = creditCostPerLink;
+//     await user.save();
+
+//     return res.json({ 
+//       success: true,
+//       message: 'Credit cost updated successfully',
+//       newCost: user.creditCostPerLink
+//     });
+
+//   } catch (error) {
+//     console.error('Error details:', {
+//       message: error.message,
+//       stack: error.stack,
+//       requestBody: req.body
+//     });
+//     return res.status(500).json({ 
+//       success: false,
+//       message: 'Server error while updating credit cost',
+//       error: error.message 
+//     });
+//   }
+// });
+
+
+
+// app.get('/credit-cost', async (req, res) => {
+//   try {
+//     const userEmail = req.user.email;
+//     const user = await User.findOne({
+//       where: { userEmail: userEmail },
+//       attributes: ['creditCostPerLink']
+//     });
+
+//     if (!user) {
+//       return res.status(404).json({ error: 'User not found' });
+//     }
+
+//     res.json({
+//       creditCostPerLink: user.creditCostPerLink
+//     });
+//   } catch (error) {
+//     console.error('Error:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
+
+
+
+
+
+app.get('/api/credit-cost', async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    // Validate email parameter
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email query parameter is required',
+        code: 'MISSING_EMAIL'
+      });
+    }
+
+    // Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format',
+        code: 'INVALID_EMAIL'
+      });
+    }
+
+    // Normalize email to lowercase
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Find user with only the needed attribute
+    const user = await User.findOne({
+      where: { userEmail: normalizedEmail },
+      attributes: ['creditCostPerLink'],
+      raw: true // Returns plain object instead of model instance
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+    }
+
+    // Successful response
+    res.json({
+      success: true,
+      data: {
+        creditCostPerLink: user.creditCostPerLink
+      },
+      meta: {
+        requestedAt: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching credit cost:', error);
+    
+    // More specific error handling
+    if (error.name === 'SequelizeConnectionError') {
+      return res.status(503).json({
+        success: false,
+        message: 'Service unavailable - database error',
+        code: 'DB_CONNECTION_ERROR'
+      });
+    }
+
+    // Generic server error
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      code: 'INTERNAL_ERROR'
+    });
+  }
+});
 
 
 

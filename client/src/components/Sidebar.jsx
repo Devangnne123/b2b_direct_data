@@ -34,9 +34,9 @@ function Sidebar() {
   }, []);
 
   const adminMenuItems = [
-    { name: "Direct Number Enrichment", icon: <FaUserPlus />, options: [{ name: "Single Lookup", path: "/profile-lookup" }, { name: "Bulk Lookup", path: "/bulk-lookup" }] },
-    { name: "Linkedin Contact Verification", icon: <FaUserPlus />, options: [{ name: "Upload contact Link", path: "/profile-lookup" }, { name: "Contact Statistics", path: "/bulk-lookup" }] },
-    { name: "Linkedin Company Details", icon: <FaUserPlus />, options: [{ name: "Upload Company link", path: "/profile-lookup" }, { name: "Company Statistics", path: "/bulk-lookup" }] },
+    { name: "Direct Number Enrichment", icon: <FaUserPlus />, options: [ { name: "Bulk Lookup", path: "/bulk-lookup" }] },
+    { name: "Linkedin Contact Verification", icon: <FaUserPlus />, options: [{ name: "Upload contact Link", path: "/Linkedin_Contect" }, ] },
+    { name: "Linkedin Company Details", icon: <FaUserPlus />, options: [{ name: "Upload Company link", path: "/Linkedin_Company" }, ] },
     {
       name: "Settings",
       icon: <IoMdSettings />,
@@ -49,17 +49,17 @@ function Sidebar() {
       name: "Statistics",
       icon: <FaChartBar />,
       options: [
-        { name: "Lookup Statistics", path: "/UserStatistics" },
+        // { name: "Lookup Statistics", path: "/UserStatistics" },
         { name: "Credit Reports", path: "/user-credit-report" },
-        { name: "User Statistics", path: "/statistic" },
+        // { name: "User Statistics", path: "/statistic" },
       ],
     },
   ];
 
   const userMenuItems = [
-    { name: "Direct Number Enrichment", icon: <FaUserPlus />, options: [{ name: "Single Lookup", path: "/profile-lookup" }, { name: "Bulk Lookup", path: "/bulk-lookup" }, { name: "Number Statistics", path: "/UserStatistics" }] },
-    { name: "Linkedin Contact Verification", icon: <FaUserPlus />, options: [{ name: "Upload contact Link", path: "/profile-lookup" }, { name: "Contact Statistics", path: "/bulk-lookup" }] },
-    { name: "Linkedin Company Details", icon: <FaUserPlus />, options: [{ name: "Upload Company link", path: "/profile-lookup" }, { name: "Company Statistics", path: "/bulk-lookup" }] },
+    { name: "Direct Number Enrichment", icon: <FaUserPlus />, options: [ { name: "Bulk Lookup", path: "/bulk-lookup" },] },
+    { name: "Linkedin Contact Verification", icon: <FaUserPlus />, options: [{ name: "Upload contact Link", path: "/Linkedin_Contect" },] },
+    { name: "Linkedin Company Details", icon: <FaUserPlus />, options: [{ name: "Upload Company link", path: "/Linkedin_Company" }, ] },
     {
       name: "Statistics",
       icon: <FaChartBar />,
@@ -79,7 +79,7 @@ function Sidebar() {
   const superAdminItems = [
     { name: "All Admin", path: "/all-admin", icon: <FaChartBar /> },
     { name: "All User", path: "/all-user", icon: <FaChartBar /> },
-    { name: "All User Statistic", path: "/all-user-statistics", icon: <FaChartBar /> },
+    // { name: "All User Statistic", path: "/all-user-statistics", icon: <FaChartBar /> },
     { name: "Credit Report", path: "/admin-credit-report", icon: <FaChartBar /> },
     { name: "Sign out", path: "/", icon: <FaChartBar /> },
   ];

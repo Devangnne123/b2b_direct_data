@@ -186,7 +186,10 @@
   padding: 2px 2px;
   border-radius: 6px;
   margin-bottom: 0px;
-  font-size: 10px;
+  width: 70%;
+  margin: auto;
+  text-align: center;
+  font-size: 11px;
 }
 
 /* Pagination Controls */

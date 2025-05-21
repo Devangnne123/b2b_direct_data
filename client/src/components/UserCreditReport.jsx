@@ -3,8 +3,9 @@ import {
   Users, ArrowUpDown, Database, Download, Calendar, 
   CreditCard, ArrowUpRight, ArrowDownLeft, Loader2, 
   ChevronLeft, ChevronRight, FileSpreadsheet,
-  FileText, FileInput, AlertCircle, Coins, Mail, Plus, Minus
+  FileText, FileInput, AlertCircle, Coins, Mail, Plus, Minus, Tag,Send,Banknote
 } from "lucide-react";
+
 import Sidebar from "../components/Sidebar";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
@@ -88,44 +89,43 @@ const UserCreditReport = () => {
     }
   };
 
-  const processFileUploads = (uploads) => {
-    if (!Array.isArray(uploads)) {
-      console.error("Uploads data is not an array:", uploads);
-      return [];
+const processFileUploads = (uploads) => {
+  if (!Array.isArray(uploads)) {
+    console.error("Uploads data is not an array:", uploads);
+    return [];
+  }
+
+  // Group by uniqueId but don't sum the credits - take the first instance's values
+  const groupedUploads = {};
+  uploads.forEach((item) => {
+    if (!item?.uniqueId) return;
+    
+    if (!groupedUploads[item.uniqueId]) {
+      groupedUploads[item.uniqueId] = {
+        ...item,
+        // Don't sum these - take the values from the first item
+        date: item.date || new Date().toISOString(),
+        remainingCredits: item.remainingCredits
+      };
     }
+    // Else skip - we only want one entry per uniqueId
+  });
 
-    const groupedUploads = {};
-    uploads.forEach((item) => {
-      if (!item?.uniqueId) return;
-      
-      if (!groupedUploads[item.uniqueId]) {
-        groupedUploads[item.uniqueId] = {
-          ...item,
-          count: 1,
-          totalCredits: item.creditDeducted || 0,
-          date: item.date || new Date().toISOString()
-        };
-      } else {
-        groupedUploads[item.uniqueId].count += 1;
-        groupedUploads[item.uniqueId].totalCredits += item.creditDeducted || 0;
-      }
-    });
-
-    return Object.values(groupedUploads).map(upload => ({
-      id: upload.uniqueId,
-      type: "FILE_UPLOAD",
-      sortKey: new Date(upload.date),
-      displayDate: upload.date,
-      description: `File Processing: ${upload.fileName || 'Unknown'}`,
-      details: `${upload.matchCount || 0} matches (${upload.count} links)`,
-      amount: -(upload.totalCredits || 0),
-      remainingCredits: upload.remainingCredits,
-      fileName: upload.fileName,
-      matchCount: upload.matchCount,
-      icon: <FileInput className="h-4 w-4 text-orange-500" />,
-      isCredit: false
-    }));
-  };
+  return Object.values(groupedUploads).map(upload => ({
+    id: upload.uniqueId,
+    type: "FILE_UPLOAD",
+    sortKey: new Date(upload.date),
+    displayDate: upload.date,
+    description: `File Processing: ${upload.fileName || 'Unknown'}`,
+    details: `${upload.matchCount || 0} matches`, // Removed count of links
+    amount: upload.creditDeducted || 0, // Use the original creditDeducted value
+    remainingCredits: upload.remainingCredits,
+    fileName: upload.fileName,
+    matchCount: upload.matchCount,
+    icon: <FileInput className="h-4 w-4 text-orange-500" />,
+    isCredit: false
+  }));
+};
 
   const requestSort = (key) => {
     setSortConfig(prev => ({
@@ -176,28 +176,32 @@ const UserCreditReport = () => {
       minute: "2-digit",
     });
   };
+// In the renderAmountCell function:
+const renderAmountCell = (amount, isCredit) => {
+  // For file uploads, we always want to show as negative (deduction)
+  const displayAmount = isCredit ? amount : -Math.abs(amount);
+  const isPositive = isCredit;
 
-  const renderAmountCell = (amount, isCredit) => {
-    return (
-      <div className="flex items-center gap-1">
-        {isCredit ? (
-          <>
-            <ArrowDownLeft className="h-4 w-4 text-green-500" />
-            <span className="font-medium text-green-500">
-              +{Math.abs(amount)}
-            </span>
-          </>
-        ) : (
-          <>
-            <ArrowUpRight className="h-4 w-4 text-red-500" />
-            <span className="font-medium text-red-500">
-              -{Math.abs(amount)}
-            </span>
-          </>
-        )}
-      </div>
-    );
-  };
+  return (
+    <div className="flex items-center gap-1">
+      {isPositive ? (
+        <>
+          <ArrowDownLeft className="h-4 w-4 text-green-500" />
+          <span className="font-medium text-green-500">
+            +{Math.abs(displayAmount)}
+          </span>
+        </>
+      ) : (
+        <>
+          <ArrowUpRight className="h-4 w-4 text-red-500" />
+          <span className="font-medium text-red-500">
+            {displayAmount} {/* This will show as negative */}
+          </span>
+        </>
+      )}
+    </div>
+  );
+};
 
   return (
     <div className="main">
@@ -230,22 +234,20 @@ const UserCreditReport = () => {
                     </div>
 
                     {process.env.NODE_ENV === "development" && (
-                      <div className="debug-info p-4 mb-4 bg-gray-100 rounded">
-                        <h3 className="font-bold mb-2">Debug Information</h3>
-                        <p>User: {userEmail}</p>
-                        <p>Transactions: {transactions.length}</p>
-                        <p>Admin Credits: {adminCredits.length}</p>
-                        <p>File Uploads: {fileUploads.length}</p>
-                        <p>Active Tab: {activeTab}</p>
-                        <p>Sorted Data: {sortedData.length}</p>
-                        <button 
-                          onClick={fetchCreditData}
-                          className="mt-2 px-3 py-1 bg-blue-500 text-white rounded"
-                        >
-                          Refresh Data
-                        </button>
-                      </div>
-                    )}
+  <div className="debug-info">
+    
+    <p>User: {userEmail}</p>
+    <p>Transactions: {transactions.length}</p>
+    <p>Admin Credits: {adminCredits.length}</p>
+    <p>File Uploads: {fileUploads.length}</p>
+    <p>Active Tab: {activeTab}</p>
+    <p>Sorted Data: {sortedData.length}</p>
+    <button onClick={fetchCreditData} className="refresh-button">
+      Refresh Data
+    </button>
+  </div>
+)}
+
 
                     <div className="credit-tabs">
                       <button 
@@ -297,21 +299,32 @@ const UserCreditReport = () => {
                                 <thead>
                                   <tr>
                                     <th onClick={() => requestSort("date")}>
-                                      <div className="flex items-center gap-1">
-                                        <Calendar className="h-4 w-4" />
-                                        Date
+                                      <div className="flex items-center gap-6">
+                                        <Calendar className="h-7 w-4" />
+                                       
                                       </div>
                                     </th>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                    <th>From/To</th>
+                                    <th><div className="flex items-center gap-1">
+                                        < Tag className="h-7 w-4" />
+                                     
+                                      </div></th>
+                                    <th><div className="flex items-center gap-1">
+                                        <FileInput className="h-7 w-4" />
+                                                                              </div></th>
+                                    <th><div className="flex items-center gap-1">
+                                        <Send className="h-7 w-4" />
+                                        
+                                      </div></th>
                                     <th onClick={() => requestSort("amount")}>
                                       <div className="flex items-center gap-1">
-                                        <Coins className="h-4 w-4" />
-                                        Amount
+                                        <Coins className="h-7 w-4" />
+                                        
                                       </div>
                                     </th>
-                                    <th>Balance</th>
+                                    <th><div className="flex items-center gap-1">
+                                        <Banknote className="h-7 w-4" />
+                                       
+                                      </div></th>
                                   </tr>
                                 </thead>
                                 <tbody>

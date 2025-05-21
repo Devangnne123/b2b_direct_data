@@ -20,7 +20,7 @@ import UserList from "./components/UserList";
 import UserStatistics from "./components/UserStatistics";
 import AllUser from "./components/AllUser";
 import AllAdmin from "./components/AllAdmin";
-import AllStatistics from "./components/AllStatistics";
+// import AllStatistics from "./components/AllStatistics";
 import AdminCreditReport from "./components/AdminCreditReport";
 import Services from "./components/Services";
 import UserCreditReport from "./components/UserCreditReport";
@@ -28,6 +28,9 @@ import Api from "./components/Api";
 import ContactUs from "./components/ContactUs";
 // import Bulk from "./components/Bulk";
 import TempLinkMobileForm from "./components/TempLinkMobileForm";
+// import Bulk from "./components/Bulk";
+import Linkedin_Contect from "./components/Linkedin_Contect";
+import Linkedin_Company from "./components/Linkedin_Company";
 import "./App.css";
 import AboutUs from "./components/AboutUs";
 
@@ -36,11 +39,13 @@ function App() {
   const location = useLocation();
   const excludePaths = [
     
-    "/profile-lookup",
+    // "/profile-lookup",
     "/bulk-lookup",
     "/statistic",
     "/add-user",
     // "/bulk",
+    "/Linkedin_Contect",
+    "/Linkedin_Company",
     "/temp",
     "/user-list",
     "/UserStatistics",
@@ -60,12 +65,15 @@ function App() {
         <Route path="/" element={<Index />} />
         
         <Route path="/services" element={<Services />} />
-        <Route path="/profile-lookup" element={<ProfileLookup />} />
+        {/* <Route path="/profile-lookup" element={<ProfileLookup />} /> */}
         <Route path="/bulk-lookup" element={<BulkLookup />} />
         {/* <Route path="/bulk" element={<Bulk />} /> */}
         <Route path="/statistic" element={<Statistic />} />
         <Route path="/Temp" element={<TempLinkMobileForm />} />
-        <Route path="/" element={<Login />} />
+       
+        <Route path="/Linkedin_Contect" element={<Linkedin_Contect />} />
+        <Route path="/Linkedin_Company" element={<Linkedin_Company />} />
+         <Route path="/" element={<Login />} />
         <Route path="/" element={<SignUp />} />
         <Route path="/api" element={<Api />} />
         <Route path="/aboutus" element={<AboutUs />} />
@@ -76,7 +84,7 @@ function App() {
         <Route path="/admin-credit-report" element={<AdminCreditReport />} />
         <Route path="/user-credit-report" element={<UserCreditReport />} />
         <Route path="/all-user" element={<AllUser />} />
-        <Route path="/all-user-statistics" element={<AllStatistics />} />
+        {/* <Route path="/all-user-statistics" element={<AllStatistics />} /> */}
         <Route path="/UserStatistics" element={<UserStatistics />} />
         <Route path="/mobile-enrichment" element={<MobileEnrichment />} />
         <Route path="/linkedin-contact-verification" element={<LinkedinContactVerification />} />

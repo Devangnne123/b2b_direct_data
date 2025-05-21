@@ -56,6 +56,16 @@ const User = sequelize.define("User", {
       }
     }
   },
+  // In your User model definition
+// In your User model definition
+creditCostPerLink: {
+  type: DataTypes.INTEGER,
+  defaultValue: 5,
+  allowNull: false,
+  validate: {
+    min: 1
+  }
+},
   credits: {
     type: DataTypes.INTEGER,
     defaultValue: 0,

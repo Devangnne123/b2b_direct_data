@@ -349,10 +349,11 @@
 /* Success message styles */
 .success-message_S {
   color: #4CAF50; /* Green color for success */
-  font-size: 5px;
+  font-size: 12px;
   font-weight: 500;
   top:20px;
   left: 100px;
+  
   text-align: center;
   margin: 15px 0;
   background-color: antiquewhite;

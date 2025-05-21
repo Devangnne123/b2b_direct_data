@@ -50,12 +50,12 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
           
           setTimeout(() => {
             if (parseInt(user.roleId) === 1) {
-              navigate("/add-user");
+              navigate("/bulk-lookup");
             }
             else if(parseInt(user.roleId) === 3){
               navigate("/all-user");
             } else {
-              navigate("/profile-lookup");
+              navigate("/bulk-lookup");
             }
           }, 2000);
         } else {

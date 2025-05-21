@@ -221,7 +221,7 @@ function Index() {
           <div className="modal-footer">
             <button
               className="action-button"
-              onClick={handleSignUpClick}
+              
             >
               Sign Up to Get Access
             </button>

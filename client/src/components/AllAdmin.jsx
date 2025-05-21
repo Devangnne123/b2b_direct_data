@@ -6,14 +6,12 @@ import {
   Mail,
   Search,
   User,
- 
   Building,
   RefreshCw,
+  Link as LinkIcon,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import {
- 
- 
   Building2,
   Phone,
   CircleDollarSign,
@@ -50,6 +48,7 @@ const AllAdmin = () => {
         ...user,
         credits: user.credits || 0,
         newCredits: "",
+        newCreditCost: user.creditCostPerLink || 5,
       }));
 
       setUsers(updatedUsers);
@@ -68,9 +67,9 @@ const AllAdmin = () => {
     }));
   };
 
-  const handleInputChange = (index, value) => {
+  const handleInputChange = (index, field, value) => {
     const updatedUsers = [...users];
-    updatedUsers[index].newCredits = value;
+    updatedUsers[index][field] = value;
     setUsers(updatedUsers);
   };
 
@@ -106,7 +105,6 @@ const AllAdmin = () => {
         return;
       }
 
-      // ✅ Fix: Ensure transaction entry is created
       const transactionResponse = await fetch(
         "http://localhost:3000/super-admin/assign-credits",
         {
@@ -128,28 +126,66 @@ const AllAdmin = () => {
       }
 
       alert("Credits assigned successfully!");
-      fetchUsersWithCredits(); // Refresh user list
+      fetchUsersWithCredits();
     } catch (error) {
       console.error("Error updating credits:", error);
       alert("Failed to update credits. Try again later.");
     }
   };
 
-  // Filter users based on search term
+ // AllAdmin.jsx - Updated handler
+const handleUpdateCreditCost = async (userEmail, newCost) => {
+  if (!newCost || isNaN(newCost) || newCost < 1) {
+    alert("Please enter a valid cost (minimum 1)");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `$http://localhost:3000/users/update-credit-cost`,
+      {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ 
+          userEmail, 
+          creditCostPerLink: parseInt(newCost) 
+        }),
+      }
+    );
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to update credit cost');
+    }
+
+    alert(`Credit cost updated to ${result.newCost}!`);
+    fetchUsersWithCredits();
+  } catch (error) {
+    console.error("Credit cost update failed:", {
+      error: error.message,
+      userEmail,
+      newCost,
+      time: new Date().toISOString()
+    });
+    alert(`Update failed: ${error.message}`);
+  }
+};
   const filteredUsers = users.filter(
     (user) =>
       user.userEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.phoneNumber?.includes(searchTerm)
   );
 
-  // Pagination logic
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = filteredUsers.slice(indexOfFirstRow, indexOfLastRow);
   const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
   return (
     <div className="main">
       <div className="main-con">
@@ -161,7 +197,6 @@ const AllAdmin = () => {
               <div className="main-title">
                 <li className="profile">
                   <p className="title">Admin Management</p>
-                   
                 </li>
                 <li>
                   <p className="title-des2">
@@ -186,28 +221,8 @@ const AllAdmin = () => {
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="search-input"
                         />
-                        {/* <button
-                          onClick={fetchUsersWithCredits}
-                          className="refresh-btn"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </button> */}
                       </div>
                     </div>
-                    {/* <div className="search-container">
-                      <div className="search-input-container">
-                        <input
-                          type="text"
-                          placeholder="Search by Email or Phone..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="search-input"
-                        />
-                        <button onClick={fetchUsersWithCredits} className="refresh-btn">
-                          <RefreshCw className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div> */}
 
                     <div className="history-table">
                       <div className="statistics-page">
@@ -231,41 +246,35 @@ const AllAdmin = () => {
                                       <th title="Email">
                                         <div className="flex items-center justify-center gap-1">
                                           <Mail className="h-4 w-4" />
-                                         
+                                        </div>
+                                      </th>
+                                      <th title="Password">
+                                        <div className="flex items-center justify-center gap-1">
+                                          <User className="h-4 w-4" />
                                         </div>
                                       </th>
                                       <th title="Company">
                                         <div className="flex items-center justify-center gap-1">
                                           <Building className="h-4 w-4" />
-                                          
-                                        </div>
-                                      </th>
-                                      <th title="Department">
-                                        <div className="flex items-center justify-center gap-1">
-                                          <Building2 className="h-4 w-4" />{" "}
-                                          {/* Different building icon for department */}
-                                          
                                         </div>
                                       </th>
                                       <th title="Phone">
                                         <div className="flex items-center justify-center gap-1">
                                           <Phone className="h-4 w-4" />
-                                         
                                         </div>
                                       </th>
-                                      <th title="Credits Used">
+                                      <th title="Credits">
                                         <div className="flex items-center justify-center gap-1">
-                                          <CircleDollarSign className="h-4 w-4" />{" "}
-                                          {/* Or Coins icon */}
-                                       
+                                          <Wallet className="h-4 w-4" />
                                         </div>
                                       </th>
-                                      <th colSpan="2" title="Remaining Credits">
+                                      <th title="Credit Cost Per Link">
                                         <div className="flex items-center justify-center gap-1">
-                                          <Wallet className="h-4 w-4" />{" "}
-                                          {/* Or CreditCard icon */}
-                                         
+                                          <LinkIcon className="h-4 w-4" />
                                         </div>
+                                      </th>
+                                      <th title="Actions">
+                                        Actions
                                       </th>
                                     </tr>
                                   </thead>
@@ -293,11 +302,6 @@ const AllAdmin = () => {
                                                   )
                                                 }
                                                 className="password-toggle1 p-1 rounded hover:bg-gray-100"
-                                                aria-label={
-                                                  showPasswords[user.userEmail]
-                                                    ? "Hide password"
-                                                    : "Show password"
-                                                }
                                               >
                                                 {showPasswords[
                                                   user.userEmail
@@ -313,20 +317,24 @@ const AllAdmin = () => {
                                           <td>{user.phoneNumber || "N/A"}</td>
                                           <td>{user.credits || 0}</td>
                                           <td>
+                                            <span className="credit-cost-display">
+                                              {user.creditCostPerLink || 5}
+                                            </span>
+                                          </td>
+                                          <td>
                                             <input
                                               type="number"
                                               value={user.newCredits}
                                               onChange={(e) =>
                                                 handleInputChange(
                                                   index,
+                                                  "newCredits",
                                                   e.target.value
                                                 )
                                               }
-                                              placeholder="Enter Credits"
+                                              placeholder="Add Credits"
                                               className="credit-input"
                                             />
-                                          </td>
-                                          <td>
                                             <button
                                               onClick={() =>
                                                 handleUpdateCredits(
@@ -334,9 +342,9 @@ const AllAdmin = () => {
                                                   user.newCredits
                                                 )
                                               }
-                                              className="update-btn"
+                                              className="update-btn ml-2"
                                             >
-                                              Update
+                                              Add
                                             </button>
                                           </td>
                                         </tr>
@@ -382,11 +390,6 @@ const AllAdmin = () => {
                                             )
                                           }
                                           className="password-toggle1 p-1 rounded hover:bg-gray-100"
-                                          aria-label={
-                                            showPasswords[user.userEmail]
-                                              ? "Hide password"
-                                              : "Show password"
-                                          }
                                         >
                                           {showPasswords[user.userEmail] ? (
                                             <EyeOff className="h-4 w-4 text-gray-600 hover:text-blue-600" />
@@ -418,6 +421,15 @@ const AllAdmin = () => {
                                       <span>{user.credits || 0}</span>
                                     </div>
 
+                                    <div className="mobile-card-row">
+                                      <span className="mobile-label">
+                                        Credit Cost:
+                                      </span>
+                                      <span className="credit-cost-display">
+                                        {user.creditCostPerLink || 5}
+                                      </span>
+                                    </div>
+
                                     <div className="mobile-card-actions">
                                       <input
                                         type="number"
@@ -425,10 +437,11 @@ const AllAdmin = () => {
                                         onChange={(e) =>
                                           handleInputChange(
                                             index,
+                                            "newCredits",
                                             e.target.value
                                           )
                                         }
-                                        placeholder="Enter Credits"
+                                        placeholder="Add Credits"
                                         className="mobile-credit-input"
                                       />
                                       <button
@@ -440,7 +453,7 @@ const AllAdmin = () => {
                                         }
                                         className="mobile-update-btn"
                                       >
-                                        Update
+                                        Add Credits
                                       </button>
                                     </div>
                                   </div>
@@ -492,5 +505,4 @@ const AllAdmin = () => {
     </div>
   );
 };
-
 export default AllAdmin;
