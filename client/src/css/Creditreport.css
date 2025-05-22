@@ -1,0 +1,96 @@
+/* Debug Table Styles */
+.debug-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  background: rgb(248, 248, 248);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.debug-table-header {
+  background-color: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.debug-table-header th {
+  padding: 0.2rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #ffffff;
+  font-size: 0.8rem;
+}
+
+.debug-table-row {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.debug-table-row:last-child {
+  border-bottom: none;
+}
+
+.debug-table-cell {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+}
+
+.debug-value {
+  font-weight: 200;
+  font-size: small;
+  color: #1e293b;
+}
+
+.refresh-cell {
+  text-align: center;
+}
+
+.refresh-button {
+  background: #608ae5;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.refresh-button:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.refresh-button:active {
+  background: #1d4ed8;
+  transform: translateY(0);
+}
+
+.refresh-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+  .debug-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .debug-table-header th,
+  .debug-table-cell {
+    padding: 0.5rem;
+    font-size: 0.8125rem;
+  }
+  
+  .refresh-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+}

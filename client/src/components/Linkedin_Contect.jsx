@@ -532,7 +532,7 @@ function BulkLookup() {
             </li>
             <div className="main-title">
               <li className="profile">
-                <p className="title">LinkedIn Content Verification</p>
+                <p className="title-head">LinkedIn Content Verification</p>
                 <li className="credits-main1">
                   <h5 className="credits">
                     <img
@@ -545,11 +545,11 @@ function BulkLookup() {
                 </li>
               </li>
               <li>
-                <p className="title-des2">
+                {/* <p className="title-des2">
                   Upload LinkedIn URL files to verify and validate profile content at scale.
-                </p>
+                </p> */}
               </li>
-              <h1 className="title-head">Automated LinkedIn Profile Checker</h1>
+              {/* <h1 className="title-head">LinkedIn Content Verification</h1> */}
             </div>
           </nav>
 

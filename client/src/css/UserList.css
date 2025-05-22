@@ -1,11 +1,11 @@
 /* Form Container */
 .add-user-form-container {
-  max-width: 400px;
+  max-width: 300px;
   justify-content: center;
-  padding: 30px;
-  margin: 0px auto;
+  padding: 20px;
+  margin: 10px auto;
   background-color: #f9f9f9;
-  border-radius: 10px;
+  border-radius: 20px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   font-family: "Arial", sans-serif;
 }
@@ -19,7 +19,7 @@
 .add-user-form-container form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
 }
 
 .add-user-form-container input[type="email"],
@@ -27,7 +27,7 @@
 .add-user-form-container input[type="number"] {
   padding: 12px 15px;
   
-  font-size: 16px;
+  font-size: 14px;
   border: 1px solid #dcdcdc;
   border-radius: 8px;
   background-color: #ffffff;
@@ -38,18 +38,18 @@
 .add-user-form-container input[type="email"]:focus,
 .add-user-form-container input[type="password"]:focus,
 .add-user-form-container input[type="number"]:focus {
-  border-color: #007bff;
+  border-color: #5f7d9e;
   outline: none;
   box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
 }
 
 .add-user-form-container button[type="submit"] {
   padding: 12px 15px;
-  background-color: #007bff;
-  color: white;
+  background-color: #6897ca;
+  color: rgb(255, 255, 255);
   border: none;
-  border-radius: 8px;
-  font-size: 16px;
+  border-radius: 20px;
+  font-size: 14px;
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s ease-in-out;

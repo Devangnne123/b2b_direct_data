@@ -106,6 +106,7 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
       uniqueId,
       fileName: req.file.originalname,
       totallink: links.length,
+      
       matchCount,
     });
 
@@ -295,9 +296,48 @@ app.use('/api/links', linkRoutes);
   
   
   
+// app.get('/created-by/:email', async (req, res) => {
+//   try {
+//     // Verify the requesting user has permission
+//     const requestingUser = req.user; // Assuming you have authentication middleware
+    
+//     // Only allow if the requesting user is an admin or is requesting their own created users
+//     if (requestingUser.roleId !== 1 && requestingUser.userEmail !== req.params.email) {
+//       return res.status(403).json({
+//         success: false,
+//         error: "Unauthorized - You can only view users you created"
+//       });
+//     }
 
+//     // Find all users where createdBy matches the email parameter
+//     const createdUsers = await User.findAll({
+//       where: {
+//         createdBy: req.params.email
+//       },
+//       attributes: [
+//         'userEmail',
+//         'companyName',
+//         'credits',
+//         'createdAt',
+//         'lastLogin',
+//         'isActive'
+//       ],
+//       order: [['createdAt', 'DESC']]
+//     });
 
+//     res.json({
+//       success: true,
+//       data: createdUsers
+//     });
 
+//   } catch (error) {
+//     console.error('Error fetching created users:', error);
+//     res.status(500).json({
+//       success: false,
+//       error: "Failed to fetch created users"
+//     });
+//   }
+// });
 
 
 

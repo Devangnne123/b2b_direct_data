@@ -84,12 +84,12 @@ const AddUser = () => {
               </li>
               <div className="main-title">
                 <li className="profile">
-                  <p className="title">Add User</p>
+                  <p className="title-head">Add User</p>
                 </li>
-                <li>
+                {/* <li>
                   <p className="title-des2">You can Add your User Here</p>
                 </li>
-                <li className="title-head">Explore Real-Time Data</li>
+                <li className="title-head">Explore Real-Time Data</li> */}
               </div>
             </nav>
           </div>

@@ -181,6 +181,7 @@ function BulkLookup() {
         file: file.name,
         matchCount: res.data.matchCount || 0,
         totallink: totalLinks,
+        links:res.data.link,
         uniqueId: res.data.uniqueId,
         creditToDeduct: res.data.matchCount * creditCost,
         timestamp: new Date().toISOString(),
@@ -290,49 +291,83 @@ function BulkLookup() {
     }
   };
 
-  function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits }) {
-    const totalLinks = pendingUpload.totallink || 0;
-    const matchCount = pendingUpload.matchCount || 0;
-    const notFoundCount = totalLinks - matchCount;
-    const creditsToDeduct = pendingUpload.creditToDeduct || 0;
-    const remainingCredits = currentCredits - creditsToDeduct;
+function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits }) {
+  const totalLinks = pendingUpload.totallink || 0;
+  const matchCount = pendingUpload.matchCount || 0;
+  const notFoundCount = totalLinks - matchCount;
+  const creditsToDeduct = pendingUpload.creditToDeduct || 0;
+  const remainingCredits = currentCredits - creditsToDeduct;
 
-    return (
-      <div className="modal-container">
-        <h3 className="modal-heading">Confirm Upload</h3>
-        <div className="modal-content-space">
-          <p className="text-gray-800">You have an unconfirmed upload:</p>
-          <div className="info-box">
-            <p><strong>📄 File:</strong> {pendingUpload.file}</p>
-            <p><strong>🔗 Total Links:</strong> {totalLinks}</p>
-            <p className="text-green-600"><strong>✅ Matches Found:</strong> {matchCount}</p>
-            <p className="text-red-600"><strong>❌ Not Found:</strong> {notFoundCount}</p>
-            <p><strong>💳 Credits to Deduct:</strong> {creditsToDeduct}</p>
-            <p className="font-bold"><strong>🧮 Remaining Credits:</strong> {remainingCredits}</p>
+  return (
+    <div className="modal-container">
+      <h3 className="modal-heading">Confirm Upload</h3>
+      <div className="modal-content-space">
+        {/* <p className="text-gray-800 mb-4">You have an unconfirmed upload:</p> */}
+        
+        <div className="horizontal-table">
+          {/* File */}
+          <div className="horizontal-table-item">
+            <span className="horizontal-table-label">File</span>
+            <span className="horizontal-table-value">📄 {pendingUpload.file}</span>
           </div>
-          <p className="text-sm text-gray-600 text-center">
-            This dialog will persist until you choose an option.
-          </p>
+          
+          {/* Total Links */}
+          <div className="horizontal-table-item">
+            <span className="horizontal-table-label">Total Links</span>
+            <span className="horizontal-table-value">🔗 {totalLinks}</span>
+          </div>
+          
+          {/* Matches Found */}
+          <div className="horizontal-table-item">
+            <span className="horizontal-table-label">Matches Found</span>
+            <span className="horizontal-table-value text-success">✅ {matchCount}</span>
+          </div>
+          
+          {/* Not Found */}
+          <div className="horizontal-table-item">
+            <span className="horizontal-table-label">Not Found</span>
+            <span className="horizontal-table-value text-danger">❌ {notFoundCount}</span>
+          </div>
+          
+          {/* Credits to Deduct */}
+          <div className="horizontal-table-item">
+            <span className="horizontal-table-label">Credits to Deduct</span>
+            <span className="horizontal-table-value">💳 {creditsToDeduct}</span>
+          </div>
+          
+          {/* Remaining Credits */}
+          <div className="horizontal-table-item">
+            <span className="horizontal-table-label">Remaining Credits</span>
+            <span className="horizontal-table-value">
+              🧮 <span className={remainingCredits < 0 ? "text-danger" : "text-success"}>
+                {remainingCredits}
+              </span>
+            </span>
+          </div>
         </div>
-        <div className="buttons-container">
-          <button onClick={onCancel} className="cancel-button">
-            <span>❌</span>
-            <span>Cancel Upload</span>
-          </button>
-          <button
-            onClick={onConfirm}
-            className="confirm-button"
-            disabled={remainingCredits < 0}
-            title={remainingCredits < 0 ? "Not enough credits" : ""}
-            style={remainingCredits < 0 ? {backgroundColor: '#9ca3af', cursor: 'not-allowed'} : {}}
-          >
-            <span>✅</span>
-            <span>Confirm & Process</span>
-          </button>
-        </div>
+
+        {/* <p className="text-sm text-gray-600 text-center mt-4">
+          This dialog will persist until you choose an option.
+        </p> */}
       </div>
-    );
-  }
+      <div className="buttons-container">
+        <button onClick={onCancel} className="cancel-button">
+          <span>❌</span>
+          <span>Cancel Upload</span>
+        </button>
+        <button
+          onClick={onConfirm}
+          className="confirm-button"
+          disabled={remainingCredits < 0}
+          title={remainingCredits < 0 ? "Not enough credits" : ""}
+        >
+          <span>✅</span>
+          <span>Confirm & Process</span>
+        </button>
+      </div>
+    </div>
+  );
+}
 
   const requestSort = (key) => {
     let direction = "desc";
@@ -394,6 +429,7 @@ function BulkLookup() {
     });
 
     const rowData = sortedGroup.map((entry) => {
+      const links = entry?.link || null;
       const matchLink = entry?.matchLink || null;
       const mobile_number = entry?.mobile_number || "N/A";
       const mobile_number_2 = entry?.mobile_number_2 || "N/A";
@@ -412,11 +448,13 @@ function BulkLookup() {
       return {
         fileName: entry?.fileName || "Unknown",
         uniqueId: entry?.uniqueId || "Unknown",
-        matchCount: entry?.matchCount || 0,
-        totallinks: entry?.totallink || 0,
+        // matchCount: entry?.matchCount || 0,
+        // totallinks: entry?.totallink || 0,
         date: entry?.date ? new Date(entry.date).toLocaleString() : "Unknown",
+        
+        orignal_link:links,
+        matchLink: matchLink || "N/A",
         status,
-        link: matchLink || "N/A",
         mobile_number,
         mobile_number_2,
         person_name,
@@ -484,7 +522,7 @@ function BulkLookup() {
               <nav className="main-head">
                 <div className="main-title">
                   <li className="profile">
-                    <p className="title">Bulk LinkedIn Lookup</p>
+                    <p className="title-head">Bulk LinkedIn Lookup</p>
                     <li className="credits-main1">
                       <h5 className="credits">
                         <img
@@ -497,11 +535,11 @@ function BulkLookup() {
                     </li>
                   </li>
                   <li>
-                    <p className="title-des2">
+                    {/* <p className="title-des2">
                       Upload Excel files containing LinkedIn URLs for bulk processing
-                    </p>
+                    </p> */}
                   </li>
-                  <h1 className="title-head">LinkedIn Data Enrichment</h1>
+                  {/* <h1 className="title-head">Bulk LinkedIn Lookup</h1> */}
                 </div>
               </nav>
 

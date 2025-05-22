@@ -134,9 +134,9 @@ const UserList = () => {
             <nav className="main-head">
               <div className="main-title">
                 <li className="profile">
-                  <p className="title">User Management</p>
+                  <p className="title-head">User Management</p>
                   <li className="credits-main1">
-                    <h5 className="credits1">
+                    <h5 className="credits">
                     <img
                         src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
                         alt="external-credits-university-flaticons-flat-flat-icons"
@@ -146,11 +146,11 @@ const UserList = () => {
                   </li>
                 </li>
                 <li>
-                  <p className="title-des2">
+                  {/* <p className="title-des2">
                     Manage users and credit transfers
-                  </p>
+                  </p> */}
                 </li>
-                <h1 className="title-head">User List</h1>
+                {/* <h1 className="title-head">User List</h1> */}
               </div>
             </nav>
 

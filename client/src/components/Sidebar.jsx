@@ -146,7 +146,7 @@ function Sidebar() {
             )}
           </li>
         ))}
-        {!isCollapsed && roleId === "1" && (
+        {/* {!isCollapsed && roleId === "1" && (
           <div className="start">
             <div className="start-plan">
               <h3>Start Your Plan</h3>
@@ -154,7 +154,7 @@ function Sidebar() {
               <button className="upgrade">Upgrade</button>
             </div>
           </div>
-        )}
+        )} */}
       </nav>
     </aside>
   );

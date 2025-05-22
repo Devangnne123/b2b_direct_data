@@ -31,6 +31,7 @@ import TempLinkMobileForm from "./components/TempLinkMobileForm";
 // import Bulk from "./components/Bulk";
 import Linkedin_Contect from "./components/Linkedin_Contect";
 import Linkedin_Company from "./components/Linkedin_Company";
+import Alladmincompanycredits from "./components/Alladmincompanycredits";
 import "./App.css";
 import AboutUs from "./components/AboutUs";
 
@@ -44,6 +45,7 @@ function App() {
     "/statistic",
     "/add-user",
     // "/bulk",
+    "/Alladmincompanycredits",
     "/Linkedin_Contect",
     "/Linkedin_Company",
     "/temp",
@@ -70,7 +72,8 @@ function App() {
         {/* <Route path="/bulk" element={<Bulk />} /> */}
         <Route path="/statistic" element={<Statistic />} />
         <Route path="/Temp" element={<TempLinkMobileForm />} />
-       
+       AdminCreditReport
+       <Route path="/Alladmincompanycredits" element={<Alladmincompanycredits />} />
         <Route path="/Linkedin_Contect" element={<Linkedin_Contect />} />
         <Route path="/Linkedin_Company" element={<Linkedin_Company />} />
          <Route path="/" element={<Login />} />

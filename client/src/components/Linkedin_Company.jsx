@@ -532,7 +532,7 @@ function BulkLookup() {
             </li>
             <div className="main-title">
               <li className="profile">
-                <p className="title">LinkedIn Company Details Lookup</p>
+                <p className="title-head">LinkedIn Company Details Lookup</p>
                 <li className="credits-main1">
                   <h5 className="credits">
                     <img
@@ -545,11 +545,11 @@ function BulkLookup() {
                 </li>
               </li>
               <li>
-                <p className="title-des2">
+                {/* <p className="title-des2">
                   Upload a file containing LinkedIn company URLs to fetch company details such as size, industry, and location.
-                </p>
+                </p> */}
               </li>
-              <h1 className="title-head">Automated LinkedIn Company Intelligence</h1>
+              {/* <h1 className="title-head">LinkedIn Company Details Lookup</h1> */}
             </div>
           </nav>
 

@@ -238,7 +238,7 @@
 
 
 .title-head {
-  font-size: 40px;
+  font-size: 30px;
   
   margin: 0%;
   font-weight: normal;
@@ -256,12 +256,12 @@
   border: 1px solid #757575;
   color: #757575;
   background-color: #a6baee42;
-  width: 100px;
+  width: 150px;
   padding: 2px 8px;
   display:flex;
   justify-content: center;
   align-items: center;
-  margin: 2%;
+  margin: 10%;
   border-radius: 20px;
   font-size: small;
   
