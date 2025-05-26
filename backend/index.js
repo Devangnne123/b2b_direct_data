@@ -4,7 +4,7 @@ const multer = require('multer');
 const xlsx= require('xlsx');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
-const { sequelize } = require('./config/db');
+const { sequelize,LinkedInProfile } = require('./config/db');
 const Link = require('./model/Link');
 const path = require('path');
 const fs = require('fs');
@@ -16,9 +16,21 @@ const User  = require('./model/userModel'); // Adjust path as needed
 const cors = require('cors');
 require('dotenv').config();  // Load the .env file
 
-
+app.use(cors());
   
-  app.use(cors());
+// app.use(cors({
+//   origin: function (origin, callback) {
+//     const allowedOrigins = ['http://localhost:3000/', 'http://localhost:5173/'];
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   methods: ['GET', 'POST'],
+//   credentials: true
+// }));
+
 
 app.use(express.json()); // middleware
 app.use(express.urlencoded({ extended: false })); // middleware
@@ -579,3 +591,58 @@ app.use('/super-admin', superAdminRoutes);
 
 const uploadedLinksRoutes = require("./routes/uploadedLinksRoutes");
 app.use("/uploadedLinks", uploadedLinksRoutes);
+
+
+
+
+// In your server routes file (e.g., routes.js or app.js)
+const nodemailer = require('nodemailer');
+
+// Configure your email transporter (add this at the top of your file)
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: "pateldevang507@gmail.com", // Your Gmail address
+    pass: "xvytnlaaerusaixw"  // Your Gmail password or app password
+  }
+});
+
+// Add this route
+app.post('/send-upload-notification', async (req, res) => {
+  try {
+    const { email, fileName, totalLinks, matchCount, creditsDeducted } = req.body;
+
+    const mailOptions = {
+      from: "pateldevang507@gmail.com",
+      to: email,
+      subject: 'Your Bulk LinkedIn Lookup Upload Status',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Bulk LinkedIn Lookup - Upload Processed</h2>
+          <p>Your file has been successfully processed by our system.</p>
+          
+          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <h3 style="margin-top: 0; color: #1f2937;">Upload Details</h3>
+            <p><strong>File Name:</strong> ${fileName}</p>
+            <p><strong>Total Links Processed:</strong> ${totalLinks}</p>
+            <p><strong>Matches Found:</strong> ${matchCount}</p>
+            <p><strong>Credits Deducted:</strong> ${creditsDeducted}</p>
+          </div>
+          
+          <p>You can download your results from the Bulk Lookup section of your dashboard.</p>
+          <p>If you have any questions, please reply to this email.</p>
+          
+          <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+            This is an automated message. Please do not reply directly to this email.
+          </p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: 'Email sent successfully' });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});

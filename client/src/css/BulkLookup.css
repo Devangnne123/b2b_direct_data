@@ -1362,6 +1362,9 @@
 .status-badge.pending {
   background-color: #f59e0b; /* amber */
 }
+.status-badge.pending {
+  background-color: #f59e0b; /* amber */
+}
 
 .status-badge.completed {
   background-color: #10b981; /* green */

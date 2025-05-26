@@ -3,7 +3,7 @@ import {
   Users, ArrowUpDown, Database, Download, Calendar, 
   CreditCard, ArrowUpRight, ArrowDownLeft, Loader2, 
   ChevronLeft, ChevronRight, FileSpreadsheet,
-  FileText, FileInput, AlertCircle, Coins, Mail, Plus, Minus, Tag,Send,Banknote
+  FileText, FileInput, AlertCircle, Coins, Mail, Plus, Minus, Tag, Send, Banknote
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
@@ -13,6 +13,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "../css/Creditreport.css";
 
 const UserCreditReport = () => {
+   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [adminCredits, setAdminCredits] = useState([]);
   const [fileUploads, setFileUploads] = useState([]);
@@ -29,8 +30,25 @@ const UserCreditReport = () => {
   const userEmail = JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
 
   useEffect(() => {
+    fetchUsers();
     fetchCreditData();
-  }, []);
+  }, [userEmail]);
+
+   const fetchUsers = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/users/created-by/${userEmail}`
+      );
+      if (!response.ok) throw new Error(`Error: ${response.statusText}`);
+
+      const { data } = await response.json();
+      setUsers(data);
+    } catch (error) {
+      setError(error.message || "Failed to fetch user data.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchCreditData = async () => {
     setLoading(true);
@@ -44,7 +62,7 @@ const UserCreditReport = () => {
         })
       ]);
 
-      // Process user transactions
+      // Process user transactions (both sent and received)
       const processedUserTxns = (userTxnsRes.data?.data || []).map(t => ({
         ...t,
         type: "USER_TRANSACTION",
@@ -52,29 +70,31 @@ const UserCreditReport = () => {
         displayDate: t.transactionDate || t.createdAt,
         description: t.transactionType,
         icon: <CreditCard className="h-4 w-4 text-purple-500" />,
-        amount: t.receiverEmail === userEmail ? Math.abs(t.amount) : -Math.abs(t.amount),
+        amount: t.receiverEmail === userEmail ? Math.abs(t.amount) : Math.abs(t.amount),
         isCredit: t.receiverEmail === userEmail,
         sender: t.senderEmail,
-        receiver: t.receiverEmail
+        receiver: t.receiverEmail,
+        createdBy: t.createdBy || userEmail
       }));
 
-      // Process admin transactions where user is the recipient
+      // Process admin transactions where user is involved (either recipient or creator)
       const processedAdminCredits = (adminTxnsRes.data?.data || [])
-        .filter(txn => txn.recipientEmail === userEmail)
+        .filter(txn => txn.recipientEmail === userEmail || txn.createdBy === userEmail)
         .map(txn => ({
           ...txn,
           type: "ADMIN_CREDIT",
           sortKey: new Date(txn.date),
           displayDate: txn.date,
-          description: "Admin Credit Assignment",
+          description: txn.createdBy === userEmail ? "Admin Credit Assignment (Sent)" : "Admin Credit Assignment",
           icon: <Mail className="h-4 w-4 text-blue-500" />,
-          amount: Math.abs(txn.amount),
-          isCredit: true,
+          amount: txn.createdBy === userEmail ? -Math.abs(txn.amount) : Math.abs(txn.amount),
+          isCredit: txn.recipientEmail === userEmail,
           sender: txn.senderEmail,
-          receiver: txn.recipientEmail
+          receiver: txn.recipientEmail,
+          createdBy: txn.createdBy
         }));
 
-      // Process file uploads
+      // Process file uploads - show all uploads by this user
       const processedUploads = processFileUploads(uploadsRes.data || []);
 
       setTransactions(processedUserTxns);
@@ -90,43 +110,42 @@ const UserCreditReport = () => {
     }
   };
 
-const processFileUploads = (uploads) => {
-  if (!Array.isArray(uploads)) {
-    console.error("Uploads data is not an array:", uploads);
-    return [];
-  }
-
-  // Group by uniqueId but don't sum the credits - take the first instance's values
-  const groupedUploads = {};
-  uploads.forEach((item) => {
-    if (!item?.uniqueId) return;
-    
-    if (!groupedUploads[item.uniqueId]) {
-      groupedUploads[item.uniqueId] = {
-        ...item,
-        // Don't sum these - take the values from the first item
-        date: item.date || new Date().toISOString(),
-        remainingCredits: item.remainingCredits
-      };
+  const processFileUploads = (uploads) => {
+    if (!Array.isArray(uploads)) {
+      console.error("Uploads data is not an array:", uploads);
+      return [];
     }
-    // Else skip - we only want one entry per uniqueId
-  });
 
-  return Object.values(groupedUploads).map(upload => ({
-    id: upload.uniqueId,
-    type: "FILE_UPLOAD",
-    sortKey: new Date(upload.date),
-    displayDate: upload.date,
-    description: `File Processing: ${upload.fileName || 'Unknown'}`,
-    details: `${upload.matchCount || 0} matches`, // Removed count of links
-    amount: upload.creditDeducted || 0, // Use the original creditDeducted value
-    remainingCredits: upload.remainingCredits,
-    fileName: upload.fileName,
-    matchCount: upload.matchCount,
-    icon: <FileInput className="h-4 w-4 text-orange-500" />,
-    isCredit: false
-  }));
-};
+    const groupedUploads = {};
+    uploads.forEach((item) => {
+      if (!item?.uniqueId) return;
+      
+      if (!groupedUploads[item.uniqueId]) {
+        groupedUploads[item.uniqueId] = {
+          ...item,
+          date: item.date || new Date().toISOString(),
+          remainingCredits: item.remainingCredits,
+          createdBy: userEmail
+        };
+      }
+    });
+
+    return Object.values(groupedUploads).map(upload => ({
+      id: upload.uniqueId,
+      type: "FILE_UPLOAD",
+      sortKey: new Date(upload.date),
+      displayDate: upload.date,
+      description: `File Processing: ${upload.fileName || 'Unknown'}`,
+      details: `${upload.matchCount || 0} matches`,
+      amount: -Math.abs(upload.creditDeducted || 0),
+      remainingCredits: upload.remainingCredits,
+      fileName: upload.fileName,
+      matchCount: upload.matchCount,
+      icon: <FileInput className="h-4 w-4 text-orange-500" />,
+      isCredit: false,
+      createdBy: upload.createdBy || userEmail
+    }));
+  };
 
   const requestSort = (key) => {
     setSortConfig(prev => ({
@@ -148,6 +167,13 @@ const processFileUploads = (uploads) => {
       data = [...fileUploads];
     }
 
+    // Filter to show transactions where user is involved (either as sender/receiver or creator)
+    data = data.filter(item => 
+      item.sender === userEmail || 
+      item.receiver === userEmail || 
+      item.createdBy === userEmail
+    );
+
     return data.sort((a, b) => {
       if (sortConfig.key === "amount") {
         return sortConfig.direction === "desc" 
@@ -159,8 +185,9 @@ const processFileUploads = (uploads) => {
         ? b.sortKey - a.sortKey 
         : a.sortKey - b.sortKey;
     });
-  }, [transactions, adminCredits, fileUploads, activeTab, sortConfig]);
+  }, [transactions, adminCredits, fileUploads, activeTab, sortConfig, userEmail]);
 
+  // Rest of the component remains the same...
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
@@ -177,32 +204,31 @@ const processFileUploads = (uploads) => {
       minute: "2-digit",
     });
   };
-// In the renderAmountCell function:
-const renderAmountCell = (amount, isCredit) => {
-  // For file uploads, we always want to show as negative (deduction)
-  const displayAmount = isCredit ? amount : -Math.abs(amount);
-  const isPositive = isCredit;
 
-  return (
-    <div className="flex items-center gap-1">
-      {isPositive ? (
-        <>
-          <ArrowDownLeft className="h-4 w-4 text-green-500" />
-          <span className="font-medium text-green-500">
-            +{Math.abs(displayAmount)}
-          </span>
-        </>
-      ) : (
-        <>
-          <ArrowUpRight className="h-4 w-4 text-red-500" />
-          <span className="font-medium text-red-500">
-            {displayAmount} {/* This will show as negative */}
-          </span>
-        </>
-      )}
-    </div>
-  );
-};
+  const renderAmountCell = (amount, isCredit) => {
+    const displayAmount = isCredit ? amount : -Math.abs(amount);
+    const isPositive = isCredit;
+
+    return (
+      <div className="flex items-center gap-1">
+        {isPositive ? (
+          <>
+            <ArrowDownLeft className="h-4 w-4 text-green-500" />
+            <span className="font-medium text-green-500">
+              +{Math.abs(displayAmount)}
+            </span>
+          </>
+        ) : (
+          <>
+            <ArrowUpRight className="h-4 w-4 text-red-500" />
+            <span className="font-medium text-red-500">
+              {displayAmount}
+            </span>
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="main">
@@ -215,76 +241,63 @@ const renderAmountCell = (amount, isCredit) => {
               <div className="main-title">
                 <li className="profile">
                   <p className="title-head">Credit Report History</p>
-                  
                 </li>
-                <li>
-                  {/* <p className="title-des2">
-                    View your complete credit history including admin assignments
-                  </p> */}
-                </li>
-                {/* <h1 className="title-head">Complete Credit History</h1> */}
               </div>
             </nav>
+            
 
             <section>
               <div className="main-body0">
                 <div className="main-body1">
                   <div className="left">
-                    {/* <div className="left-main1">Analyze your credit transactions</div>
-                    <div className="url-des1">
-                      <p>Detailed breakdown of all credit transactions including file processing deductions.</p>
-                    </div> */}
-
                     {process.env.NODE_ENV === "development" && (
-  <div className="debug-info">
-  {/* <h3>System Debug Information</h3> */}
-  <table className="debug-table">
-    <thead className="debug-table-header">
-      <tr>
-        <th>User</th>
-        <th>Transactions</th>
-        <th>Admin Credits</th>
-        <th>File Uploads</th>
-        <th>Active Tab</th>
-        <th>Sorted Data</th>
-        <th className="refresh-cell">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr className="debug-table-row">
-        <td className="debug-table-cell debug-value">{userEmail || 'N/A'}</td>
-        <td className="debug-table-cell debug-value">{transactions.length}</td>
-        <td className="debug-table-cell debug-value">{adminCredits.length}</td>
-        <td className="debug-table-cell debug-value">{fileUploads.length}</td>
-        <td className="debug-table-cell debug-value">{activeTab}</td>
-        <td className="debug-table-cell debug-value">{sortedData.length}</td>
-        <td className="debug-table-cell refresh-cell">
-          <button 
-            onClick={fetchCreditData} 
-            className="refresh-button"
-            title="Refresh all debug data"
-          >
-            <svg 
-              className="refresh-icon" 
-              xmlns="http://www.w3.org/2000/svg" 
-              viewBox="0 0 20 20" 
-              fill="currentColor"
-            >
-              <path 
-                fillRule="evenodd" 
-                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" 
-                clipRule="evenodd" 
-              />
-            </svg>
-            Refresh
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-)}
-
+                      <div className="debug-info">
+                        <table className="debug-table">
+                          <thead className="debug-table-header">
+                            <tr>
+                              <th>User</th>
+                              <th>Transactions</th>
+                              <th>Admin Credits</th>
+                              <th>File Uploads</th>
+                              <th>Active Tab</th>
+                              <th>Sorted Data</th>
+                              <th className="refresh-cell">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="debug-table-row">
+                              <td className="debug-table-cell debug-value">{userEmail || 'N/A'}</td>
+                              <td className="debug-table-cell debug-value">{transactions.length}</td>
+                              <td className="debug-table-cell debug-value">{adminCredits.length}</td>
+                              <td className="debug-table-cell debug-value">{fileUploads.length}</td>
+                              <td className="debug-table-cell debug-value">{activeTab}</td>
+                              <td className="debug-table-cell debug-value">{sortedData.length}</td>
+                              <td className="debug-table-cell refresh-cell">
+                                <button 
+                                  onClick={fetchCreditData} 
+                                  className="refresh-button"
+                                  title="Refresh all debug data"
+                                >
+                                  <svg 
+                                    className="refresh-icon" 
+                                    xmlns="http://www.w3.org/2000/svg" 
+                                    viewBox="0 0 20 20" 
+                                    fill="currentColor"
+                                  >
+                                    <path 
+                                      fillRule="evenodd" 
+                                      d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" 
+                                      clipRule="evenodd" 
+                                    />
+                                  </svg>
+                                  Refresh
+                                </button>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
 
                     <div className="credit-tabs">
                       <button 
@@ -338,29 +351,24 @@ const renderAmountCell = (amount, isCredit) => {
                                     <th onClick={() => requestSort("date")}>
                                       <div className="flex items-center gap-6">
                                         <Calendar className="h-7 w-4" />
-                                       
                                       </div>
                                     </th>
                                     <th><div className="flex items-center gap-1">
-                                        < Tag className="h-7 w-4" />
-                                     
+                                        <Tag className="h-7 w-4" />
                                       </div></th>
                                     <th><div className="flex items-center gap-1">
                                         <FileInput className="h-7 w-4" />
-                                                                              </div></th>
+                                      </div></th>
                                     <th><div className="flex items-center gap-1">
                                         <Send className="h-7 w-4" />
-                                        
                                       </div></th>
                                     <th onClick={() => requestSort("amount")}>
                                       <div className="flex items-center gap-1">
                                         <Coins className="h-7 w-4" />
-                                        
                                       </div>
                                     </th>
                                     <th><div className="flex items-center gap-1">
                                         <Banknote className="h-7 w-4" />
-                                       
                                       </div></th>
                                   </tr>
                                 </thead>
@@ -374,7 +382,7 @@ const renderAmountCell = (amount, isCredit) => {
                                             {item.icon}
                                             <span>
                                               {item.type === "ADMIN_CREDIT" 
-                                                ? "Admin Credit" 
+                                                ? item.createdBy === userEmail ? "Admin Credit (Sent)" : "Admin Credit" 
                                                 : item.type === "FILE_UPLOAD"
                                                 ? "File Process"
                                                 : "Transaction"}
@@ -395,7 +403,11 @@ const renderAmountCell = (amount, isCredit) => {
                                         </td>
                                         <td>
                                           {item.type === "ADMIN_CREDIT" ? (
-                                            <div>From Admin: {item.sender}</div>
+                                            <div>
+                                              {item.createdBy === userEmail 
+                                                ? `To: ${item.receiver}` 
+                                                : `From Admin: ${item.sender}`}
+                                            </div>
                                           ) : item.sender === userEmail ? (
                                             <div>To: {item.receiver}</div>
                                           ) : (
@@ -416,7 +428,7 @@ const renderAmountCell = (amount, isCredit) => {
                                   ) : (
                                     <tr>
                                       <td colSpan="6" className="no-data">
-                                        No {activeTab === "all" ? "history" : activeTab} found.
+                                        No {activeTab === "all" ? "history" : activeTab} found for your account.
                                       </td>
                                     </tr>
                                   )}
@@ -465,7 +477,7 @@ const renderAmountCell = (amount, isCredit) => {
                                       <div>
                                         <div className="transaction-type">
                                           {item.type === "ADMIN_CREDIT" 
-                                            ? "Admin Credit" 
+                                            ? item.createdBy === userEmail ? "Admin Credit (Sent)" : "Admin Credit"
                                             : item.type === "FILE_UPLOAD"
                                             ? "File Process"
                                             : "Transaction"}
@@ -502,7 +514,11 @@ const renderAmountCell = (amount, isCredit) => {
                                       <span className="stat-label">Direction:</span>
                                       <div>
                                         {item.type === "ADMIN_CREDIT" ? (
-                                          <div>From Admin: {item.sender}</div>
+                                          <div>
+                                            {item.createdBy === userEmail 
+                                              ? `To: ${item.receiver}` 
+                                              : `From Admin: ${item.sender}`}
+                                          </div>
                                         ) : item.sender === userEmail ? (
                                           <div>To: {item.receiver}</div>
                                         ) : (
@@ -524,7 +540,7 @@ const renderAmountCell = (amount, isCredit) => {
                               ))
                             ) : (
                               <div className="empty-state">
-                                <p>No {activeTab === "all" ? "history" : activeTab} found.</p>
+                                <p>No {activeTab === "all" ? "history" : activeTab} found for your account.</p>
                               </div>
                             )}
 

@@ -49,7 +49,6 @@ class ErrorBoundary extends React.Component {
 
 function BulkLookup() {
   const [file, setFile] = useState(null);
-  const [email, setEmail] = useState("");
   const [savedEmail, setSavedEmail] = useState("Guest");
   const [uploadedData, setUploadedData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
@@ -57,7 +56,7 @@ function BulkLookup() {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
-    const [shouldRefresh, setShouldRefresh] = useState(false);
+  const [shouldRefresh, setShouldRefresh] = useState(false);
   const [sortConfig, setSortConfig] = useState({
     key: "date",
     direction: "desc",
@@ -68,43 +67,69 @@ function BulkLookup() {
   const [creditCost, setCreditCost] = useState(5);
   const dataRef = useRef({ uploadedData: [], credits: null });
 
-  // Silent data refresh function
-  const silentRefresh = useCallback(async () => {
-    try {
-      if (!savedEmail || savedEmail === "Guest") return;
-      
-      const [linksRes, creditsRes] = await Promise.all([
-        axios.get("http://localhost:3000/get-links", {
-          headers: { "user-email": savedEmail },
-        }),
-        axios.get(`http://localhost:3000/api/user/${savedEmail}`)
-      ]);
-
-      // Only update state if data actually changed
-      if (JSON.stringify(linksRes.data) !== JSON.stringify(dataRef.current.uploadedData)) {
-        setUploadedData(linksRes.data || []);
-        setFilteredData(linksRes.data || []);
-        dataRef.current.uploadedData = linksRes.data || [];
-      }
-
-      if (creditsRes.data.credits !== dataRef.current.credits) {
-        setCredits(creditsRes.data.credits);
-        dataRef.current.credits = creditsRes.data.credits;
-      }
-    } catch (error) {
-      console.error("Silent refresh error:", error);
-    }
-  }, [savedEmail]);
-
-  // Set up silent refresh every 10 seconds
+  // Add beforeunload event listener
   useEffect(() => {
-    // Initial load
+    const handleBeforeUnload = async (e) => {
+      if (pendingUpload) {
+        // Cancel the pending upload when page is refreshed or closed
+        try {
+          await axios.delete(
+            `http://localhost:3000/cancel-upload/${pendingUpload.uniqueId}`
+          );
+          console.log("Pending upload canceled due to page refresh/close");
+        } catch (err) {
+          console.error("Failed to cancel upload on page exit:", err);
+        }
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [pendingUpload]);
+
+const silentRefresh = useCallback(async () => {
+  try {
+    if (!savedEmail || savedEmail === "Guest") return;
+    
+    const [linksRes, creditsRes] = await Promise.all([
+      axios.get("http://localhost:3000/get-links", {
+        headers: { "user-email": savedEmail },
+      }),
+      axios.get(`http://localhost:3000/api/user/${savedEmail}`)
+    ]);
+
+    const now = Date.now();
+    const newData = linksRes.data || [];
+
+    // Preserve processing status for items that are still within 1 minute window
+    const updatedData = newData.map(item => {
+      const itemTime = new Date(item.date || 0).getTime();
+      if (now - itemTime < 60000) { // Less than 1 minute old
+        return { ...item, status: "pending" };
+      }
+      return item;
+    });
+
+    if (JSON.stringify(updatedData) !== JSON.stringify(dataRef.current.uploadedData)) {
+      setUploadedData(updatedData);
+      setFilteredData(updatedData);
+      dataRef.current.uploadedData = updatedData;
+    }
+
+    if (creditsRes.data.credits !== dataRef.current.credits) {
+      setCredits(creditsRes.data.credits);
+      dataRef.current.credits = creditsRes.data.credits;
+    }
+  } catch (error) {
+    console.error("Silent refresh error:", error);
+  }
+}, [savedEmail]);
+
+  useEffect(() => {
     silentRefresh();
-    
-    // Set up interval
     const intervalId = setInterval(silentRefresh, 10000);
-    
-    // Clean up
     return () => clearInterval(intervalId);
   }, [silentRefresh]);
 
@@ -129,7 +154,7 @@ function BulkLookup() {
       const response = await axios.get("http://localhost:3000/users/getAllAdmin");
       if (response.data && response.data.users) {
         const adminUser = response.data.users.find(
-          (user) => user.userEmail === email
+          (user) => user.userEmail === email  
         );
         if (adminUser) {
           setCreditCost(adminUser.creditCostPerLink || 5);
@@ -140,122 +165,169 @@ function BulkLookup() {
     }
   };
 
-  const getGroupStatus = (group) => {
-    if (!group || group.length === 0) return "completed";
-    
-    const firstItem = group[0] || {};
-    const uniqueId = firstItem.uniqueId;
-    
-    // Check if we have processing status for this group
-    if (processingStatus[uniqueId]) {
-      return processingStatus[uniqueId].status;
+const getGroupStatus = (group) => {
+  if (!group || group.length === 0) return "completed";
+  
+  const firstItem = group[0] || {};
+  const uniqueId = firstItem.uniqueId;
+  
+  // Check processing status first
+  if (processingStatus[uniqueId]) {
+    return processingStatus[uniqueId].status;
+  }
+  
+  // Check if any item is still pending based on timestamp
+  const now = Date.now();
+  const oneMinuteAgo = now - 60000; // 1 minute in milliseconds
+  
+  // Check if any item was created less than 1 minute ago
+  const hasRecentItems = group.some(item => {
+    const itemTime = new Date(item.date || 0).getTime();
+    return itemTime > oneMinuteAgo;
+  });
+  
+  if (hasRecentItems) {
+    return "pending";
+  }
+  
+  // Otherwise, check actual status
+  if (group.some(item => item.status === "pending")) return "pending";
+  if (group.some(item => item.status === "processing")) return "processing";
+  if (group.every(item => item.matchLink)) return "completed";
+  if (firstItem.matchCount === 0) return "completed";
+  
+  return "incompleted";
+};
+  const handleUpload = async () => {
+    if (!file) {
+      toast.error("Please choose a file to upload first");
+      return;
     }
     
-    // Original status logic
-    if (firstItem.matchCount === 0) return "completed";
-    if (group.some(item => item.status === "pending")) return "pending";
-    if (group.some(item => item.status === "processing")) return "processing";
-    if (group.every(item => item.matchLink)) return "pending";
-    return "incompleted";
-  };
-
-  const handleUpload = async () => {
-    if (!file) return toast.error("Please choose a file to upload.");
-    if (!savedEmail || savedEmail === "Guest")
+    if (!savedEmail || savedEmail === "Guest") {
       return toast.error("Please save your email first");
-    if (credits < creditCost) return toast.error("Not enough credits");
+    }
+    
+    if (credits < creditCost) {
+      return toast.error("Not enough credits");
+    }
 
     setLoading(true);
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const res = await axios.post(
-        "http://localhost:3000/upload-excel",
-        formData,
-        { headers: { "user-email": savedEmail } }
-      );
+    const res = await axios.post(
+      "http://localhost:3000/upload-excel",
+      formData,
+      { headers: { "user-email": savedEmail } }
+    );
 
-      const totalLinks = res.data.totallink || res.data.totalLinks || 0;
-      const uploadData = {
-        file: file.name,
-        matchCount: res.data.matchCount || 0,
-        totallink: totalLinks,
-        links:res.data.link,
-        uniqueId: res.data.uniqueId,
-        creditToDeduct: res.data.matchCount * creditCost,
-        timestamp: new Date().toISOString(),
-      };
-      
-      setPendingUpload(uploadData);
-      setShowConfirmation(true);
-      
-      // Set processing status with timeout
-      setProcessingStatus(prev => ({
-        ...prev,
-        [res.data.uniqueId]: {
-          status: "processing",
-          startTime: Date.now()
-        }
-      }));
-      
-      // Set timeout to update status after 20 seconds
-      setTimeout(() => {
-        setProcessingStatus(prev => ({
+    const totalLinks = res.data.totallink || res.data.totalLinks || 0;
+    const uploadData = {
+      file: file.name,
+      matchCount: res.data.matchCount || 0,
+      totallink: totalLinks,
+      links: res.data.link,
+      uniqueId: res.data.uniqueId,
+      creditToDeduct: res.data.matchCount * creditCost,
+      timestamp: new Date().toISOString(),
+    };
+    
+    // Save pending upload to localStorage with timestamp
+    localStorage.setItem("pendingUpload", JSON.stringify({
+      ...uploadData,
+      uploadTime: Date.now()
+    }));
+    
+    setPendingUpload(uploadData);
+    setShowConfirmation(true);
+    
+    // Set initial status as pending for 1 minute
+    setProcessingStatus(prev => ({
+      ...prev,
+      [res.data.uniqueId]: {
+        status: "pending",
+        startTime: Date.now()
+      }
+    }));
+    
+    // After 1 minute, update status based on actual data
+    setTimeout(() => {
+      setProcessingStatus(prev => {
+        const group = uploadedData.filter(item => item.uniqueId === res.data.uniqueId);
+        const actualStatus = group.some(item => item.status === "processing") ? "processing" :
+                           group.every(item => item.matchLink) ? "completed" : "incompleted";
+        
+        return {
           ...prev,
           [res.data.uniqueId]: {
             ...prev[res.data.uniqueId],
-            status: "completed"
+            status: actualStatus
           }
-        }));
-      }, 30000); // 20 seconds
-
+        };
+      });
+    }, 60000); // 1 minute
     } catch (err) {
       console.error(err);
+      toast.error("Failed to upload file");
     } finally {
       setLoading(false);
     }
   };
 
- const confirmUpload = async () => {
-    if (!pendingUpload) return;
+  const confirmUpload = async () => {
+  if (!pendingUpload) return;
 
-    setLoading(true);
+  setLoading(true);
+  try {
+    const creditRes = await axios.post(
+      "http://localhost:3000/api/upload-file",
+      {
+        userEmail: savedEmail,
+        creditCost: pendingUpload.creditToDeduct,
+        uniqueId: pendingUpload.uniqueId,
+      }
+    );
+
+    setCredits(creditRes.data.updatedCredits);
+    toast.success(`Processing complete! Deducted ${pendingUpload.creditToDeduct} credits`);
+    
+    // Send email notification
     try {
-      const creditRes = await axios.post(
-        "http://localhost:3000/api/upload-file",
-        {
-          userEmail: savedEmail,
-          creditCost: pendingUpload.creditToDeduct,
-          uniqueId: pendingUpload.uniqueId,
-        }
-      );
-
-      setCredits(creditRes.data.updatedCredits);
-      toast.success(`Processing complete! Deducted ${pendingUpload.creditToDeduct} credits`);
-      setPendingUpload(null);
-      setFile(null);
-      document.querySelector('input[type="file"]').value = null;
-      
-      // Set flag to refresh after 20 seconds
-      setShouldRefresh(true);
-    } catch (err) {
-      toast.error("Failed to confirm processing");
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setShowConfirmation(false);
+      await axios.post("http://localhost:3000/send-upload-notification", {
+        email: savedEmail,
+        fileName: pendingUpload.file,
+        totalLinks: pendingUpload.totallink || 0,
+        matchCount: pendingUpload.matchCount || 0,
+        creditsDeducted: pendingUpload.creditToDeduct
+      });
+    } catch (emailError) {
+      console.error("Failed to send email notification:", emailError);
+      // Don't show error to user as this is non-critical
     }
-  };
+    
+    // Remove pending upload from localStorage
+    localStorage.removeItem("pendingUpload");
+    
+    setPendingUpload(null);
+    setFile(null);
+    document.querySelector('input[type="file"]').value = null;
+    setShouldRefresh(true);
+  } catch (err) {
+    toast.error("Failed to confirm processing");
+    console.error(err);
+  } finally {
+    setLoading(false);
+    setShowConfirmation(false);
+  }
+};
 
-  // Add this useEffect to handle the refresh
   useEffect(() => {
     if (!shouldRefresh) return;
-    
     const timer = setTimeout(() => {
       window.location.reload();
-    }, 20000); // 20 seconds
-    
+    }, 20000);
     return () => clearTimeout(timer);
   }, [shouldRefresh]);
 
@@ -273,7 +345,9 @@ function BulkLookup() {
       );
       toast.info("Upload canceled - all data removed");
       
-      // Remove processing status if canceled
+      // Remove pending upload from localStorage
+      localStorage.removeItem("pendingUpload");
+      
       setProcessingStatus(prev => {
         const newStatus = {...prev};
         delete newStatus[pendingUpload.uniqueId];
@@ -291,83 +365,71 @@ function BulkLookup() {
     }
   };
 
-function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits }) {
-  const totalLinks = pendingUpload.totallink || 0;
-  const matchCount = pendingUpload.matchCount || 0;
-  const notFoundCount = totalLinks - matchCount;
-  const creditsToDeduct = pendingUpload.creditToDeduct || 0;
-  const remainingCredits = currentCredits - creditsToDeduct;
+  function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits }) {
+    const totalLinks = pendingUpload.totallink || 0;
+    const matchCount = pendingUpload.matchCount || 0;
+    const notFoundCount = totalLinks - matchCount;
+    const creditsToDeduct = pendingUpload.creditToDeduct || 0;
+    const remainingCredits = currentCredits - creditsToDeduct;
 
-  return (
-    <div className="modal-container">
-      <h3 className="modal-heading">Confirm Upload</h3>
-      <div className="modal-content-space">
-        {/* <p className="text-gray-800 mb-4">You have an unconfirmed upload:</p> */}
-        
-        <div className="horizontal-table">
-          {/* File */}
-          <div className="horizontal-table-item">
-            <span className="horizontal-table-label">File</span>
-            <span className="horizontal-table-value">📄 {pendingUpload.file}</span>
-          </div>
-          
-          {/* Total Links */}
-          <div className="horizontal-table-item">
-            <span className="horizontal-table-label">Total Links</span>
-            <span className="horizontal-table-value">🔗 {totalLinks}</span>
-          </div>
-          
-          {/* Matches Found */}
-          <div className="horizontal-table-item">
-            <span className="horizontal-table-label">Matches Found</span>
-            <span className="horizontal-table-value text-success">✅ {matchCount}</span>
-          </div>
-          
-          {/* Not Found */}
-          <div className="horizontal-table-item">
-            <span className="horizontal-table-label">Not Found</span>
-            <span className="horizontal-table-value text-danger">❌ {notFoundCount}</span>
-          </div>
-          
-          {/* Credits to Deduct */}
-          <div className="horizontal-table-item">
-            <span className="horizontal-table-label">Credits to Deduct</span>
-            <span className="horizontal-table-value">💳 {creditsToDeduct}</span>
-          </div>
-          
-          {/* Remaining Credits */}
-          <div className="horizontal-table-item">
-            <span className="horizontal-table-label">Remaining Credits</span>
-            <span className="horizontal-table-value">
-              🧮 <span className={remainingCredits < 0 ? "text-danger" : "text-success"}>
-                {remainingCredits}
+    return (
+      <div className="modal-container">
+        <h3 className="modal-heading">Confirm Upload</h3>
+        <div className="modal-content-space">
+          <div className="horizontal-table">
+            <div className="horizontal-table-item">
+              <span className="horizontal-table-label">File</span>
+              <span className="horizontal-table-value">📄 {pendingUpload.file}</span>
+            </div>
+            
+            <div className="horizontal-table-item">
+              <span className="horizontal-table-label">Total Links</span>
+              <span className="horizontal-table-value">🔗 {totalLinks}</span>
+            </div>
+            
+            <div className="horizontal-table-item">
+              <span className="horizontal-table-label">Matches Found</span>
+              <span className="horizontal-table-value text-success">✅ {matchCount}</span>
+            </div>
+            
+            <div className="horizontal-table-item">
+              <span className="horizontal-table-label">Not Found</span>
+              <span className="horizontal-table-value text-danger">❌ {notFoundCount}</span>
+            </div>
+            
+            <div className="horizontal-table-item">
+              <span className="horizontal-table-label">Credits to Deduct</span>
+              <span className="horizontal-table-value">💳 {creditsToDeduct}</span>
+            </div>
+            
+            <div className="horizontal-table-item">
+              <span className="horizontal-table-label">Remaining Credits</span>
+              <span className="horizontal-table-value">
+                🧮 <span className={remainingCredits < 0 ? "text-danger" : "text-success"}>
+                  {remainingCredits}
+                </span>
               </span>
-            </span>
+            </div>
           </div>
         </div>
-
-        {/* <p className="text-sm text-gray-600 text-center mt-4">
-          This dialog will persist until you choose an option.
-        </p> */}
+        <div className="buttons-container">
+          <button onClick={onCancel} className="cancel-button">
+            <span>❌</span>
+            <span>Cancel Upload</span>
+          </button>
+          <button
+            onClick={onConfirm}
+            className="confirm-button"
+            disabled={remainingCredits < 0}
+            title={remainingCredits < 0 ? "Not enough credits" : ""}
+          >
+            <span>✅</span>
+            <span>Confirm & Process</span>
+          </button>
+        </div>
       </div>
-      <div className="buttons-container">
-        <button onClick={onCancel} className="cancel-button">
-          <span>❌</span>
-          <span>Cancel Upload</span>
-        </button>
-        <button
-          onClick={onConfirm}
-          className="confirm-button"
-          disabled={remainingCredits < 0}
-          title={remainingCredits < 0 ? "Not enough credits" : ""}
-        >
-          <span>✅</span>
-          <span>Confirm & Process</span>
-        </button>
-      </div>
-    </div>
-  );
-}
+    );
+  }
 
   const requestSort = (key) => {
     let direction = "desc";
@@ -448,11 +510,8 @@ function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits
       return {
         fileName: entry?.fileName || "Unknown",
         uniqueId: entry?.uniqueId || "Unknown",
-        // matchCount: entry?.matchCount || 0,
-        // totallinks: entry?.totallink || 0,
         date: entry?.date ? new Date(entry.date).toLocaleString() : "Unknown",
-        
-        orignal_link:links,
+        orignal_link: links,
         matchLink: matchLink || "N/A",
         status,
         mobile_number,
@@ -513,7 +572,7 @@ function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits
   };
 
   return (
-    <ErrorBoundary>
+   <ErrorBoundary>
       <div className="main">
         <div className="main-con">
           <Sidebar userEmail={savedEmail} />
@@ -534,12 +593,6 @@ function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits
                       </h5>
                     </li>
                   </li>
-                  <li>
-                    {/* <p className="title-des2">
-                      Upload Excel files containing LinkedIn URLs for bulk processing
-                    </p> */}
-                  </li>
-                  {/* <h1 className="title-head">Bulk LinkedIn Lookup</h1> */}
                 </div>
               </nav>
 
@@ -564,18 +617,22 @@ function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits
                             type="file"
                             id="file-input"
                             accept=".xlsx, .xls"
-                            onChange={(e) =>
-                              !showConfirmation && setFile(e.target.files[0])
-                            }
+                            onChange={(e) => {
+                              if (!showConfirmation) {
+                                setFile(e.target.files[0]);
+                              }
+                            }}
                             className="file-input"
                             disabled={showConfirmation}
+                            required
                           />
                           <button
                             onClick={handleUpload}
                             className={`upload-btn ${
-                              showConfirmation ? "disabled" : ""
+                              showConfirmation || !file ? "disabled" : ""
                             }`}
                             disabled={
+                              !file ||
                               !savedEmail ||
                               savedEmail === "Guest" ||
                               credits < creditCost ||
@@ -590,6 +647,11 @@ function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits
                             )}
                           </button>
                         </div>
+                        {!file && (
+                          <p className="file-required-text">
+                            * Please select a file to proceed
+                          </p>
+                        )}
                       </div>
 
                       {showConfirmation && pendingUpload && (
@@ -679,17 +741,16 @@ function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits
                                             <td>{first.totallink || 0}</td>
                                             <td>{first.matchCount || 0}</td>
                                             <td>
-                                               <div className={`status-badge ${
-    status === "processing" ? "processing" :
-    status === "pending" ? "pending" : 
-    status === "incompleted" ? "completed" : "Incompleted"
-  }`}>
-    {status === "processing" ? "Processing..." :
-     status === "pending" ? "Pending" : 
-     status === "completed" ? "pending" : "Completed"}
-  </div>
-</td>
-        
+                                              <div className={`status-badge ${
+                                                status === "processing" ? "processing" :
+                                                status === "pending" ? "pending" : 
+                                                status === "incompleted" ? "completed" : "Incompleted"
+                                              }`}>
+                                                {status === "processing" ? "Processing..." :
+                                                status === "pending" ? "Pending" : 
+                                                status === "completed" ? "pending" : "completed"}
+                                              </div>
+                                            </td>
                                             <td>{formatDate(first.date)}</td>
                                             <td>
                                               <div className="flex items-center gap-1">
@@ -705,12 +766,6 @@ function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits
                                                   downloadGroupedEntry(group)
                                                 }
                                                 className="download-btn"
-                                                // disabled={status !== "completed"}
-                                                title={
-                                                  status !== "completed"
-                                                    ? `Download available only when status is Completed (Current: ${status})`
-                                                    : ""
-                                                }
                                               >
                                                 <Download className="h-4 w-4" />
                                                 <span className="hidden md:inline">
@@ -734,7 +789,6 @@ function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits
                                     className={`pagination-btn ${
                                       currentPage === 1 ? "disabled" : ""
                                     }`}
-                                    aria-label="Previous page"
                                   >
                                     <ChevronLeft className="h-4 w-4" />
                                   </button>
@@ -749,7 +803,6 @@ function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits
                                       className={`pagination-btn ${
                                         currentPage === number ? "active" : ""
                                       }`}
-                                      aria-label={`Page ${number}`}
                                     >
                                       {number}
                                     </button>
@@ -763,7 +816,6 @@ function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits
                                         ? "disabled"
                                         : ""
                                     }`}
-                                    aria-label="Next page"
                                   >
                                     <ChevronRight className="h-4 w-4" />
                                   </button>
