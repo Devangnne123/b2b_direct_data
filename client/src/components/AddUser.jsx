@@ -53,7 +53,7 @@ const AddUser = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:3880/users/newuser", {
+      const response = await fetch("http://localhost:6080/users/newuser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),

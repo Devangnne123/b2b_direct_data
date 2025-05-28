@@ -21,7 +21,7 @@ require('dotenv').config();  // Load the .env file
   
 // app.use(cors({
 //   origin: function (origin, callback) {
-//     const allowedOrigins = ['http://localhost:3880/', 'http://localhost:5173/'];
+//     const allowedOrigins = ['http://localhost:6080/', 'http://localhost:5173/'];
 //     if (!origin || allowedOrigins.includes(origin)) {
 //       callback(null, true);
 //     } else {
@@ -573,7 +573,7 @@ app.use('/api', require('./routes/user'));
 
 
 sequelize.sync({ alter: true }).then(() => {
-  app.listen(3000, () => console.log('Backend running on http://localhost:3880'));
+  app.listen(6080, () => console.log('Backend running on http://localhost:6080'));
 });  
 
 const mobileEnrichmentRoutes = require('./routes/mobileEnrichmentRoutes')

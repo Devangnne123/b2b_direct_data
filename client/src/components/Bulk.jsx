@@ -34,7 +34,7 @@ function App() {
 
   const fetchCredits = async (email) => {
     try {
-      const res = await axios.get(`http://localhost:3880/api/user/${email}`);
+      const res = await axios.get(`http://localhost:6080/api/user/${email}`);
       setCredits(res.data.credits);
     } catch (err) {
       alert("Failed to fetch credits");
@@ -54,7 +54,7 @@ function App() {
 
   const fetchUserLinks = async (email) => {
     try {
-      const res = await axios.get("http://localhost:3880/get-links", {
+      const res = await axios.get("http://localhost:6080/get-links", {
         headers: { "user-email": email },
       });
       setUploadedData(res.data);
@@ -76,7 +76,7 @@ function App() {
 
     try {
       const res = await axios.post(
-        "http://localhost:3880/upload-excel",
+        "http://localhost:6080/upload-excel",
         formData,
         {
           headers: { "user-email": savedEmail },
@@ -87,7 +87,7 @@ function App() {
       const creditToDeduct = matchCount * creditCost;
 
       const creditRes = await axios.post(
-        "http://localhost:3880/api/upload-file",
+        "http://localhost:6080/api/upload-file",
         {
           userEmail: savedEmail,
           creditCost: creditToDeduct,
