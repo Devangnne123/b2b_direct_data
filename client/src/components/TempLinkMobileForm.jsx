@@ -15,7 +15,7 @@ const UpdateLinkDetails = () => {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000http://localhost:8000/get-templink', {
+      const res = await fetch('http://3.6.160.211:8000http://3.6.160.211:8000/get-templink', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uniqueId }),
@@ -57,7 +57,7 @@ const UpdateLinkDetails = () => {
     }
 
     try {
-      const res = await fetch('http://localhost:8000http://localhost:8000/update-templink', {
+      const res = await fetch('http://3.6.160.211:8000http://3.6.160.211:8000/update-templink', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

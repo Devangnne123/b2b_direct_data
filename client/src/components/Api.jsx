@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import "../csshttp://localhost:8000.css";
+import "../csshttp://3.6.160.211:8000.css";
 
 export default function Api() {
   const calculateTimeLeft = () => {
