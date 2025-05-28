@@ -31,7 +31,7 @@ const UserList = () => {
   const fetchUsers = async () => {
     try {
       const response = await fetch(
-        `http://localhost:6080/users/created-by/${userEmail}`
+        `/api/users/created-by/${userEmail}`
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
@@ -47,7 +47,7 @@ const UserList = () => {
   const fetchUserCredits = async () => {
     try {
       const response = await fetch(
-        `http://localhost:6080/users/credits/${encodeURIComponent(userEmail)}`
+        `/api/users/credits/${encodeURIComponent(userEmail)}`
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
@@ -85,7 +85,7 @@ const UserList = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:6080/transactions/update-credits",
+        "/api/transactions/update-credits",
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

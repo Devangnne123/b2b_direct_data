@@ -26,7 +26,7 @@ const AllUser = () => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const response = await fetch('http://localhost:6080/users/user');
+        const response = await fetch('/api/users/user');
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }

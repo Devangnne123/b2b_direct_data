@@ -21,7 +21,7 @@ const AdminCreditReport = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("http://localhost:6080/super-admin/get-credit-transactions");
+      const response = await fetch("/api/super-admin/get-credit-transactions");
       const data = await response.json();
 
       if (data.success) {

@@ -37,7 +37,7 @@ const UserCreditReport = () => {
    const fetchUsers = async () => {
     try {
       const response = await fetch(
-        `http://localhost:6080/users/created-by/${userEmail}`
+        `/api/users/created-by/${userEmail}`
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
@@ -55,9 +55,9 @@ const UserCreditReport = () => {
     setError(null);
     try {
       const [userTxnsRes, adminTxnsRes, uploadsRes] = await Promise.all([
-        axios.get(`http://localhost:6080/transactions/credit-transactions/${userEmail}`),
-        axios.get(`http://localhost:6080/super-admin/get-credit-transactions`),
-        axios.get(`http://localhost:6080/get-links`, {
+        axios.get(`/api/transactions/credit-transactions/${userEmail}`),
+        axios.get(`/api/super-admin/get-credit-transactions`),
+        axios.get(`/api/get-links`, {
           headers: { "user-email": userEmail }
         })
       ]);

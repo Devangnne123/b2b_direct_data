@@ -43,8 +43,8 @@ const UserCreditReport = () => {
     try {
       // Fetch both transactions and file uploads in parallel
       const [transactionsRes, uploadsRes] = await Promise.all([
-        axios.get(`http://localhost:6080/transactions/credit-transactions/${userEmail}`),
-        axios.get(`http://localhost:6080/get-links`, {
+        axios.get(`/api/transactions/credit-transactions/${userEmail}`),
+        axios.get(`/api/get-links`, {
           headers: { "user-email": userEmail }
         })
       ]);

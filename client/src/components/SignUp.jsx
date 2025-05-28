@@ -125,7 +125,7 @@ const SignUp = ({ closeModal, setShowModal }) => {
     };
 
     try {
-      const response = await fetch("http://localhost:6080/users/user", {
+      const response = await fetch("/api/users/user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),

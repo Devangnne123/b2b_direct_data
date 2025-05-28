@@ -17,11 +17,11 @@ const path=require("path");
 const cors = require('cors');
 require('dotenv').config();  // Load the .env file
 
-
+const PORT =  8080;
   
 // app.use(cors({
 //   origin: function (origin, callback) {
-//     const allowedOrigins = ['http://localhost:6080/', 'http://localhost:5173/'];
+//     const allowedOrigins = ['/api/', 'http://localhost:5173/'];
 //     if (!origin || allowedOrigins.includes(origin)) {
 //       callback(null, true);
 //     } else {
@@ -35,7 +35,7 @@ require('dotenv').config();  // Load the .env file
 
 app.use(express.json()); // middleware
 const _dirname=path.dirname("")
-const buildpath = path.join(_dirname,"../client/build")
+const buildpath = path.join(_dirname,"../client/dist")
 app.use(express.static(buildpath));
 app.use(cors({ origin: '*' }));
 app.use(express.urlencoded({ extended: false })); // middleware
@@ -573,7 +573,7 @@ app.use('/api', require('./routes/user'));
 
 
 sequelize.sync({ alter: true }).then(() => {
-  app.listen(6080, () => console.log('Backend running on http://localhost:6080'));
+  app.listen(PORT, () => console.log('Backend running on /api'));
 });  
 
 const mobileEnrichmentRoutes = require('./routes/mobileEnrichmentRoutes')

@@ -26,7 +26,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
     setErrorMessage("");
   
     try {
-      const response = await fetch("http://localhost:6080/users/login", {
+      const response = await fetch("/api/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
