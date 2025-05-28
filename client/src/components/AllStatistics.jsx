@@ -19,7 +19,7 @@ const AllStatistics = () => {
     const fetchStatistics = async () => {
       setLoading(true);
       try {
-        const response = await fetch('http://localhost:3000/bulkUpload/allstatistics');
+        const response = await fetch('http://localhost:8000/bulkUpload/allstatistics');
         console.log("Response Status:", response.status);
 
         if (!response.ok) {
@@ -76,7 +76,7 @@ const AllStatistics = () => {
 
   const handleDownload = (filePath) => {
     if (filePath) {
-      window.open(`http://localhost:3000/${filePath}`, "_blank");
+      window.open(`http://localhost:8000/${filePath}`, "_blank");
     }
   };
 

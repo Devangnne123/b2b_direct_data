@@ -15,7 +15,7 @@ const SearchMatchLink = () => {
     setNotFound(false);
 
     try {
-      const res = await axios.get(`http://localhost:3000http://localhost:3000/links/search-match?matchLink=${matchLink}`);
+      const res = await axios.get(`http://localhost:8000http://localhost:8000/links/search-match?matchLink=${matchLink}`);
       setResult(res.data.result);
     } catch (error) {
       if (error.response?.status === 404) {

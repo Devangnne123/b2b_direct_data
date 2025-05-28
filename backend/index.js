@@ -573,7 +573,7 @@ app.use('/api', require('./routes/user'));
 
 
 sequelize.sync({ alter: true }).then(() => {
-  app.listen(3000, () => console.log('Backend running on /api'));
+  app.listen(8000, () => console.log('Backend running on 8000'));
 });  
 
 const mobileEnrichmentRoutes = require('./routes/mobileEnrichmentRoutes')

@@ -125,7 +125,7 @@ const SignUp = ({ closeModal, setShowModal }) => {
     };
 
     try {
-      const response = await fetch("http://localhost:3000/users/user", {
+      const response = await fetch("http://localhost:8000/users/user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
