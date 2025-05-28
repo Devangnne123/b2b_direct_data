@@ -34,7 +34,7 @@ function App() {
 
   const fetchCredits = async (email) => {
     try {
-      const res = await axios.get(`http://3.6.160.211:8000http://3.6.160.211:8000/user/${email}`);
+      const res = await axios.get(`http://3.6.160.211:8000/api/user/${email}`);
       setCredits(res.data.credits);
     } catch (err) {
       alert("Failed to fetch credits");
@@ -87,7 +87,7 @@ function App() {
       const creditToDeduct = matchCount * creditCost;
 
       const creditRes = await axios.post(
-        "http://3.6.160.211:8000http://3.6.160.211:8000/upload-file",
+        "http://3.6.160.211:8000/api/upload-file",
         {
           userEmail: savedEmail,
           creditCost: creditToDeduct,

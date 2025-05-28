@@ -97,7 +97,7 @@ const silentRefresh = useCallback(async () => {
       axios.get("http://3.6.160.211:8000/get-links", {
         headers: { "user-email": savedEmail },
       }),
-      axios.get(`http://3.6.160.211:8000http://3.6.160.211:8000/user/${savedEmail}`)
+      axios.get(`http://3.6.160.211:8000/api/user/${savedEmail}`)
     ]);
 
     const now = Date.now();
@@ -282,7 +282,7 @@ const getGroupStatus = (group) => {
   setLoading(true);
   try {
     const creditRes = await axios.post(
-      "http://3.6.160.211:8000http://3.6.160.211:8000/upload-file",
+      "http://3.6.160.211:8000/api/upload-file",
       {
         userEmail: savedEmail,
         creditCost: pendingUpload.creditToDeduct,

@@ -39,7 +39,7 @@ const handleSearch = async () => {
   setNotFound(false);
 
   try {
-    const res = await axios.get(`http://3.6.160.211:8000http://3.6.160.211:8000/links/search-match?matchLink=${matchLink}`);
+    const res = await axios.get(`http://3.6.160.211:8000/api/links/search-match?matchLink=${matchLink}`);
 
     if (res.data.result) {
       setResult(res.data.result);
