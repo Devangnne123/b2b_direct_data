@@ -39,7 +39,7 @@ function Header() {
               </Link>
             </li>
             <li>
-              <Link to="/api" onClick={handleLinkClick}>
+              <Link to="http://localhost:3000" onClick={handleLinkClick}>
                 API Reference
               </Link>
             </li>

@@ -39,7 +39,7 @@ const handleSearch = async () => {
   setNotFound(false);
 
   try {
-    const res = await axios.get(`/api/api/links/search-match?matchLink=${matchLink}`);
+    const res = await axios.get(`http://localhost:3000http://localhost:3000/links/search-match?matchLink=${matchLink}`);
 
     if (res.data.result) {
       setResult(res.data.result);
@@ -76,7 +76,7 @@ const handleSearch = async () => {
       userStats[userEmail] = updatedStats;
       sessionStorage.setItem("statisticsData", JSON.stringify(userStats));
 
-      await fetch(`/api/bulkUpload/add`, {
+      await fetch(`http://localhost:3000/bulkUpload/add`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -103,7 +103,7 @@ const handleSearch = async () => {
   // Fetch user credits from the database
   const fetchUserCredits = async () => {
     try {
-      const response = await fetch(`/api/users/user`, {
+      const response = await fetch(`http://localhost:3000/users/user`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -139,7 +139,7 @@ const handleSearch = async () => {
   // Update user credits in the database
   const updateUserCredits = async (newCredits) => {
     try {
-      await fetch(`/api/users/update-credits`, {
+      await fetch(`http://localhost:3000/users/update-credits`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -166,7 +166,7 @@ const handleSearch = async () => {
 
     try {
       setIsLoading(true);
-      const apiUrl = `/api/mobileEnrichments/mobileEnrichment/single/${encodeURIComponent(
+      const apiUrl = `http://localhost:3000/mobileEnrichments/mobileEnrichment/single/${encodeURIComponent(
         linkedinLink
       )}`;
       const response = await fetch(apiUrl);
@@ -209,7 +209,7 @@ const handleSearch = async () => {
         userStats[userEmail] = updatedStatistics;
         sessionStorage.setItem("statisticsData", JSON.stringify(userStats));
 
-        await fetch(`/api/bulkUpload/add`, {
+        await fetch(`http://localhost:3000/bulkUpload/add`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

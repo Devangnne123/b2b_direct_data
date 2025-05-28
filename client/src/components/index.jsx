@@ -156,7 +156,7 @@ function Index() {
       {/* <section className="featuresSection">
       <div className="featuresContent">
         <img width="500px"
-          src="https://cdn.builder.io/api/v1/image/assets/TEMP/24725e4db5be734aef05bd0d13a2917d4bc10fc2"
+          src="https://cdn.builder.iohttp://localhost:3000/v1/image/assets/TEMP/24725e4db5be734aef05bd0d13a2917d4bc10fc2"
           alt="Security Features"
           className="featuresImage"
         />

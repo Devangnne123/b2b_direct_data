@@ -74,7 +74,7 @@ function BulkLookup() {
         // Cancel the pending upload when page is refreshed or closed
         try {
           await axios.delete(
-            `/api/cancel-upload/${pendingUpload.uniqueId}`
+            `http://localhost:3000/cancel-upload/${pendingUpload.uniqueId}`
           );
           console.log("Pending upload canceled due to page refresh/close");
         } catch (err) {
@@ -94,10 +94,10 @@ const silentRefresh = useCallback(async () => {
     if (!savedEmail || savedEmail === "Guest") return;
     
     const [linksRes, creditsRes] = await Promise.all([
-      axios.get("/api/get-links", {
+      axios.get("http://localhost:3000/get-links", {
         headers: { "user-email": savedEmail },
       }),
-      axios.get(`/api/api/user/${savedEmail}`)
+      axios.get(`http://localhost:3000http://localhost:3000/user/${savedEmail}`)
     ]);
 
     const now = Date.now();
@@ -151,7 +151,7 @@ const silentRefresh = useCallback(async () => {
 
   const fetchCreditCost = async (email) => {
     try {
-      const response = await axios.get("/api/users/getAllAdmin");
+      const response = await axios.get("http://localhost:3000/users/getAllAdmin");
       if (response.data && response.data.users) {
         const adminUser = response.data.users.find(
           (user) => user.userEmail === email  
@@ -218,7 +218,7 @@ const getGroupStatus = (group) => {
 
     try {
     const res = await axios.post(
-      "/api/upload-excel",
+      "http://localhost:3000/upload-excel",
       formData,
       { headers: { "user-email": savedEmail } }
     );
@@ -282,7 +282,7 @@ const getGroupStatus = (group) => {
   setLoading(true);
   try {
     const creditRes = await axios.post(
-      "/api/api/upload-file",
+      "http://localhost:3000http://localhost:3000/upload-file",
       {
         userEmail: savedEmail,
         creditCost: pendingUpload.creditToDeduct,
@@ -295,7 +295,7 @@ const getGroupStatus = (group) => {
     
     // Send email notification
     try {
-      await axios.post("/api/send-upload-notification", {
+      await axios.post("http://localhost:3000/send-upload-notification", {
         email: savedEmail,
         fileName: pendingUpload.file,
         totalLinks: pendingUpload.totallink || 0,
@@ -341,7 +341,7 @@ const getGroupStatus = (group) => {
     setLoading(true);
     try {
       await axios.delete(
-        `/api/cancel-upload/${pendingUpload.uniqueId}`
+        `http://localhost:3000/cancel-upload/${pendingUpload.uniqueId}`
       );
       toast.info("Upload canceled - all data removed");
       
