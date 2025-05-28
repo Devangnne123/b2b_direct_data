@@ -1,5 +1,6 @@
 const { Sequelize } = require('sequelize');
 
+require('dotenv').config();  // Load the .env file
 // Create a new Sequelize instance
 const sequelize = new Sequelize('newdevang', 'postgres', 'Admin', {
   host: 'localhost',

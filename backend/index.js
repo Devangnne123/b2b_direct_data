@@ -6,17 +6,18 @@ const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
 const { sequelize,LinkedInProfile } = require('./config/db');
 const Link = require('./model/Link');
-const path = require('path');
+
 const fs = require('fs');
 const MasterUrl = require('./model/MasterUrl'); // MasterUrl model
 const TempLinkMobile = require('./model/TempLinkMobile');///tempmobile
 const User  = require('./model/userModel'); // Adjust path as needed
+const path=require("path");
 
 
 const cors = require('cors');
 require('dotenv').config();  // Load the .env file
 
-app.use(cors());
+
   
 // app.use(cors({
 //   origin: function (origin, callback) {
@@ -33,6 +34,10 @@ app.use(cors());
 
 
 app.use(express.json()); // middleware
+const _dirname=path.dirname("")
+const buildpath = path.join(_dirname,"../client/build")
+app.use(express.static(buildpath));
+app.use(cors({ origin: '*' }));
 app.use(express.urlencoded({ extended: false })); // middleware
 // app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
