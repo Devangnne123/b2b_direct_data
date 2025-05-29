@@ -39,7 +39,7 @@ function Header() {
               </Link>
             </li>
             <li>
-              <Link to="http://3.6.160.211:8000" onClick={handleLinkClick}>
+              <Link to="/api" onClick={handleLinkClick}>
                 API Reference
               </Link>
             </li>

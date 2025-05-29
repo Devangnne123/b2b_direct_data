@@ -34,10 +34,10 @@ const PORT =  8080;
 
 
 app.use(express.json()); // middleware
-
-const buildpath = path.join(__dirname,"../client/dist")
+const _dirname=path.dirname("")
+const buildpath = path.join(_dirname,"../client/dist")
 app.use(express.static(buildpath));
-app.use(cors({ origin: 'http://3.6.160.211:8000' }));
+app.use(cors({ origin: '*' }));
 app.use(express.urlencoded({ extended: false })); // middleware
 // app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -47,10 +47,7 @@ app.use(express.urlencoded({ extended: false })); // middleware
 // Middleware
 
 
-// 🔥 This fallback must come AFTER the static files middleware
-app.get("*", (req, res) => {
-  res.sendFile(path.join(buildpath, "index.html"));
-});
+
 
 
   // upload file 
@@ -570,7 +567,7 @@ app.get('/api/credit-cost', async (req, res) => {
 
 
 
-app.use('/api', require('./routes/file'));
+  app.use('/api', require('./routes/file'));
 
 app.use('/api', require('./routes/user'));
 
