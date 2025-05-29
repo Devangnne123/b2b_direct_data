@@ -39,18 +39,7 @@ const buildpath = path.join(_dirname,"../client/dist")
 app.use(express.static(buildpath));
 app.use(cors({ origin: '*' }));
 app.use(express.urlencoded({ extended: false })); // middleware
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// const tempLinkMobileRoutes = require('./routes/tempLinkRoutes');
-// app.use('/', tempLinkMobileRoutes);
-
-// Middleware
-
-
-
-
-
-  // upload file 
+ 
   const upload = multer({ dest: 'uploads/' });
 
 app.post('/upload-excel', upload.single('file'), async (req, res) => {
