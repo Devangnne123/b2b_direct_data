@@ -34,7 +34,7 @@ const PORT =  8080;
 
 
 app.use(express.json()); // middleware
-const __dirname=path.dirname("")
+
 const buildpath = path.join(__dirname,"../client/dist")
 app.use(express.static(buildpath));
 app.use(cors({ origin: 'http://3.6.160.211:8000' }));
