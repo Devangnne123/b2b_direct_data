@@ -40,7 +40,7 @@ app.use(express.static(buildpath));
 app.use(cors({ origin: '*' }));
 app.use(express.urlencoded({ extended: false })); // middleware
  
-  const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: 'uploads/' });
 
 app.post('/upload-excel', upload.single('file'), async (req, res) => {
   try {
