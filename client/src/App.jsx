@@ -72,7 +72,7 @@ function App() {
         {/* <Route path="/bulk" element={<Bulk />} /> */}
         <Route path="/statistic" element={<Statistic />} />
         <Route path="/Temp" element={<TempLinkMobileForm />} />
-       AdminCreditReport
+ 
        <Route path="/Alladmincompanycredits" element={<Alladmincompanycredits />} />
         <Route path="/Linkedin_Contect" element={<Linkedin_Contect />} />
         <Route path="/Linkedin_Company" element={<Linkedin_Company />} />
@@ -99,7 +99,7 @@ function App() {
 
 export default function AppWrapper() {
   return (
-    <Router>
+    <Router basename="/">
       <App />
     </Router>
   );
