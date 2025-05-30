@@ -39,7 +39,7 @@ const handleSearch = async () => {
   setNotFound(false);
 
   try {
-    const res = await axios.get(`http://localhost:8000/api/links/search-match?matchLink=${matchLink}`);
+    const res = await axios.get(`http://3.6.160.211:8000/api/links/search-match?matchLink=${matchLink}`);
 
     if (res.data.result) {
       setResult(res.data.result);
@@ -76,7 +76,7 @@ const handleSearch = async () => {
       userStats[userEmail] = updatedStats;
       sessionStorage.setItem("statisticsData", JSON.stringify(userStats));
 
-      await fetch(`http://localhost:8000/bulkUpload/add`, {
+      await fetch(`http://3.6.160.211:8000/bulkUpload/add`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -103,7 +103,7 @@ const handleSearch = async () => {
   // Fetch user credits from the database
   const fetchUserCredits = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/users/user`, {
+      const response = await fetch(`http://3.6.160.211:8000/users/user`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -139,7 +139,7 @@ const handleSearch = async () => {
   // Update user credits in the database
   const updateUserCredits = async (newCredits) => {
     try {
-      await fetch(`http://localhost:8000/users/update-credits`, {
+      await fetch(`http://3.6.160.211:8000/users/update-credits`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -166,7 +166,7 @@ const handleSearch = async () => {
 
     try {
       setIsLoading(true);
-      const apiUrl = `http://localhost:8000/mobileEnrichments/mobileEnrichment/single/${encodeURIComponent(
+      const apiUrl = `http://3.6.160.211:8000/mobileEnrichments/mobileEnrichment/single/${encodeURIComponent(
         linkedinLink
       )}`;
       const response = await fetch(apiUrl);
@@ -209,7 +209,7 @@ const handleSearch = async () => {
         userStats[userEmail] = updatedStatistics;
         sessionStorage.setItem("statisticsData", JSON.stringify(userStats));
 
-        await fetch(`http://localhost:8000/bulkUpload/add`, {
+        await fetch(`http://3.6.160.211:8000/bulkUpload/add`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
