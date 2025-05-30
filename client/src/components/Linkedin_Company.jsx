@@ -97,7 +97,7 @@ function BulkLookup() {
    useEffect(() => {
     const fetchAdminCreditCost = async () => {
       try {
-        const response = await axios.get("http://3.6.160.211:8000/users/getAllAdmin");
+        const response = await axios.get("http://localhost:8000/users/getAllAdmin");
         if (response.data && response.data.users) {
           // Find the admin user matching the current email
           const adminUser = response.data.users.find(
@@ -130,8 +130,8 @@ function BulkLookup() {
 //   setLoadingcost(true);
   
 //   try {
-//     const response = await axios.get('http://3.6.160.211:8000http://3.6.160.211:8000/credit-cost', {
-//       params: { email } // This will create http://3.6.160.211:8000/credit-cost?email=user@example.com
+//     const response = await axios.get('http://localhost:8000http://localhost:8000/credit-cost', {
+//       params: { email } // This will create http://localhost:8000/credit-cost?email=user@example.com
 //     });
     
 //     setCreditCost(response.data.creditCostPerLink);
@@ -172,7 +172,7 @@ function BulkLookup() {
 
   const fetchCredits = async (email) => {
     try {
-      const res = await axios.get(`http://3.6.160.211:8000/api/user/${email}`);
+      const res = await axios.get(`http://localhost:8000/api/user/${email}`);
       setCredits(res.data.credits);
     } catch (err) {
       toast.error("Failed to fetch credits");
@@ -193,7 +193,7 @@ function BulkLookup() {
   const fetchUserLinks = async (email) => {
     setLoading(true);
     try {
-      const res = await axios.get("http://3.6.160.211:8000/get-links", {
+      const res = await axios.get("http://localhost:8000/get-links", {
         headers: { "user-email": email },
       });
       setUploadedData(res.data || []);
@@ -229,7 +229,7 @@ function BulkLookup() {
 
   try {
     const res = await axios.post(
-      "http://3.6.160.211:8000/upload-excel",
+      "http://localhost:8000/upload-excel",
       formData,
       { headers: { "user-email": savedEmail } }
     );
@@ -264,7 +264,7 @@ function BulkLookup() {
     setLoading(true);
     try {
       const creditRes = await axios.post(
-        "http://3.6.160.211:8000/api/upload-file",
+        "http://localhost:8000/api/upload-file",
         {
           userEmail: savedEmail,
           creditCost: pendingUpload.creditToDeduct,
@@ -303,7 +303,7 @@ function BulkLookup() {
     setLoading(true);
     try {
       await axios.delete(
-        `http://3.6.160.211:8000/cancel-upload/${pendingUpload.uniqueId}`
+        `http://localhost:8000/cancel-upload/${pendingUpload.uniqueId}`
       );
       toast.info("Upload canceled - all data removed");
     } catch (err) {

@@ -142,7 +142,7 @@ const handleUpdateCreditCost = async (userEmail, newCost) => {
 
   try {
     const response = await fetch(
-      `http://3.6.160.211:8000/users/update-credit-cost`,
+      `$http://3.6.160.211:8000/users/update-credit-cost`,
       {
         method: "PATCH",
         headers: { 
