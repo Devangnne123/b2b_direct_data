@@ -33,7 +33,7 @@ const UserStatistics = () => {
         const formattedDate = threeMonthsAgo.toISOString();
     
         const response = await fetch(
-          `http://3.6.160.211:8000/bulkUpload/userStatistics?email=${userEmail}&fromDate=${formattedDate}`
+          `http://13.200.242.61:8000/bulkUpload/userStatistics?email=${userEmail}&fromDate=${formattedDate}`
         );
     
         if (!response.ok) {
@@ -59,7 +59,7 @@ const UserStatistics = () => {
         const formattedDate = threeMonthsAgo.toISOString();
     
         const response = await fetch(
-          `http://3.6.160.211:8000/excel/history/${userEmail}?fromDate=${formattedDate}`
+          `http://13.200.242.61:8000/excel/history/${userEmail}?fromDate=${formattedDate}`
         );
         if (!response.ok) throw new Error("Failed to fetch file history");
     
@@ -100,7 +100,7 @@ const UserStatistics = () => {
   };
 
   const handleDownloadFile = async (filePath) => {
-    window.open(`http://3.6.160.211:8000/${filePath}`, "_blank");
+    window.open(`http://13.200.242.61:8000/${filePath}`, "_blank");
   };
 
   return (
