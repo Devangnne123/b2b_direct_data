@@ -15,7 +15,7 @@ const UpdateLinkDetails = () => {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/get-templink', {
+      const res = await fetch('http://3.109.203.132:8000/api/get-templink', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uniqueId }),
@@ -57,7 +57,7 @@ const UpdateLinkDetails = () => {
     }
 
     try {
-      const res = await fetch('http://localhost:8000/api/update-templink', {
+      const res = await fetch('http://3.109.203.132:8000/api/update-templink', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
