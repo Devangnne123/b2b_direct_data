@@ -53,7 +53,7 @@ const AddUser = () => {
     };
 
     try {
-      const response = await fetch("http://13.200.242.61:8000/users/newuser", {
+      const response = await fetch("http://localhost:8000/users/newuser", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),

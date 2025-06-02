@@ -2,11 +2,18 @@ const { Sequelize } = require('sequelize');
 
 require('dotenv').config();  // Load the .env file
 // Create a new Sequelize instance
-const sequelize = new Sequelize('newdevang', 'postgres', 'Admin', {
-  host: 'localhost',
+const sequelize = new Sequelize('postgres', 'postgres', 'admin==88', {
+  host: 'newdevang.cnmam8aewz34.ap-south-1.rds.amazonaws.com',
   dialect: 'postgres',
-  logging: false, // Set to true if you want to see raw SQL logs
+  logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false, // Use true in production with a valid cert
+    },
+  },
 });
+
 
 const connectDB = async () => {
     try {

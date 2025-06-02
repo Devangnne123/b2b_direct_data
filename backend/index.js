@@ -358,7 +358,7 @@ app.use('/api/links', linkRoutes);
   
   const cron = require('node-cron');
   
-cron.schedule('*/10 * * * * *', async () => {
+cron.schedule('*/30 * * * * *', async () => {
   try {
     console.log('🔄 Cron Job: Syncing TempLinkMobile ➝ Link...');
 
