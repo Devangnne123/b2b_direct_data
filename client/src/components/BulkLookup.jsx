@@ -171,31 +171,42 @@ const getGroupStatus = (group) => {
   const firstItem = group[0] || {};
   const uniqueId = firstItem.uniqueId;
   
-  // Check processing status first
+  // 1. Check processing status first (for recently uploaded files)
   if (processingStatus[uniqueId]) {
     return processingStatus[uniqueId].status;
   }
   
-  // Check if any item is still pending based on timestamp
+  // 2. Check timestamp (if any item was created <1 min ago, consider pending)
   const now = Date.now();
-  const oneMinuteAgo = now - 60000; // 1 minute in milliseconds
-  
-  // Check if any item was created less than 1 minute ago
+  const oneMinuteAgo = now - 60000;
   const hasRecentItems = group.some(item => {
     const itemTime = new Date(item.date || 0).getTime();
     return itemTime > oneMinuteAgo;
   });
+  if (hasRecentItems) return "pending";
   
-  if (hasRecentItems) {
-    return "pending";
-  }
+  // 3. Check explicit status values from database
+  const statuses = group.map(item => item.status || 'not available');
   
-  // Otherwise, check actual status
-  if (group.some(item => item.status === "pending")) return "pending";
-  if (group.some(item => item.status === "processing")) return "processing";
-  if (group.every(item => item.matchLink)) return "completed";
-  if (firstItem.matchCount === 0) return "completed";
+  // Rule 1: If any item is pending → whole group is pending
+  if (statuses.includes('pending')) return 'pending';
   
+  // Rule 2: If all are "not available" → completed
+  if (statuses.every(status => status === 'not available')) return 'completed';
+  
+  // Rule 3: Mixed "completed" and "not available" → completed
+  if (statuses.some(status => status === 'completed')) return 'completed';
+  
+  // Rule 4: If items have match data (mobile, name, etc) → completed
+  const hasMatchData = group.some(item => 
+    item.mobile_number || 
+    item.mobile_number_2 || 
+    item.person_name ||
+    item.matchLink
+  );
+  if (hasMatchData) return 'completed';
+  
+  // Default case
   return "incompleted";
 };
   const handleUpload = async () => {
@@ -740,17 +751,15 @@ const getGroupStatus = (group) => {
                                             </td>
                                             <td>{first.totallink || 0}</td>
                                             <td>{first.matchCount || 0}</td>
-                                            <td>
-                                              <div className={`status-badge ${
-                                                status === "processing" ? "processing" :
-                                                status === "pending" ? "pending" : 
-                                                status === "incompleted" ? "completed" : "Incompleted"
-                                              }`}>
-                                                {status === "processing" ? "Processing..." :
-                                                status === "pending" ? "Pending" : 
-                                                status === "completed" ? "pending" : "completed"}
-                                              </div>
-                                            </td>
+<td>
+  <div className={`status-badge ${
+    status === "pending" ? "pending" : 
+    status === "completed" ? "completed" : "incompleted"
+  }`}>
+    {status === "pending" ? "Pending" : 
+    status === "completed" ? "Completed" : "Incomplete"}
+  </div>
+</td>
                                             <td>{formatDate(first.date)}</td>
                                             <td>
                                               <div className="flex items-center gap-1">

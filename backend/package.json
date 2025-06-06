@@ -1,5 +1,8 @@
 {
   "dependencies": {
+    "@paypal/checkout-server-sdk": "^1.0.3",
+    "@paypal/paypal-js": "^8.2.0",
+    "@paypal/react-paypal-js": "^8.8.3",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -17,8 +20,7 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-  "start": "node index.js",
-  "dev": "nodemon index.js"
-}
-
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  }
 }

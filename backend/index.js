@@ -52,44 +52,67 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
 
-    const links = rows.flat().filter(cell =>
-      typeof cell === 'string' && cell.toLowerCase().includes('linkedin.com/in')
+    // Extract and filter LinkedIn links with more comprehensive matching
+    const links = rows.flat().filter(cell => 
+      typeof cell === 'string' && 
+      cell.toLowerCase().includes('linkedin.com')
     );
 
     if (links.length === 0) {
       fs.unlinkSync(filePath);
-      return res.status(400).json({ message: 'No valid LinkedIn links found.' });
+      return res.status(400).json({ message: 'No LinkedIn links found.' });
     }
 
     const uniqueId = uuidv4();
     let matchCount = 0;
 
     for (const link of links) {
-      const cleanedLink = link.replace(/linkedin\.com\/+in\//i, 'linkedin.com/in/').toLowerCase();
-      const remark = cleanedLink.includes('linkedin.com/in/') ? 'ok' : 'invalid';
+      // First determine the link type/remark
+      let remark;
+      if (/linkedin\.com\/in\/ACw|acw|ACo|sales\/lead\/ACw|sales\/people\/ACw|sales\/people\/acw|sales\/people\/AC/i.test(link)) {
+        remark = 'Sales Navigator Link';
+      } else if (/linkedin\.com\/company/i.test(link)) {
+        remark = 'Company Link';
+      } else if (/linkedin\.com\/pub\//i.test(link)) {
+        remark = 'Old_link_check';
+      } else if (!/linkedin\.com\/in\//i.test(link) && !/Linkedin\.Com\/In\//i.test(link) && !/linkedin\.com\/\/in\//i.test(link)) {
+        remark = 'Junk Link';
+      } else {
+        remark = 'ok';
+      }
+
+      // Clean the link only if it's marked as 'ok'
+      let cleanedLink = link;
+      if (remark === 'ok') {
+        cleanedLink = link
+          .replace(/Linkedin\.Com\/In\//i, 'linkedin.com/in/')
+          .replace(/linkedin\.com\/\/in\//i, 'linkedin.com/in/')
+          .toLowerCase();
+      }
 
       let matchLink = null;
       let linkedinLinkId = null;
 
-      const matched = await MasterUrl.findOne({
-        where: { clean_linkedin_link: cleanedLink },
-        attributes: ['linkedin_link_id', 'clean_linkedin_link'],
-      });
-
-      if (matched) {
-        matchLink = cleanedLink;
-        linkedinLinkId = matched.linkedin_link_id;
-        matchCount++; // ✅ count all matches, including duplicates
-
-        // ✅ Insert every matched link (even duplicates) into TempLinkMobile
-        await TempLinkMobile.create({
-          uniqueId,
-          matchLink,
-          linkedin_link_id: linkedinLinkId,
+      // Only try to match if it's a clean profile link
+      if (remark === 'ok') {
+        const matched = await MasterUrl.findOne({
+          where: { clean_linkedin_link: cleanedLink },
+          attributes: ['linkedin_link_id', 'clean_linkedin_link'],
         });
+
+        if (matched) {
+          matchLink = cleanedLink;
+          linkedinLinkId = matched.linkedin_link_id;
+          matchCount++;
+          
+          await TempLinkMobile.create({
+            uniqueId,
+            matchLink,
+            linkedin_link_id: linkedinLinkId,
+          });
+        }
       }
-   
-      // ✅ Always store in Link table
+
       await Link.create({
         uniqueId,
         email,
@@ -99,9 +122,8 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
         remark,
         fileName: req.file.originalname,
         matchLink,
-        
         linkedin_link_id: linkedinLinkId,
-        matchCount, // optional
+        matchCount,
       });
     }
 
@@ -112,16 +134,15 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
       uniqueId,
       fileName: req.file.originalname,
       totallink: links.length,
-      
       matchCount,
     });
 
   } catch (err) {
     console.error('Upload error:', err);
-    res.status(500).json({ error: 'Upload failed' });
+    if (req.file?.path) fs.unlinkSync(req.file.path);
+    res.status(500).json({ error: 'Upload failed', details: err.message });
   }
 });
-
 
 
 
@@ -181,7 +202,7 @@ app.delete('/cancel-upload/:uniqueId', async (req, res) => {
   }
 });
   
-  
+
   
   
   
@@ -571,8 +592,12 @@ app.use('/mobileEnrichments', mobileEnrichmentRoutes)
 const userRoutes = require('./routes/userRoutes')
 app.use('/users', userRoutes)
 
+// const creditRoutes = require('./routes/creditRoutes')
+// app.use('/api', creditRoutes)
+
 const bulkUploadRoutes = require('./routes/bulkUploadRoutes')
 app.use('/bulkUpload', bulkUploadRoutes)
+
 
 const creditTransactionRoutes = require("./routes/creditTransactionRoutes");  // Import new routes
 app.use("/transactions", creditTransactionRoutes);  
@@ -596,8 +621,8 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: "pateldevang507@gmail.com", // Your Gmail address
-    pass: "xvytnlaaerusaixw"  // Your Gmail password or app password
+    user: "patel507@gmail.com", // Your Gmail address
+    pass: "xvytnlaaerusaixsdd"  // Your Gmail password or app password
   }
 });
 
@@ -639,4 +664,92 @@ app.post('/send-upload-notification', async (req, res) => {
     console.error('Error sending email:', error);
     res.status(500).json({ error: 'Failed to send email' });
   }
+});
+
+
+              
+
+
+const paypal = require('@paypal/checkout-server-sdk');
+
+// Configure PayPal environment
+const configurePaypal = () => {
+  const clientId = 'AfbApeBIXm9IckCuj2fcypzXx29Fo4cHRdayVeddn4ZK4zTaCeBqj-kcty2DRbVVgaGLm5RjV6rYrftX';
+  const clientSecret = 'EEImsielf4K_lPfzVgsGmBz7wUGgdD_d2fwQpWXuKbUurLHg4OEUwNcO14TvANEXNx8a9IlANyH3TbCQ';
+  
+  return process.env.NODE_ENV === 'production'
+    ? new paypal.core.LiveEnvironment(clientId, clientSecret)
+    : new paypal.core.SandboxEnvironment(clientId, clientSecret);
+};
+
+const client = new paypal.core.PayPalHttpClient(configurePaypal());
+
+app.post('/payment', async (req, res) => {
+  try {
+    const request = new paypal.orders.OrdersCreateRequest();
+    request.prefer("return=representation");
+    request.requestBody({
+      intent: "CAPTURE",
+      purchase_units: [{
+        amount: {
+          currency_code: "USD",
+          value: "1.00",
+          breakdown: {
+            item_total: {
+              currency_code: "USD",
+              value: "1.00"
+            }
+          }
+        },
+        description: "Test payment"
+      }],
+      application_context: {
+        return_url: "http://3.109.203.132:8000/success",
+        cancel_url: "http://3.109.203.132:8000/cancel",
+        brand_name: "Your Brand Name",
+        user_action: "PAY_NOW"
+      }
+    });
+
+    const payment = await client.execute(request);
+    
+    // Find approval link
+    const approvalLink = payment.result.links.find(
+      link => link.rel === "approve"
+    );
+    
+    res.json({
+      id: payment.result.id,
+      status: payment.result.status,
+      approval_url: approvalLink.href
+    });
+
+  } catch (error) {
+    console.error('Error creating payment:', error);
+    res.status(500).json({ 
+      error: 'Failed to create payment',
+      details: error.message 
+    });
+  }
+});
+
+
+
+
+
+app.get('/success', async (req, res) => {
+  try {
+    const { token } = req.query;
+    const request = new paypal.orders.OrdersCaptureRequest(token);
+    request.requestBody({});
+    
+    const capture = await client.execute(request);
+    res.json({ status: 'success', details: capture.result });
+  } catch (error) {
+    res.status(500).json({ error: 'Payment capture failed' });
+  }
+});
+
+app.get('/cancel', (req, res) => {
+  res.json({ status: 'cancelled' });
 });

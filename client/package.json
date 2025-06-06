@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
+    "@paypal/paypal-js": "^8.2.0",
+    "@paypal/react-paypal-js": "^8.8.3",
     "antd": "^5.22.6",
     "axios": "^1.9.0",
     "jspdf": "^2.5.2",

@@ -36,6 +36,7 @@ import "./App.css";
 import AboutUs from "./components/AboutUs";
 
 
+
 function App() {
   const location = useLocation();
   const excludePaths = [
@@ -45,6 +46,7 @@ function App() {
     "/statistic",
     "/add-user",
     // "/bulk",
+   
     "/Alladmincompanycredits",
     "/Linkedin_Contect",
     "/Linkedin_Company",
@@ -72,10 +74,11 @@ function App() {
         {/* <Route path="/bulk" element={<Bulk />} /> */}
         <Route path="/statistic" element={<Statistic />} />
         <Route path="/Temp" element={<TempLinkMobileForm />} />
- 
+
        <Route path="/Alladmincompanycredits" element={<Alladmincompanycredits />} />
         <Route path="/Linkedin_Contect" element={<Linkedin_Contect />} />
         <Route path="/Linkedin_Company" element={<Linkedin_Company />} />
+        
          <Route path="/" element={<Login />} />
         <Route path="/" element={<SignUp />} />
         <Route path="/api" element={<Api />} />
