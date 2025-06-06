@@ -621,8 +621,8 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: "patel507@gmail.com", // Your Gmail address
-    pass: "xvytnlaaerusaixsdd"  // Your Gmail password or app password
+    user: "b2bdirectdata@gmail.com", // Your Gmail address
+    pass: "npgjrjuebmlmepgy"  // Your Gmail password or app password
   }
 });
 
@@ -632,7 +632,7 @@ app.post('/send-upload-notification', async (req, res) => {
     const { email, fileName, totalLinks, matchCount, creditsDeducted } = req.body;
 
     const mailOptions = {
-      from: "pateldevang507@gmail.com",
+      from: "b2bdirectdata@gmail.com",
       to: email,
       subject: 'Your Bulk LinkedIn Lookup Upload Status',
       html: `
@@ -674,8 +674,8 @@ const paypal = require('@paypal/checkout-server-sdk');
 
 // Configure PayPal environment
 const configurePaypal = () => {
-  const clientId = 'AfbApeBIXm9IckCuj2fcypzXx29Fo4cHRdayVeddn4ZK4zTaCeBqj-kcty2DRbVVgaGLm5RjV6rYrftX';
-  const clientSecret = 'EEImsielf4K_lPfzVgsGmBz7wUGgdD_d2fwQpWXuKbUurLHg4OEUwNcO14TvANEXNx8a9IlANyH3TbCQ';
+  const clientId = 'eBIXm9IckCuj2fcypzXx29Fo4cHRdayVeddn4ZK4zTaCeBqj-kcty2DRbVVgaGLm5RjV6rYrftX';
+  const clientSecret = 'EEIPfzVgsGmBz7wUGgdD_d2fwQpWXuKbUurLHg4OEUwNcO14TvANEXNx8a9IlANyH3TbCQ';
   
   return process.env.NODE_ENV === 'production'
     ? new paypal.core.LiveEnvironment(clientId, clientSecret)
