@@ -54,7 +54,7 @@ function VerificationLinks() {
       if (!email || email === "Guest") return;
       
       try {
-        const response = await axios.get(`http://localhost:8000/api/user/${email}`);
+        const response = await axios.get(`http://3.109.203.132:8000/api/user/${email}`);
         setCredits(response.data.credits);
       } catch (error) {
         console.error("Error fetching credits:", error);
@@ -97,7 +97,7 @@ function VerificationLinks() {
     try {
       setIsProcessing(true);
       setUploadProgress(0);
-      const response = await axios.post('http://localhost:8000/upload-excel-verification', formData, {
+      const response = await axios.post('http://3.109.203.132:8000/upload-excel-verification', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'user-email': email
@@ -151,7 +151,7 @@ function VerificationLinks() {
   try {
     // First process the matching
     const response = await axios.post(
-      `http://localhost:8000/process-matching/${uniqueId}`, 
+      `http://3.109.203.132:8000/process-matching/${uniqueId}`, 
       {}, 
       {
         headers: {
@@ -162,7 +162,7 @@ function VerificationLinks() {
 
     // Then deduct credits
     const creditRes = await axios.post(
-      "http://localhost:8000/api/deduct-credits",
+      "http://3.109.203.132:8000/api/deduct-credits",
       {
         userEmail: email,
         credits: totalCreditCost,

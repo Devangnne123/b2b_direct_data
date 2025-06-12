@@ -60,7 +60,7 @@ function Sidebar() {
    {
   name: "Top-Up Credits",
   icon: <FaUserPlus />,
-  options: roleId === 2 ? [{ name: "Checkout", path: "/checkout" }] : [],
+  options: roleId === 1 ? [{ name: "Checkout", path: "/checkout" }] : [],
 }
 ,
     {
