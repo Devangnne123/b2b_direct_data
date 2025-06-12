@@ -2,6 +2,7 @@ const express = require('express')
 const app = express()
 const multer = require('multer');
 const xlsx= require('xlsx');
+const { Op } = require('sequelize');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
 const { sequelize,LinkedInProfile } = require('./config/db');
@@ -11,6 +12,7 @@ const fs = require('fs');
 const MasterUrl = require('./model/MasterUrl'); // MasterUrl model
 const TempLinkMobile = require('./model/TempLinkMobile');///tempmobile
 const User  = require('./model/userModel'); // Adjust path as needed
+
 const path=require("path");
 
 
@@ -104,12 +106,7 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
           matchLink = cleanedLink;
           linkedinLinkId = matched.linkedin_link_id;
           matchCount++;
-          
-          await TempLinkMobile.create({
-            uniqueId,
-            matchLink,
-            linkedin_link_id: linkedinLinkId,
-          });
+         
         }
       }
 
@@ -144,7 +141,39 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
   }
 });
 
+app.post('/confirm-upload', async (req, res) => {
+  try {
+    const { uniqueId, email } = req.body;
+    
+    // Find all matched links for this upload
+    const matchedLinks = await Link.findAll({
+      where: { 
+        uniqueId,
+        email,
+        matchLink: { [Op.ne]: null } // Only links that have matches
+      }
+    });
 
+    // Create TempLinkMobile records for each match
+    for (const link of matchedLinks) {
+      await TempLinkMobile.create({
+        uniqueId: link.uniqueId,
+        matchLink: link.matchLink,
+        linkedin_link_id: link.linkedin_link_id
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Temp records created successfully',
+      count: matchedLinks.length
+    });
+
+  } catch (err) {
+    console.error('Confirmation error:', err);
+    res.status(500).json({ error: 'Confirmation failed', details: err.message });
+  }
+});
 
 
 
@@ -667,89 +696,336 @@ app.post('/send-upload-notification', async (req, res) => {
 });
 
 
-              
 
 
+// Get user credits
+app.get('/api/users/credits', async (req, res) => {
+  try {
+    const user = await User.findOne({
+      where: { userEmail: req.query.email },
+      attributes: ['credits']
+    });
+    
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ credits: user.credits });
+  } catch (error) {
+    console.error('Credits fetch error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
+app.use(express.urlencoded({ extended: true }));
 const paypal = require('@paypal/checkout-server-sdk');
 
-// Configure PayPal environment
-const configurePaypal = () => {
-  const clientId = 'eBIXm9IckCuj2fcypzXx29Fo4cHRdayVeddn4ZK4zTaCeBqj-kcty2DRbVVgaGLm5RjV6rYrftX';
-  const clientSecret = 'EEIPfzVgsGmBz7wUGgdD_d2fwQpWXuKbUurLHg4OEUwNcO14TvANEXNx8a9IlANyH3TbCQ';
+const paymentRoutes = require('./routes/paymentRoutes')
+app.use('/api/payments', paymentRoutes);
+
+// // Configure PayPal environment
+// const environment = new paypal.core.SandboxEnvironment(
+//   process.env.PAYPAL_CLIENT_ID,
+//   process.env.PAYPAL_SECRET
+// );
+// const paypalClient = new paypal.core.PayPalHttpClient(environment);
+
+// app.post('/api/verify-payment', async (req, res) => {
+//   console.log('Received payment verification request:', req.body);
   
-  return process.env.NODE_ENV === 'production'
-    ? new paypal.core.LiveEnvironment(clientId, clientSecret)
-    : new paypal.core.SandboxEnvironment(clientId, clientSecret);
-};
+//   try {
+//     const { orderID, email, credits } = req.body;
 
-const client = new paypal.core.PayPalHttpClient(configurePaypal());
+//     // Validate input
+//     if (!orderID || !email || !credits) {
+//       console.error('Missing required fields');
+//       return res.status(400).json({ 
+//         error: 'Missing orderID, email, or credits' 
+//       });
+//     }
 
-app.post('/payment', async (req, res) => {
+//     // Verify PayPal order
+//     console.log('Verifying PayPal order:', orderID);
+//     const request = new paypal.orders.OrdersGetRequest(orderID);
+//     const order = await paypalClient.execute(request);
+
+//     console.log('PayPal order status:', order.result.status);
+    
+//     if (order.result.status !== 'COMPLETED') {
+//       return res.status(400).json({ 
+//         error: 'Payment not completed',
+//         status: order.result.status 
+//       });
+//     }
+
+//     // Update user credits
+//     console.log('Updating credits for:', email);
+//     const user = await User.findOne({ where: { userEmail: email } });
+    
+//     if (!user) {
+//       console.error('User not found:', email);
+//       return res.status(404).json({ error: 'User not found' });
+//     }
+
+//     const newCredits = user.credits + Number(credits);
+//     await user.update({ credits: newCredits });
+
+//     console.log('Credits updated successfully');
+//     return res.json({ 
+//       success: true,
+//       credits: newCredits,
+//       transactionId: order.result.id
+//     });
+
+//   } catch (error) {
+//     console.error('Payment verification error:', error);
+    
+//     // Handle specific PayPal errors
+//     if (error.statusCode) {
+//       return res.status(400).json({
+//         error: 'PayPal API error',
+//         details: error.message,
+//         statusCode: error.statusCode
+//       });
+//     }
+
+//     // Handle database errors
+//     if (error.name === 'SequelizeDatabaseError') {
+//       return res.status(500).json({
+//         error: 'Database error',
+//         details: error.message
+//       });
+//     }
+
+//     // Generic server error
+//     return res.status(500).json({
+//       error: 'Internal server error',
+//       details: process.env.NODE_ENV === 'development' 
+//         ? error.message 
+//         : undefined
+//     });
+//   }
+// });
+
+
+
+
+// POST /api/verify-payment
+app.post('/api/verify-payment', async (req, res) => {
   try {
-    const request = new paypal.orders.OrdersCreateRequest();
-    request.prefer("return=representation");
-    request.requestBody({
-      intent: "CAPTURE",
-      purchase_units: [{
-        amount: {
-          currency_code: "USD",
-          value: "1.00",
-          breakdown: {
-            item_total: {
-              currency_code: "USD",
-              value: "1.00"
-            }
-          }
-        },
-        description: "Test payment"
-      }],
-      application_context: {
-        return_url: "http://3.109.203.132:8000/success",
-        cancel_url: "http://3.109.203.132:8000/cancel",
-        brand_name: "Your Brand Name",
-        user_action: "PAY_NOW"
-      }
+    const { email, creditAmount } = req.body;
+
+    if (!email || !creditAmount || creditAmount <= 0) {
+      return res.status(400).json({ message: 'Invalid email or credit amount' });
+    }
+
+    const user = await User.findOne({ where: { userEmail: email.toLowerCase().trim() } });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Add credits to user's account
+    user.credits += parseInt(creditAmount);
+    await user.save();
+
+    return res.status(200).json({
+      message: `Successfully added ${creditAmount} credits to ${email}`,
+      updatedCredits: user.credits
     });
 
-    const payment = await client.execute(request);
-    
-    // Find approval link
-    const approvalLink = payment.result.links.find(
-      link => link.rel === "approve"
+  } catch (error) {
+    console.error('Payment verification error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+
+
+
+
+
+
+// 2 step
+
+const VerificationUpload = require('./model/verification_upload'); // Correct model name
+
+app.post('/upload-excel-verification', upload.single('file'), async (req, res) => {
+  try {
+    const email = req.headers['user-email'];
+    if (!email) return res.status(400).json({ error: "Email required" });
+
+    const filePath = req.file.path;
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+    const links = rows.flat().filter(cell =>
+      typeof cell === 'string' &&
+      cell.toLowerCase().includes('linkedin.com')
     );
-    
+
+    if (links.length === 0) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ message: 'No LinkedIn links found.' });
+    }
+
+    const uniqueId = uuidv4();
+
+    const categorizedLinks = links.map(link => {
+      let remark;
+     
+  if (/linkedin\.com\/(sales\/lead|sales\/people)\/ACw|ACo|acw|acw/i.test(link)) {
+    remark = 'Sales Navigator Link';
+  } else if (/linkedin\.com\/(in)\/(ACw|ACo|acw)([^a-z0-9]|$)/i.test(link)) {
+    remark = 'Sales Navigator Link';
+  } else if (/linkedin\.com\/company/i.test(link)) {
+    remark = 'Company Link';
+  } else if (/linkedin\.com\/pub\//i.test(link)) {
+    remark = 'This page doesn’t exist';
+ } else if (!/linkedin\.com\/in\//i.test(link)) {
+  remark = 'Junk Link';
+} else if (/linkedin\.com\/in\/[^\/]{1,4}$/i.test(link)) {
+  // Matches very short IDs like 'in/Ace'
+  remark = 'Invalid Profile Link';
+} else {
+  remark = 'pending';
+}
+
+
+      return {
+        uniqueId,
+        email,
+        link,
+        totallink: links.length,
+        clean_link: link,
+        remark,
+        fileName: req.file.originalname
+      };
+    });
+
+    await VerificationUpload.bulkCreate(categorizedLinks);
+    fs.unlinkSync(filePath);
+
     res.json({
-      id: payment.result.id,
-      status: payment.result.status,
-      approval_url: approvalLink.href
+      message: 'Links categorized successfully',
+      uniqueId,
+      fileName: req.file.originalname,
+      totalLinks: links.length,
+      categorizedLinks: categorizedLinks.map(l => ({
+        link: l.link,
+        remark: l.remark
+      })),
+      nextStep: 'confirm'
     });
 
-  } catch (error) {
-    console.error('Error creating payment:', error);
-    res.status(500).json({ 
-      error: 'Failed to create payment',
-      details: error.message 
-    });
+  } catch (err) {
+    console.error('Upload error:', err);
+    if (req.file?.path) fs.unlinkSync(req.file.path);
+    res.status(500).json({ error: 'Upload failed', details: err.message });
   }
 });
 
 
 
+const VerificationTemp = require('./model/verification_temp');
 
-
-app.get('/success', async (req, res) => {
+app.post('/process-matching/:uniqueId', async (req, res) => {
   try {
-    const { token } = req.query;
-    const request = new paypal.orders.OrdersCaptureRequest(token);
-    request.requestBody({});
-    
-    const capture = await client.execute(request);
-    res.json({ status: 'success', details: capture.result });
-  } catch (error) {
-    res.status(500).json({ error: 'Payment capture failed' });
+    const { uniqueId } = req.params;
+    const email = req.headers['user-email'];
+
+    if (!email) return res.status(400).json({ error: "Email required" });
+
+    const pendingLinks = await VerificationUpload.findAll({
+      where: { uniqueId, email, remark: 'pending' }
+    });
+
+    let insertedCount = 0;
+
+    for (const linkRecord of pendingLinks) {
+     let cleanedLink = linkRecord.link
+  .trim()
+  .replace(/^(https?:\/\/)?(www\.)?/i, 'https://www.') // ensure https://www.
+  .replace(/linkedin\.com\/+in\/+/i, 'linkedin.com/in/') // normalize /in/
+  .toLowerCase();
+
+// Remove trailing slashes before appending details
+cleanedLink = cleanedLink.replace(/\/+$/, '');
+
+// Ensure it ends with /details/experience/
+if (!cleanedLink.includes('/details/experience/')) {
+  cleanedLink = `${cleanedLink}/details/experience/`;
+}
+
+
+
+      // Insert always (no uniqueness check)
+      await VerificationTemp.create({
+        uniqueId,
+        clean_linkedin_link: cleanedLink,
+        remark: 'pending'
+      });
+
+      insertedCount++;
+    }
+
+    res.json({
+      message: 'Processed and inserted cleaned links into temp table',
+      uniqueId,
+      insertedCount,
+      totalPending: pendingLinks.length,
+      status: 'success'
+    });
+
+  } catch (err) {
+    console.error('Insert to temp error:', err);
+    res.status(500).json({ error: 'Processing failed', details: err.message });
   }
 });
 
-app.get('/cancel', (req, res) => {
-  res.json({ status: 'cancelled' });
+
+
+
+
+// Add this route for deducting credits
+// In your backend route file (e.g., routes/api.js)
+const CreditHistory = require('./model/CreditHistory');
+app.post('/api/deduct-credits', async (req, res) => {
+  try {
+    const { userEmail, credits, uniqueId } = req.body;
+
+    if (!userEmail || !credits || credits <= 0) {
+      return res.status(400).json({ error: 'Invalid credit deduction request' });
+    }
+
+    const user = await User.findOne({ where: { userEmail } });
+
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (user.credits < 0) {
+      return res.status(400).json({ error: 'Insufficient credits' });
+    }
+
+    // Deduct credits
+    user.credits -= credits;
+    await user.save();
+
+    // Optional: Save in CreditHistory table for audit
+    await CreditHistory.create({
+      email: userEmail,
+      creditsUsed: credits,
+      
+      uniqueId
+    });
+
+    res.json({ updatedCredits: user.credits });
+
+  } catch (err) {
+    console.error('Credit deduction error:', err);
+    res.status(500).json({ error: 'Failed to deduct credits' });
+  }
 });
+
+
+

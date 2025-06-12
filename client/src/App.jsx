@@ -34,6 +34,11 @@ import Linkedin_Company from "./components/Linkedin_Company";
 import Alladmincompanycredits from "./components/Alladmincompanycredits";
 import "./App.css";
 import AboutUs from "./components/AboutUs";
+import CreditsManagementPage from "./components/CreditsManagementPage";
+import Checkout from "./components/Checkout";
+import PaymentStatus from "./components/PaymentStatus";
+import PayPalReturnHandler from "./components/PayPalReturnHandler";
+import VerificationLinks from "./components/Verification_links";
 
 
 
@@ -45,8 +50,9 @@ function App() {
     "/bulk-lookup",
     "/statistic",
     "/add-user",
-    // "/bulk",
-   
+    "/checkout",
+   "/buy",
+   "/verfication_links",
     "/Alladmincompanycredits",
     "/Linkedin_Contect",
     "/Linkedin_Company",
@@ -74,7 +80,10 @@ function App() {
         {/* <Route path="/bulk" element={<Bulk />} /> */}
         <Route path="/statistic" element={<Statistic />} />
         <Route path="/Temp" element={<TempLinkMobileForm />} />
-
+<Route path="/checkout" element={<Checkout />} />
+          <Route path="/payment-status" element={<PaymentStatus />} />
+          <Route path="/api/payments/capture" element={<PayPalReturnHandler />} />
+          <Route path="/verfication_links" element={<VerificationLinks />} />
        <Route path="/Alladmincompanycredits" element={<Alladmincompanycredits />} />
         <Route path="/Linkedin_Contect" element={<Linkedin_Contect />} />
         <Route path="/Linkedin_Company" element={<Linkedin_Company />} />

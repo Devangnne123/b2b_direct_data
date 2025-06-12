@@ -26,7 +26,7 @@ const AllUser = () => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const response = await fetch('http://3.109.203.132:8000/users/user');
+        const response = await fetch('http://localhost:8000/users/user');
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }

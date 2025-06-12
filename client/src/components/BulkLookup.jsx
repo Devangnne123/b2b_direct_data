@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { ToastContainer, toast } from "react-toastify";
+import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import "react-toastify/dist/ReactToastify.css";
 import { FaCoins } from "react-icons/fa";
 import {
@@ -20,6 +21,8 @@ import {
 import Sidebar from "../components/Sidebar";
 import "../css/BulkLookup.css";
 import "../css/UserS.css";
+import Checkout from "../components/Checkout";
+import Verification_links from "../components/Verification_links";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -67,37 +70,17 @@ function BulkLookup() {
   const [creditCost, setCreditCost] = useState(5);
   const dataRef = useRef({ uploadedData: [], credits: null });
 
-  // Add beforeunload event listener
-  useEffect(() => {
-    const handleBeforeUnload = async (e) => {
-      if (pendingUpload) {
-        // Cancel the pending upload when page is refreshed or closed
-        try {
-          await axios.delete(
-            `http://3.109.203.132:8000/cancel-upload/${pendingUpload.uniqueId}`
-          );
-          console.log("Pending upload canceled due to page refresh/close");
-        } catch (err) {
-          console.error("Failed to cancel upload on page exit:", err);
-        }
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [pendingUpload]);
+  
 
 const silentRefresh = useCallback(async () => {
   try {
     if (!savedEmail || savedEmail === "Guest") return;
     
     const [linksRes, creditsRes] = await Promise.all([
-      axios.get("http://3.109.203.132:8000/get-links", {
+      axios.get("http://localhost:8000/get-links", {
         headers: { "user-email": savedEmail },
       }),
-      axios.get(`http://3.109.203.132:8000/api/user/${savedEmail}`)
+      axios.get(`http://localhost:8000/api/user/${savedEmail}`)
     ]);
 
     const now = Date.now();
@@ -151,7 +134,7 @@ const silentRefresh = useCallback(async () => {
 
   const fetchCreditCost = async (email) => {
     try {
-      const response = await axios.get("http://3.109.203.132:8000/users/getAllAdmin");
+      const response = await axios.get("http://localhost:8000/users/getAllAdmin");
       if (response.data && response.data.users) {
         const adminUser = response.data.users.find(
           (user) => user.userEmail === email  
@@ -229,7 +212,7 @@ const getGroupStatus = (group) => {
 
     try {
     const res = await axios.post(
-      "http://3.109.203.132:8000/upload-excel",
+      "http://localhost:8000/upload-excel",
       formData,
       { headers: { "user-email": savedEmail } }
     );
@@ -287,13 +270,23 @@ const getGroupStatus = (group) => {
     }
   };
 
-  const confirmUpload = async () => {
+ const confirmUpload = async () => {
   if (!pendingUpload) return;
 
   setLoading(true);
   try {
+    // First create the TempLinkMobile records
+    const tempRes = await axios.post(
+      "http://localhost:8000/confirm-upload",
+      {
+        uniqueId: pendingUpload.uniqueId,
+        email: savedEmail
+      }
+    );
+
+    // Then deduct credits
     const creditRes = await axios.post(
-      "http://3.109.203.132:8000/api/upload-file",
+      "http://localhost:8000/api/upload-file",
       {
         userEmail: savedEmail,
         creditCost: pendingUpload.creditToDeduct,
@@ -306,7 +299,7 @@ const getGroupStatus = (group) => {
     
     // Send email notification
     try {
-      await axios.post("http://3.109.203.132:8000/send-upload-notification", {
+      await axios.post("http://localhost:8000/send-upload-notification", {
         email: savedEmail,
         fileName: pendingUpload.file,
         totalLinks: pendingUpload.totallink || 0,
@@ -315,12 +308,9 @@ const getGroupStatus = (group) => {
       });
     } catch (emailError) {
       console.error("Failed to send email notification:", emailError);
-      // Don't show error to user as this is non-critical
     }
     
-    // Remove pending upload from localStorage
     localStorage.removeItem("pendingUpload");
-    
     setPendingUpload(null);
     setFile(null);
     document.querySelector('input[type="file"]').value = null;
@@ -352,7 +342,7 @@ const getGroupStatus = (group) => {
     setLoading(true);
     try {
       await axios.delete(
-        `http://3.109.203.132:8000/cancel-upload/${pendingUpload.uniqueId}`
+        `http://localhost:8000/cancel-upload/${pendingUpload.uniqueId}`
       );
       toast.info("Upload canceled - all data removed");
       
@@ -842,13 +832,16 @@ const getGroupStatus = (group) => {
                   </div>
                 </div>
               </section>
-              
+             
+             
               <ToastContainer position="top-center" autoClose={5000} />
             </div>
           </div>
         </div>
       </div>
+      
     </ErrorBoundary>
+    
   );
 }
 
