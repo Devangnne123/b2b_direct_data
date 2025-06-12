@@ -33,8 +33,8 @@ exports.createPayment = async (req, res) => {
       application_context: {
         brand_name: 'Your Store Name',
         user_action: 'PAY_NOW',
-        return_url:`http://localhost:5173/payment-status?success=true&email=${email}&credits=${creditAmount}`,
-        cancel_url: 'http://localhost:5173/payment-status?success=false'
+        return_url:`http://3.109.203.132:3005/payment-status?success=true&email=${email}&credits=${creditAmount}`,
+        cancel_url: 'http://3.109.203.132:3005/payment-status?success=false'
       }
     });
 
@@ -65,11 +65,11 @@ exports.createPayment = async (req, res) => {
 //     const capture = await client.execute(request);
     
 //     // Successful payment
-//     res.redirect('http://localhost:5173/payment-status?success=true');
+//     res.redirect('http://3.109.203.132:3005/payment-status?success=true');
 
 //   } catch (error) {
 //     console.error('PayPal capture error:', error);
-//     res.redirect('http://localhost:5173/payment-status?success=false');
+//     res.redirect('http://3.109.203.132:3005/payment-status?success=false');
 //   }
 // };
 

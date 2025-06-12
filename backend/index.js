@@ -23,7 +23,7 @@ const PORT =  8080;
   
 // app.use(cors({
 //   origin: function (origin, callback) {
-//     const allowedOrigins = ['/api/', 'http://localhost:5173/'];
+//     const allowedOrigins = ['/api/', 'http://3.109.203.132:3005/'];
 //     if (!origin || allowedOrigins.includes(origin)) {
 //       callback(null, true);
 //     } else {
