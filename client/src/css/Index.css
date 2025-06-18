@@ -61,6 +61,7 @@ body{
    .login-signup{
      list-style: none;
      display: flex;
+     
      gap: 10px;
    
    }
@@ -78,6 +79,7 @@ body{
      background-color: #96969647;
      color: #333;
      border-radius: 100px;
+     margin: 8%;
    }
    
    .login-btn:hover {
@@ -88,6 +90,7 @@ body{
      background-color: black;
      color: white;
      border-radius: 100px;
+     margin: 8%;
    }
    
    .signup-btn:hover {
@@ -241,7 +244,7 @@ body{
         padding: 10px 50px;
         color: #60656d;
         text-align: justify;
-        width: 320px;
+        width: 340px;
         
      }
    
@@ -313,7 +316,8 @@ body{
    
   .service{
     display: flex;
-    justify-content: space-evenly;
+    justify-content: space-around;
+    gap: 30px;
     margin-bottom: 20px;
   }
      .SERVICES{
@@ -333,8 +337,8 @@ body{
        flex-direction: column;
        justify-content: center;
      align-items: center;
-       width: 250px;
-       height: 300px;
+       width: 230px;
+       height: 280px;
       
        border-radius: 50px;
        background: linear-gradient(to bottom, rgba(64, 64, 67, 0.5), rgba(182, 201, 226, 0.5));
@@ -461,7 +465,7 @@ body{
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 200px;
+      height: 300px;
       width: 50px;
      
       
@@ -474,7 +478,7 @@ body{
        display: flex;
        flex-direction: column;
        align-items: center;
-       display: none;
+       
        justify-content: center;
     }
     .heroText{
@@ -545,7 +549,7 @@ body{
     display: flex;
     flex-direction: column;
     text-align: justify;
-   margin-top: 50px;
+   margin-top: 10px;
     font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
     width: 70%;
 

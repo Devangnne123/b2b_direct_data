@@ -361,7 +361,7 @@ body{
 
 .footer-section h3,
 .footer-section h4 {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: bold;
   margin-bottom: 10px;
   color: #000;
@@ -385,6 +385,7 @@ body{
 .footer-section ul li a {
   text-decoration: none;
   color: #555;
+  font-size: 13px;
   transition: color 0.3s ease;
 }
 
@@ -786,7 +787,7 @@ label {
 }
 
 
-button, .back-button {
+ .back-button {
   background: #0070ba;
   color: white;
   border: none;
@@ -798,7 +799,7 @@ button, .back-button {
   margin-top: 10px;
 }
 
-button:hover, .back-button:hover {
+.back-button:hover {
   background: #005ea6;
 }
 

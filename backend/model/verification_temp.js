@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
 
-
 const VerificationTemp = sequelize.define('verification_temp', {
   uniqueId: {
     type: DataTypes.STRING,
@@ -11,13 +10,91 @@ const VerificationTemp = sequelize.define('verification_temp', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-   remark: {
+    link_id: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+
+  remark: {
     type: DataTypes.STRING,
     allowNull: false
   },
+  full_name: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  head_title: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  head_location: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  title_1: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  company_1: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  company_link_1: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  exp_duration: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  exp_location: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  job_type: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  title_2: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  company_2: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  company_link_2: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  exp_duration_2: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  exp_location_2: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  job_type_2: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  final_remarks: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  list_contacts_id: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  url_id: {
+    type: DataTypes.STRING,
+    allowNull: true
+  }
 }, {
   tableName: 'verification_temps',
-  timestamps: false
+  timestamps: false, // Enable createdAt and updatedAt
+  
 });
 
 module.exports = VerificationTemp;

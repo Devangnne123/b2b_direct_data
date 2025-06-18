@@ -13,7 +13,7 @@ const PayPalReturnHandler = () => {
   useEffect(() => {
     const capturePayment = async () => {
       try {
-        await axios.post('http://3.109.203.132:8000/api/payments/capture', {
+        await axios.post('http://localhost:8000/api/payments/capture', {
           orderID: token,
           email,
           creditAmount: parseInt(creditAmount)

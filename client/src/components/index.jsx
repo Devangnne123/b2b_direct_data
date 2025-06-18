@@ -100,10 +100,9 @@ function Index() {
         </h1>
         <div className="search-email">
         <p className="sub-text1">
-        Gather real-time contact and company data from an email address with
-        our Reverse Email Lookup tool made for businesses.
+        Our platform helps you instantly verify LinkedIn connections and enrich profiles with accurate contact details, company information, and social data — all in one click. Whether you're building lead lists, updating your CRM, or qualifying prospects, we streamline the process so you can focus on making real connections.
       </p>
-      <div className="input-container">
+      {/* <div className="input-container">
         <input
           type="email"
           placeholder="Try an email address"
@@ -114,7 +113,7 @@ function Index() {
         <button className="search-button" onClick={handleSearch}>
           Search
         </button>
-      </div>
+      </div> */}
       </div>
         </div>
 
@@ -156,7 +155,7 @@ function Index() {
       {/* <section className="featuresSection">
       <div className="featuresContent">
         <img width="500px"
-          src="https://cdn.builder.iohttp://3.109.203.132:8000/v1/image/assets/TEMP/24725e4db5be734aef05bd0d13a2917d4bc10fc2"
+          src="https://cdn.builder.iohttp://localhost:8000/v1/image/assets/TEMP/24725e4db5be734aef05bd0d13a2917d4bc10fc2"
           alt="Security Features"
           className="featuresImage"
         />

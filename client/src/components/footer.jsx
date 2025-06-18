@@ -47,13 +47,50 @@ function footer() {
             <h4>PRODUCT</h4>
             <ul>
               <li>
-                <a href="#">Reverse Email Lookup</a>
+                <a href="#">Direct Number Enrichment</a>
               </li>
               <li>
-                <a href="#">Email Enrichment</a>
+                <a href="#">LinkedIn Company Details</a>
               </li>
               <li>
-                <a href="#">Email Verification</a>
+                <a href="#">LinkedIn Contact Verification</a>
+              </li>
+              <li>
+                <a href="#">Direct Number Enrichment API</a>
+              </li>
+            </ul>
+          </div>
+          <div className="footer-section">
+            <h4>Company</h4>
+            <ul>
+              <li>
+                <a href="#">Contact US</a>
+              </li>
+              <li>
+                <a href="#">About US</a>
+              </li>
+              <li>
+                <a href="#">API Docs</a>
+              </li>
+              <li>
+                <a href="#">Data Processing</a>
+              </li>
+            </ul>
+          </div>
+          <div className="footer-section">
+            <h4>Legal</h4>
+            <ul>
+              <li>
+                <a href="#">Terms and Conditions</a>
+              </li>
+              <li>
+                <a href="#">Privacy Policy</a>
+              </li>
+              <li>
+                <a href="#">Cookie Policy & Settings</a>
+              </li>
+              <li>
+                <a href="#">Do Not Sell My Info</a>
               </li>
             </ul>
           </div>
@@ -95,13 +132,7 @@ function footer() {
         </div>
         <div className="footer-bottom">
           <p className='footer-links1'>Copyright © 2024 | All Rights Reserved. Powered by B2B direct data.</p>
-          <div className="footer-links2">
-            <a className='aa' href="#">Terms</a>
-            <a className='aa' href="#">Privacy Policy</a>
-            <a className='aa' href="#">Security Policy</a>
-            <a className='aa' href="#">Cookies Policy</a>
-            <a className='aa' href="#">Data Processing Agreement</a>
-          </div>
+         
         </div>
       </footer>
     </>

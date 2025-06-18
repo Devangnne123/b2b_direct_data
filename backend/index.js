@@ -1,5 +1,6 @@
 const express = require('express')
 const app = express()
+
 const multer = require('multer');
 const xlsx= require('xlsx');
 const { Op } = require('sequelize');
@@ -406,7 +407,7 @@ app.use('/api/links', linkRoutes);
   
   
   
-  const cron = require('node-cron');
+const cron = require('node-cron');
   
 cron.schedule('*/30 * * * * *', async () => {
   try {
@@ -870,27 +871,27 @@ app.post('/upload-excel-verification', upload.single('file'), async (req, res) =
     }
 
     const uniqueId = uuidv4();
+    let pendingCount = 0; // Initialize pending count
 
     const categorizedLinks = links.map(link => {
       let remark;
      
-  if (/linkedin\.com\/(sales\/lead|sales\/people)\/ACw|ACo|acw|acw/i.test(link)) {
-    remark = 'Sales Navigator Link';
-  } else if (/linkedin\.com\/(in)\/(ACw|ACo|acw)([^a-z0-9]|$)/i.test(link)) {
-    remark = 'Sales Navigator Link';
-  } else if (/linkedin\.com\/company/i.test(link)) {
-    remark = 'Company Link';
-  } else if (/linkedin\.com\/pub\//i.test(link)) {
-    remark = 'This page doesn’t exist';
- } else if (!/linkedin\.com\/in\//i.test(link)) {
-  remark = 'Junk Link';
-} else if (/linkedin\.com\/in\/[^\/]{1,4}$/i.test(link)) {
-  // Matches very short IDs like 'in/Ace'
-  remark = 'Invalid Profile Link';
-} else {
-  remark = 'pending';
-}
-
+      if (/linkedin\.com\/(sales\/lead|sales\/people)\/ACw|ACo|acw|acw/i.test(link)) {
+        remark = 'Sales Navigator Link';
+      } else if (/linkedin\.com\/(in)\/(ACw|ACo|acw)([^a-z0-9]|$)/i.test(link)) {
+        remark = 'Sales Navigator Link';
+      } else if (/linkedin\.com\/company/i.test(link)) {
+        remark = 'Company Link';
+      } else if (/linkedin\.com\/pub\//i.test(link)) {
+        remark = 'This page doesn’t exist';
+      } else if (!/linkedin\.com\/in\//i.test(link)) {
+        remark = 'Junk Link';
+      } else if (/linkedin\.com\/in\/[^\/]{1,4}$/i.test(link)) {
+        remark = 'Invalid Profile Link';
+      } else {
+        remark = 'pending';
+        pendingCount++; // Increment pending count
+      }
 
       return {
         uniqueId,
@@ -899,10 +900,12 @@ app.post('/upload-excel-verification', upload.single('file'), async (req, res) =
         totallink: links.length,
         clean_link: link,
         remark,
-        fileName: req.file.originalname
+        fileName: req.file.originalname,
+        pendingCount // Include pending count in each record (optional)
       };
     });
 
+    // Save to database
     await VerificationUpload.bulkCreate(categorizedLinks);
     fs.unlinkSync(filePath);
 
@@ -911,10 +914,12 @@ app.post('/upload-excel-verification', upload.single('file'), async (req, res) =
       uniqueId,
       fileName: req.file.originalname,
       totalLinks: links.length,
+      pendingCount, // Send pending count in response
       categorizedLinks: categorizedLinks.map(l => ({
         link: l.link,
         remark: l.remark
       })),
+      date: new Date().toISOString(),
       nextStep: 'confirm'
     });
 
@@ -924,7 +929,6 @@ app.post('/upload-excel-verification', upload.single('file'), async (req, res) =
     res.status(500).json({ error: 'Upload failed', details: err.message });
   }
 });
-
 
 
 const VerificationTemp = require('./model/verification_temp');
@@ -941,48 +945,78 @@ app.post('/process-matching/:uniqueId', async (req, res) => {
     });
 
     let insertedCount = 0;
+    let updatedCount = 0;
 
     for (const linkRecord of pendingLinks) {
-     let cleanedLink = linkRecord.link
-  .trim()
-  .replace(/^(https?:\/\/)?(www\.)?/i, 'https://www.') // ensure https://www.
-  .replace(/linkedin\.com\/+in\/+/i, 'linkedin.com/in/') // normalize /in/
-  .toLowerCase();
+      let cleanedLink = linkRecord.link
+        .trim()
+        .replace(/^(https?:\/\/)?(www\.)?/i, 'https://www.') // ensure https://www.
+        .replace(/linkedin\.com\/+in\/+/i, 'linkedin.com/in/') // normalize /in/
+        .toLowerCase();
 
-// Remove trailing slashes before appending details
-cleanedLink = cleanedLink.replace(/\/+$/, '');
+      // Remove trailing slashes before appending details
+      cleanedLink = cleanedLink.replace(/\/+$/, '');
 
-// Ensure it ends with /details/experience/
-if (!cleanedLink.includes('/details/experience/')) {
-  cleanedLink = `${cleanedLink}/details/experience/`;
-}
+      // Ensure it ends with /details/experience/
+      if (!cleanedLink.includes('/details/experience/')) {
+        cleanedLink = `${cleanedLink}/details/experience/`;
+      }
 
+      // Update the clean_link in verification_upload table
+      await VerificationUpload.update(
+        { clean_link: cleanedLink },
+        { where: { id: linkRecord.id } }
+      );
+      updatedCount++;
 
-
-      // Insert always (no uniqueness check)
+      // Insert into temp table including the link_id
       await VerificationTemp.create({
         uniqueId,
         clean_linkedin_link: cleanedLink,
-        remark: 'pending'
+        link_id: linkRecord.link_id, // Add this line to include the link_id
+        remark: 'pending',
+        // Add all the additional fields from verification_upload
+        full_name: linkRecord.full_name,
+        head_title: linkRecord.head_title,
+        head_location: linkRecord.head_location,
+        title_1: linkRecord.title_1,
+        company_1: linkRecord.company_1,
+        company_link_1: linkRecord.company_link_1,
+        exp_duration: linkRecord.exp_duration,
+        exp_location: linkRecord.exp_location,
+        job_type: linkRecord.job_type,
+        title_2: linkRecord.title_2,
+        company_2: linkRecord.company_2,
+        company_link_2: linkRecord.company_link_2,
+        exp_duration_2: linkRecord.exp_duration_2,
+        exp_location_2: linkRecord.exp_location_2,
+        job_type_2: linkRecord.job_type_2,
+        final_remarks: linkRecord.final_remarks,
+        list_contacts_id: linkRecord.list_contacts_id,
+        url_id: linkRecord.url_id
       });
 
       insertedCount++;
     }
 
     res.json({
-      message: 'Processed and inserted cleaned links into temp table',
+      message: 'Processed and updated links successfully',
       uniqueId,
       insertedCount,
+      updatedCount,
       totalPending: pendingLinks.length,
       status: 'success'
     });
 
   } catch (err) {
-    console.error('Insert to temp error:', err);
-    res.status(500).json({ error: 'Processing failed', details: err.message });
+    console.error('Processing error:', err);
+    res.status(500).json({ 
+      error: 'Processing failed', 
+      details: err.message,
+      status: 'error'
+    });
   }
 });
-
 
 
 
@@ -1029,3 +1063,415 @@ app.post('/api/deduct-credits', async (req, res) => {
 
 
 
+
+
+app.get('/get-verification-links', async (req, res) => {
+  try {
+    const userEmail = req.headers['user-email'];
+    
+    if (!userEmail || userEmail === 'Guest') {
+      return res.status(400).json({ error: 'Valid email is required' });
+    }
+
+    // Fetch all verification uploads for this user
+    const uploads = await VerificationUpload.findAll({
+      where: { email: userEmail },
+      order: [['id', 'DESC']] // Newest first
+    });
+
+    if (!uploads || uploads.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    // Group by uniqueId and transform data
+    const result = uploads.reduce((acc, upload) => {
+      const existingGroup = acc.find(g => g.uniqueId === upload.uniqueId);
+      const linkData = {
+        id: upload.id,
+        link: upload.link,
+        clean_link: upload.clean_link,
+        remark: upload.remark || 'pending',
+       
+        date: upload.date
+      };
+
+      if (existingGroup) {
+        existingGroup.links.push(linkData);
+        existingGroup.totalLinks += 1;
+        if (upload.remark === 'pending') existingGroup.pendingCount += 1;
+        if (upload.matchLink) existingGroup.matchCount += 1;
+      } else {
+        acc.push({
+          uniqueId: upload.uniqueId,
+          fileName: upload.fileName,
+          date: upload.date,
+          totalLinks: 1,
+          pendingCount: upload.remark === 'pending' ? 1 : 0,
+          matchCount: upload.matchLink ? 1 : 0,
+         creditsUsed: upload.creditsUsed,
+          status: upload.remark === 'pending' ? 'pending' : 'completed',
+          links: [linkData]
+        });
+      }
+      return acc;
+    }, []);
+
+    // Calculate totals and status for each group
+    result.forEach(group => {
+      group.creditDeducted = group.matchCount * 2;
+      group.status = group.pendingCount > 0 ? 'pending' : 'completed';
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching verification links:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+
+
+
+app.post('/api/deduct-credits_v', async (req, res) => {
+  try {
+    const { userEmail, credits, uniqueId } = req.body;
+
+    if (!userEmail || !credits || credits <= 0) {
+      return res.status(400).json({ error: 'Invalid credit deduction request' });
+    }
+
+    const user = await User.findOne({ where: { userEmail } });
+
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (user.credits < 0) {
+      return res.status(400).json({ error: 'Insufficient credits' });
+    }
+
+    // Deduct credits
+    user.credits -= credits;
+    await user.save();
+
+     // Update all VerificationUpload records with this uniqueId to include the credits used
+    await VerificationUpload.update(
+      { creditsUsed: credits },
+      { where: { uniqueId } }
+    );
+
+    res.json({ updatedCredits: user.credits });
+
+  } catch (err) {
+    console.error('Credit deduction error:', err);
+    res.status(500).json({ error: 'Failed to deduct credits' });
+  }
+});
+
+
+
+// Add this to your backend routes (e.g., in your Express server)
+app.delete('/api/delete-verification-uploads/:uniqueId', async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+    
+    if (!uniqueId) {
+      return res.status(400).json({ error: 'Unique ID is required' });
+    }
+
+    const result = await VerificationUpload.destroy({
+      where: { uniqueId }
+    });
+
+    if (result === 0) {
+      return res.status(404).json({ error: 'No records found to delete' });
+    }
+
+    res.json({ 
+      success: true,
+      message: `Deleted ${result} verification uploads`
+    });
+  } catch (error) {
+    console.error('Error deleting verification uploads:', error);
+    res.status(500).json({ error: 'Failed to delete verification uploads' });
+  }
+});
+
+
+
+
+
+
+
+
+// Add this to your backend routes
+app.get('/api/verification-uploads/:uniqueId', async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+    
+    const uploads = await VerificationUpload.findAll({
+      where: { uniqueId },
+      raw: true
+    });
+
+    if (!uploads || uploads.length === 0) {
+      return res.status(404).json({ error: 'No data found for this uniqueId' });
+    }
+
+    res.json(uploads);
+  } catch (error) {
+    console.error('Error fetching verification uploads:', error);
+    res.status(500).json({ error: 'Failed to fetch verification data' });
+  }
+});
+
+
+
+
+
+
+app.post('/sync-temp-to-main/:uniqueId', async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+    
+    // Get all records from temp table for this uniqueId
+    const tempRecords = await VerificationTemp.findAll({
+      where: { uniqueId }
+    });
+
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    // Update verification_upload records with data from temp table
+    for (const tempRecord of tempRecords) {
+      // Find the matching record in verification_upload using both uniqueId and link_id
+      const [updated] = await VerificationUpload.update(
+        {
+          // Profile information
+          full_name: tempRecord.full_name,
+          head_title: tempRecord.head_title,
+          head_location: tempRecord.head_location,
+          title_1: tempRecord.title_1,
+          company_1: tempRecord.company_1,
+          company_link_1: tempRecord.company_link_1,
+          exp_duration: tempRecord.exp_duration,
+          exp_location: tempRecord.exp_location,
+          job_type: tempRecord.job_type,
+          title_2: tempRecord.title_2,
+          company_2: tempRecord.company_2,
+          company_link_2: tempRecord.company_link_2,
+          exp_duration_2: tempRecord.exp_duration_2,
+          exp_location_2: tempRecord.exp_location_2,
+          job_type_2: tempRecord.job_type_2,
+          final_remarks: tempRecord.final_remarks,
+          list_contacts_id: tempRecord.list_contacts_id,
+          url_id: tempRecord.url_id,
+          
+          // Link information
+          clean_link: tempRecord.clean_linkedin_link,
+          remark: tempRecord.remark,
+          
+          // Mark as synced
+          last_sync: new Date()
+        },
+        { 
+          where: { 
+            uniqueId,
+            link_id: tempRecord.link_id // Match by link_id instead of URL
+          } 
+        }
+      );
+
+      if (updated > 0) {
+        updatedCount++;
+      } else {
+        skippedCount++;
+        console.warn(`No matching record found for link_id: ${tempRecord.link_id}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Sync completed - Updated ${updatedCount} records, skipped ${skippedCount}`,
+      uniqueId,
+      updatedCount,
+      skippedCount,
+      totalRecords: tempRecords.length
+    });
+
+  } catch (error) {
+    console.error('Sync error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to sync temp data to main table',
+      details: error.message
+    });
+  }
+});
+
+// // Download endpoint with merged data
+// app.get('/download-verification-data/:uniqueId', async (req, res) => {
+//   try {
+//     const { uniqueId } = req.params;
+
+//     // Get data from both tables
+//     const [mainRecords, tempRecords] = await Promise.all([
+//       VerificationUpload.findAll({ where: { uniqueId } }),
+//       VerificationTemp.findAll({ where: { uniqueId } })
+//     ]);
+
+//     // Merge data - prioritize temp records but fall back to main records
+//     const mergedData = mainRecords.map(mainRecord => {
+//       const tempRecord = tempRecords.find(t => 
+//         t.clean_linkedin_link === mainRecord.clean_link ||
+//         t.clean_linkedin_link.replace('/details/experience/', '') === mainRecord.link
+//       );
+      
+//       return {
+//         // From main table
+//         id: mainRecord.id,
+//         uniqueId: mainRecord.uniqueId,
+//         email: mainRecord.email,
+//         link: mainRecord.link,
+//         fileName: mainRecord.fileName,
+//         creditsUsed: mainRecord.creditsUsed,
+//         status: mainRecord.status,
+//         date: mainRecord.date,
+        
+//         // From temp table (if available) or main table
+//         full_name: tempRecord?.full_name || mainRecord.full_name,
+//         head_title: tempRecord?.head_title || mainRecord.head_title,
+//         head_location: tempRecord?.head_location || mainRecord.head_location,
+//         title_1: tempRecord?.title_1 || mainRecord.title_1,
+//         company_1: tempRecord?.company_1 || mainRecord.company_1,
+//         company_link_1: tempRecord?.company_link_1 || mainRecord.company_link_1,
+//         exp_duration: tempRecord?.exp_duration || mainRecord.exp_duration,
+//         exp_location: tempRecord?.exp_location || mainRecord.exp_location,
+//         job_type: tempRecord?.job_type || mainRecord.job_type,
+//         title_2: tempRecord?.title_2 || mainRecord.title_2,
+//         company_2: tempRecord?.company_2 || mainRecord.company_2,
+//         company_link_2: tempRecord?.company_link_2 || mainRecord.company_link_2,
+//         exp_duration_2: tempRecord?.exp_duration_2 || mainRecord.exp_duration_2,
+//         exp_location_2: tempRecord?.exp_location_2 || mainRecord.exp_location_2,
+//         job_type_2: tempRecord?.job_type_2 || mainRecord.job_type_2,
+//         final_remarks: tempRecord?.final_remarks || mainRecord.final_remarks,
+//         list_contacts_id: tempRecord?.list_contacts_id || mainRecord.list_contacts_id,
+//         url_id: tempRecord?.url_id || mainRecord.url_id,
+//         clean_link: tempRecord?.clean_linkedin_link || mainRecord.clean_link,
+//         remark: tempRecord?.remark || mainRecord.remark,
+        
+//         // Sync info
+//         last_sync: mainRecord.last_sync || 'Not synced'
+//       };
+//     });
+
+//     // Create Excel file
+//     const worksheet = XLSX.utils.json_to_sheet(mergedData);
+//     const workbook = XLSX.utils.book_new();
+//     XLSX.utils.book_append_sheet(workbook, worksheet, "VerificationData");
+    
+//     // Generate filename
+//     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+//     const fileName = `VerificationData_${uniqueId}_${timestamp}.xlsx`;
+//     const filePath = path.join(__dirname, 'downloads', fileName);
+    
+//     // Ensure downloads directory exists
+//     if (!fs.existsSync(path.join(__dirname, 'downloads'))) {
+//       fs.mkdirSync(path.join(__dirname, 'downloads'));
+//     }
+    
+//     // Save file
+//     XLSX.writeFile(workbook, filePath);
+    
+//     // Send file
+//     res.download(filePath, fileName, (err) => {
+//       if (err) {
+//         console.error('Download error:', err);
+//       }
+//       // Clean up file after download
+//       fs.unlinkSync(filePath);
+//     });
+
+//   } catch (error) {
+//     console.error('Download error:', error);
+//     res.status(500).json({
+//       success: false,
+//       error: 'Failed to generate download',
+//       details: error.message
+//     });
+//   }
+// });
+
+const axios = require('axios');
+// Scheduled sync job
+function setupScheduledSync() {
+  cron.schedule('* * * * *', async () => {
+    try {
+      console.log('Running scheduled sync from temp to main table...');
+      
+      const uniqueIds = await VerificationTemp.findAll({
+        attributes: ['uniqueId'],
+        group: ['uniqueId'],
+        raw: true
+      });
+
+      for (const { uniqueId } of uniqueIds) {
+        try {
+          const response = await axios.post(
+            `http://localhost:8000/sync-temp-to-main/${uniqueId}`
+          );
+          console.log(`Sync completed for ${uniqueId}:`, response.data);
+        } catch (err) {
+          console.error(`Error syncing ${uniqueId}:`, err.message);
+        }
+      }
+    } catch (error) {
+      console.error('Scheduled job error:', error);
+    }
+  });
+
+  console.log('Scheduled sync job initialized');
+}
+
+setupScheduledSync();
+
+
+
+
+
+
+
+
+
+app.post('/api/contact', async (req, res) => {
+  const { name, email, message } = req.body;
+
+  // Create a transporter
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: "b2bdirectdata@gmail.com", // Your Gmail address
+    pass: "npgjrjuebmlmepgy"  // Your Gmail password or app password
+    }
+  });
+
+  // Email options
+  const mailOptions = {
+    from: email,
+    to: 'b2bdirectdata@gmail.com',
+    subject: `New Contact Form Submission from ${name}`,
+    text: message,
+    html: `<p>You have a new contact form submission</p>
+           <p><strong>Name: </strong> ${name}</p>
+           <p><strong>Email: </strong> ${email}</p>
+           <p><strong>Message: </strong> ${message}</p>`
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: 'Email sent successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error sending email' });
+  }
+});

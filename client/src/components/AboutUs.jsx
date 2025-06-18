@@ -1,25 +1,21 @@
 import React from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import "../css/AboutUs.css";
 import { FaCheckCircle, FaChartLine, FaUsers, FaDatabase, FaGlobe } from "react-icons/fa";
 
 const AboutUs = () => {
+  const navigate = useNavigate(); // Initialize the navigate function
+
+  const handleContactClick = () => {
+    navigate("/contactus"); // Navigate to the contact page
+  };
+
   return (
     <div className="about-container">
       <header className="about-header">
         <h2>About Us</h2>
         <p>Your Trusted Partner in B2B Data Solutions</p>
       </header>
-
-      {/* <section className="about-section">
-        <h2>Who We Are</h2>
-        <p>
-          At <strong>B2B Direct Data</strong>, we provide high-quality business data to fuel growth, 
-          optimize marketing, and drive sales. Our mission is to help businesses make data-driven 
-          decisions with confidence.
-        </p>
-      </section> */}
-
-      
 
       <section className="about-section">
         <h2>Our Services</h2>
@@ -36,7 +32,6 @@ const AboutUs = () => {
             <h3>📁 Business Data Solutions</h3>
             <p>Clean, structured, and updated business data to enhance your CRM.</p>
           </div>
-         
         </div>
       </section>
 
@@ -48,7 +43,9 @@ const AboutUs = () => {
       <section className="about-contact">
         <h2>Let's Grow Together!</h2>
         <p>Join hands with <strong>B2B Direct Data</strong> and take your business to the next level with our premium data solutions.</p>
-        <button className="contact-button">Contact Us</button>
+        <button className="contact-button" onClick={handleContactClick}>
+          Contact Us
+        </button>
       </section>
     </div>
   );

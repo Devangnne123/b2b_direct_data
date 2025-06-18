@@ -10,7 +10,7 @@ const MasterUrl = sequelize.define("masterurl", {
 
   linkedin_link: {
     type: DataTypes.TEXT,
-    allowNull: false,  // Prevent null values
+    allowNull: true,  // Prevent null values
     unique: true,      // Ensures no duplicate links
   },
   clean_linkedin_link: {
@@ -22,6 +22,7 @@ const MasterUrl = sequelize.define("masterurl", {
     allowNull: true,
   }
 }, {
+  tableName: 'masterurls',
   timestamps: false,  // Disable createdAt, updatedAt fields
 });
 

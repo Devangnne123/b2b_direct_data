@@ -27,7 +27,7 @@ const CreditPurchase = () => {
   const fetchUserCredits = async (email) => {
     try {
       const response = await axios.get(
-        `http://3.109.203.132:8000/api/users/credits?email=${email}`,
+        `http://localhost:8000/api/users/credits?email=${email}`,
         { timeout: 5000 }
       );
       setCredits(response.data.credits);
@@ -76,7 +76,7 @@ const CreditPurchase = () => {
 
   try {
     const response = await axios.post(
-      `http://3.109.203.132:8000/api/verify-payment`,
+      `http://localhost:8000/api/verify-payment`,
       {
         orderID: data.orderID,
         email: userEmail,
