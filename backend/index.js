@@ -1418,7 +1418,7 @@ function setupScheduledSync() {
       for (const { uniqueId } of uniqueIds) {
         try {
           const response = await axios.post(
-            `http://localhost:8000/sync-temp-to-main/${uniqueId}`
+            `http://3.109.203.132:8000/sync-temp-to-main/${uniqueId}`
           );
           console.log(`Sync completed for ${uniqueId}:`, response.data);
         } catch (err) {

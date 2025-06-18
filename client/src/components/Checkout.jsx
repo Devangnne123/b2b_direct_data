@@ -43,7 +43,7 @@ const Checkout = () => {
     if (user && user.email) {
       setEmail(user.email);
 
-      axios.get(`http://localhost:8000/api/user/${user.email}`)
+      axios.get(`http://3.109.203.132:8000/api/user/${user.email}`)
         .then((res) => {
           setUserCredits(res.data.credits);
         })
@@ -68,7 +68,7 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8000/api/payments/create', {
+      const response = await axios.post('http://3.109.203.132:8000/api/payments/create', {
         amount,
         description,
         email,
