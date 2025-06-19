@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Import the useNavigate hook
 import { StarFilled } from "@ant-design/icons";
 import "../css/Index.css";
+import Login from "./Login";
+import SignUp from "./SignUp";
 
 
 function Index() {
   const [showModal, setShowModal] = useState(false); // State to toggle modal visibility
   const [email, setEmail] = useState(""); // State to hold email input value
+   const [showLoginModal, setShowLoginModal] = useState(false); 
   const navigate = useNavigate();
 
   const handleSignUpClick = () => {
@@ -135,7 +138,16 @@ function Index() {
                 className="serviceIcon"
               />
               <h3 className="serviceTitle">{service.title}</h3>
-              <a className="useNowBtn1" href={service.link}>Use Now</a>
+             <a 
+  className="useNowBtn1" 
+ 
+  onClick={() => {
+                  setShowLoginModal("login");
+                  // Close mobile menu when login button is clicked
+                }}
+>
+  Use Now
+</a>
             </article>
           ))}
           
@@ -193,8 +205,19 @@ function Index() {
   </section>
 
   </div>
+  {showLoginModal && (
+        <div className="overlay">
+          <div className="modal">
+            {showLoginModal === "login" ? (
+              <Login closeModal={() => setShowLoginModal(null)} setShowModal={setShowLoginModal} />
+            ) : (
+              <SignUp closeModal={() => setShowLoginModal(null)} setShowModal={setShowLoginModal} />
+            )}
+          </div>
+        </div>
+      )}
 
-  {showModal && (
+  {/* {showModal && (
       <div className="modal-overlay">
         <div className="modal-content">
           <img className="popup-logo" src="/logo.png" />
@@ -227,7 +250,7 @@ function Index() {
           </div>
         </div>
       </div>
-    )}
+    )} */}
   </div>
 );
 }

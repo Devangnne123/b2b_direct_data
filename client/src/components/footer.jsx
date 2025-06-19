@@ -1,7 +1,15 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { Link, useNavigate } from "react-router-dom";
 import '../css/footer.css';
+import Login from "./Login";
+import SignUp from "./SignUp";
 
 function footer() {
+ const [showModal, setShowModal] = useState(false);
+
+  const handleLinkClick = () => {
+   
+  };
   return (
     <>
     {/* <!-- Footer --> */}
@@ -27,36 +35,66 @@ function footer() {
           </div>
           <div className='menu-product'>
           <div className="footer-section">
-            <h4>MENU</h4>
+            <h4>Menu</h4>
             <ul>
               <li>
-                <a href="#">Home</a>
+                <a><Link to="/" onClick={handleLinkClick}>
+                                Home
+                              </Link></a>
               </li>
               <li>
-                <a href="#">Services</a>
+                <a ><Link to="/services" onClick={handleLinkClick}>
+                               Services
+                              </Link></a>
               </li>
               <li>
-                <a href="#">Login</a>
+                <a onClick={() => {
+                  setShowModal("login");
+                 
+                }} >Login</a>
               </li>
+
+              {showModal && (
+        <div className="overlay">
+          <div className="modal">
+            {showModal === "login" ? (
+              <Login closeModal={() => setShowModal(null)} setShowModal={setShowModal} />
+            ) : (
+              <SignUp closeModal={() => setShowModal(null)} setShowModal={setShowModal} />
+            )}
+          </div>
+        </div>
+      )}
               <li>
-                <a href="#">Sign up</a>
+                <a onClick={() => {
+                  setShowModal("signup");
+                 
+                }} >Sign up</a>
               </li>
             </ul>
           </div>
           <div className="footer-section">
-            <h4>PRODUCT</h4>
+            <h4>Services</h4>
             <ul>
               <li>
-                <a href="#">Direct Number Enrichment</a>
+                <a ><Link to="/services" onClick={handleLinkClick}>
+                               Direct Number Enrichment
+                              </Link></a>
               </li>
               <li>
-                <a href="#">LinkedIn Company Details</a>
+                <a ><Link to="/services" onClick={handleLinkClick}>
+                               LinkedIn Company Details
+                              </Link></a>
               </li>
               <li>
-                <a href="#">LinkedIn Contact Verification</a>
+                <a ><Link to="/services" onClick={handleLinkClick}>
+                               LinkedIn Contact Verification
+                              </Link></a>
               </li>
               <li>
-                <a href="#">Direct Number Enrichment API</a>
+                <a ><Link to="/services" onClick={handleLinkClick}>
+                               Direct Number Enrichment API
+                              </Link></a>
               </li>
             </ul>
           </div>
@@ -64,16 +102,24 @@ function footer() {
             <h4>Company</h4>
             <ul>
               <li>
-                <a href="#">Contact US</a>
+                <a ><Link to="contactus" onClick={handleLinkClick}>
+                               Contact US
+                              </Link></a>
               </li>
               <li>
-                <a href="#">About US</a>
+                <a ><Link to="/aboutus" onClick={handleLinkClick}>
+                               About US
+                              </Link></a>
               </li>
               <li>
-                <a href="#">API Docs</a>
+                <a ><Link to="/api" onClick={handleLinkClick}>
+                               API Docs
+                              </Link></a>
               </li>
               <li>
-                <a href="#">Data Processing</a>
+                <a ><Link to="/" onClick={handleLinkClick}>
+                               Data Processing
+                              </Link></a>
               </li>
             </ul>
           </div>
@@ -81,16 +127,24 @@ function footer() {
             <h4>Legal</h4>
             <ul>
               <li>
-                <a href="#">Terms and Conditions</a>
+                <a ><Link to="/" onClick={handleLinkClick}>
+                               Terms and Conditions
+                              </Link></a>
               </li>
               <li>
-                <a href="#">Privacy Policy</a>
+                <a ><Link to="/" onClick={handleLinkClick}>
+                               Privacy Policy
+                              </Link></a>
               </li>
               <li>
-                <a href="#">Cookie Policy & Settings</a>
+                <a ><Link to="/" onClick={handleLinkClick}>
+                               Cookie Policy & Settings
+                              </Link></a>
               </li>
               <li>
-                <a href="#">Do Not Sell My Info</a>
+                <a ><Link to="/" onClick={handleLinkClick}>
+                               Do Not Sell My Info
+                              </Link></a>
               </li>
             </ul>
           </div>
@@ -131,9 +185,10 @@ function footer() {
           </div> */}
         </div>
         <div className="footer-bottom">
-          <p className='footer-links1'>Copyright © 2024 | All Rights Reserved. Powered by B2B direct data.</p>
+          <p className='footer-links1'>Copyright © 2024 | All Rights Reserved. Powered by B2B Direct Data.</p>
          
         </div>
+        
       </footer>
     </>
   )

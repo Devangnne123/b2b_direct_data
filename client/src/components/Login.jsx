@@ -137,7 +137,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
         <div className="login-right">
           <div className="login-info">
             <div className="login-right-title">
-              <h3 className="login-subtitle">Mobile Enrichment</h3>
+              <h3 className="login-subtitle">Direct Number Enrichment</h3>
               <p className="login-description">Turn <span className="highlight-text"> URL  </span> into <span className="highlight-text">LinkedIn</span> data</p>
             </div>
             <img
