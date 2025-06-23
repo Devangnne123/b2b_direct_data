@@ -35,7 +35,7 @@ function Header() {
             </li>
             <li>
               <Link to="/services" onClick={handleLinkClick}>
-                Services
+                Products
               </Link>
             </li>
             <li>

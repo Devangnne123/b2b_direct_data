@@ -55,7 +55,7 @@ function Sidebar() {
     {
       name: "Linkedin Company Details",
       icon: <FaUserPlus />,
-      options: [{ name: "Upload Company link", path: "/Linkedin_Company" }],
+      options: [{ name: "Upload Company link", path: "/verfication_com" }],
     },
    {
   name: "Top-Up Credits",
@@ -93,7 +93,7 @@ function Sidebar() {
     {
       name: "Linkedin Company Details",
       icon: <FaUserPlus />,
-      options: [{ name: "Upload Company link", path: "/Linkedin_Company" }],
+      options: [{ name: "Upload Company link", path: "/verfication_com" }],
     },
     
     {

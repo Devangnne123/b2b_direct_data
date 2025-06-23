@@ -13,6 +13,11 @@ const VerificationUpload = sequelize.define('verification_upload', {
     allowNull: false,
     defaultValue: () => uuidv4() // Generate a random UUID as default
   },
+   date: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  },
   email: {
     type: DataTypes.STRING,
     allowNull: false
@@ -23,7 +28,7 @@ const VerificationUpload = sequelize.define('verification_upload', {
   },
   totallink: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: true
   },
   pendingCount: {  // New field to track pending links
     type: DataTypes.INTEGER,
@@ -41,6 +46,15 @@ const VerificationUpload = sequelize.define('verification_upload', {
   remark: {
     type: DataTypes.STRING,
     allowNull: false
+  },
+    final_status: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'pending'
+  },
+  remainingCredits: {
+    type: DataTypes.INTEGER, // <-- Add this field
+    defaultValue: 0,
   },
   fileName: {
     type: DataTypes.STRING,

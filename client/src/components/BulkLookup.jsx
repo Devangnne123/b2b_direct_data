@@ -68,9 +68,48 @@ function BulkLookup() {
   const [pendingUpload, setPendingUpload] = useState(null);
   const [processingStatus, setProcessingStatus] = useState({});
   const [creditCost, setCreditCost] = useState(5);
+  const [isConfirmationActive, setIsConfirmationActive] = useState(false);
   const dataRef = useRef({ uploadedData: [], credits: null });
 
-  
+  // Handle refresh/back navigation when confirmation is active
+  useEffect(() => {
+    if (!isConfirmationActive) return;
+    
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+      return 'You have pending upload confirmation. Are you sure you want to leave?';
+    };
+
+    const handlePopState = () => {
+      if (isConfirmationActive && pendingUpload) {
+        cancelUpload();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isConfirmationActive, pendingUpload]);
+
+  // Restore pending upload on component mount
+  useEffect(() => {
+    const savedPendingUpload = sessionStorage.getItem("pendingUpload");
+    if (savedPendingUpload) {
+      try {
+        const parsed = JSON.parse(savedPendingUpload);
+        setPendingUpload(parsed);
+        setShowConfirmation(true);
+        setIsConfirmationActive(true);
+      } catch (e) {
+        sessionStorage.removeItem("pendingUpload");
+      }
+    }
+  }, []);
 
 const silentRefresh = useCallback(async () => {
   try {
@@ -124,17 +163,9 @@ const silentRefresh = useCallback(async () => {
     }
   }, []);
 
-  useEffect(() => {
-    const savedPendingUpload = localStorage.getItem("pendingUpload");
-    if (savedPendingUpload) {
-      setPendingUpload(JSON.parse(savedPendingUpload));
-      setShowConfirmation(true);
-    }
-  }, []);
-
   const fetchCreditCost = async (email) => {
     try {
-      const response = await axios.get("http://3.109.203.132:8000/users/getAllAdmin");
+      const response = await axios.post("http://3.109.203.132:8000/users/getAllAdmin");
       if (response.data && response.data.users) {
         const adminUser = response.data.users.find(
           (user) => user.userEmail === email  
@@ -192,6 +223,7 @@ const getGroupStatus = (group) => {
   // Default case
   return "incompleted";
 };
+
   const handleUpload = async () => {
     if (!file) {
       toast.error("Please choose a file to upload first");
@@ -228,14 +260,12 @@ const getGroupStatus = (group) => {
       timestamp: new Date().toISOString(),
     };
     
-    // Save pending upload to localStorage with timestamp
-    localStorage.setItem("pendingUpload", JSON.stringify({
-      ...uploadData,
-      uploadTime: Date.now()
-    }));
+    // Save pending upload to session storage
+    sessionStorage.setItem("pendingUpload", JSON.stringify(uploadData));
     
     setPendingUpload(uploadData);
     setShowConfirmation(true);
+    setIsConfirmationActive(true);
     
     // Set initial status as pending for 1 minute
     setProcessingStatus(prev => ({
@@ -310,10 +340,11 @@ const getGroupStatus = (group) => {
       console.error("Failed to send email notification:", emailError);
     }
     
-    localStorage.removeItem("pendingUpload");
+    sessionStorage.removeItem("pendingUpload");
     setPendingUpload(null);
     setFile(null);
     document.querySelector('input[type="file"]').value = null;
+    setIsConfirmationActive(false);
     setShouldRefresh(true);
   } catch (err) {
     toast.error("Failed to confirm processing");
@@ -336,6 +367,7 @@ const getGroupStatus = (group) => {
     if (!pendingUpload?.uniqueId) {
       setShowConfirmation(false);
       setPendingUpload(null);
+      setIsConfirmationActive(false);
       return;
     }
 
@@ -346,8 +378,8 @@ const getGroupStatus = (group) => {
       );
       toast.info("Upload canceled - all data removed");
       
-      // Remove pending upload from localStorage
-      localStorage.removeItem("pendingUpload");
+      // Remove pending upload from session storage
+      sessionStorage.removeItem("pendingUpload");
       
       setProcessingStatus(prev => {
         const newStatus = {...prev};
@@ -363,6 +395,7 @@ const getGroupStatus = (group) => {
       document.querySelector('input[type="file"]').value = null;
       setLoading(false);
       setShowConfirmation(false);
+      setIsConfirmationActive(false);
     }
   };
 
@@ -575,6 +608,11 @@ const getGroupStatus = (group) => {
   return (
    <ErrorBoundary>
       <div className="main">
+        {/* Blocking overlay when confirmation is active */}
+        {isConfirmationActive && (
+          <div className="blocking-overlay"></div>
+        )}
+        
         <div className="main-con">
           <Sidebar userEmail={savedEmail} />
           <div className="right-side">
@@ -582,7 +620,7 @@ const getGroupStatus = (group) => {
               <nav className="main-head">
                 <div className="main-title">
                   <li className="profile">
-                    <p className="title-head">Bulk LinkedIn Lookup</p>
+                    <p className="title-head">Direct Number Enrichment</p>
                     <li className="credits-main1">
                       <h5 className="credits">
                         <img
@@ -624,13 +662,13 @@ const getGroupStatus = (group) => {
                               }
                             }}
                             className="file-input"
-                            disabled={showConfirmation}
+                            disabled={showConfirmation || isConfirmationActive}
                             required
                           />
                           <button
                             onClick={handleUpload}
                             className={`upload-btn ${
-                              showConfirmation || !file ? "disabled" : ""
+                              showConfirmation || !file || isConfirmationActive ? "disabled" : ""
                             }`}
                             disabled={
                               !file ||
@@ -638,7 +676,8 @@ const getGroupStatus = (group) => {
                               savedEmail === "Guest" ||
                               credits < creditCost ||
                               loading ||
-                              showConfirmation
+                              showConfirmation ||
+                              isConfirmationActive
                             }
                           >
                             {loading ? (

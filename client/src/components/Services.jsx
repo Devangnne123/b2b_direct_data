@@ -14,21 +14,21 @@ function Services() {
       title: "Direct Number Enrichment",
       titles: "Direct Number Enrichment",
       descriptions:
-        "Ensure the accuracy and reliability of your LinkedIn network with our Bulk Contact Verification service. We help businesses, recruiters, and professionals verify large volumes of LinkedIn profiles to streamline connections, enhance outreach efforts, and maintain an up-to-date network. Our automated process efficiently cross-references contact details, employment history, and profile authenticity, saving you time and ensuring your LinkedIn connections are credible and current. Whether you're looking to clean up your CRM or improve your lead generation, our bulk verification service provides peace of mind with fast, accurate results.",
+       "Unlock deeper connections with our Enrich Direct Number service. We specialize in enhancing your contact database by providing accurate direct phone numbers. Whether you're looking to improve your sales outreach, customer service, or networking efforts, our service ensures you have the right contact information to reach your target audience. Using advanced data enrichment techniques, we help you connect with key decision-makers and valuable leads, providing a direct line to grow your business more efficiently. Maximize your outreach potential with reliable phone numbers—every time.",
     },
     {
       icon: "Capturee-removebg-preview.png",
       title: "LinkedIn Company Details",
       titles: "LinkedIn Company Details",
       descriptions:
-"Unlock deeper connections with our Enrich Direct Number service. We specialize in enhancing your contact database by providing accurate direct phone numbers. Whether you're looking to improve your sales outreach, customer service, or networking efforts, our service ensures you have the right contact information to reach your target audience. Using advanced data enrichment techniques, we help you connect with key decision-makers and valuable leads, providing a direct line to grow your business more efficiently. Maximize your outreach potential with reliable phone numbers—every time.",
+"Streamline your business research with our Linkedin Company Details service. We gather comprehensive information from LinkedIn company pages to provide you with accurate and up-to-date company profiles in bulk. Whether you need details for lead generation, market analysis, or competitor research, our service offers valuable insights into company size, industry, key employees, and more. With our bulk data extraction, you can save time and effort while accessing detailed company information that helps drive smarter business decisions and targeted outreach. Let us provide you with the company data you need to scale your efforts efficiently.",
     },  
     {
       icon: "Captureq-removebg-preview (2).png",
       title: "LinkedIn Contact Verification",
       titles: "LinkedIn Contact Verification",
       descriptions:
-      "Streamline your business research with our Linkedin Company Details service. We gather comprehensive information from LinkedIn company pages to provide you with accurate and up-to-date company profiles in bulk. Whether you need details for lead generation, market analysis, or competitor research, our service offers valuable insights into company size, industry, key employees, and more. With our bulk data extraction, you can save time and effort while accessing detailed company information that helps drive smarter business decisions and targeted outreach. Let us provide you with the company data you need to scale your efforts efficiently.",
+      "Ensure the accuracy and reliability of your LinkedIn network with our Bulk Contact Verification service. We help businesses, recruiters, and professionals verify large volumes of LinkedIn profiles to streamline connections, enhance outreach efforts, and maintain an up-to-date network. Our automated process efficiently cross-references contact details, employment history, and profile authenticity, saving you time and ensuring your LinkedIn connections are credible and current. Whether you're looking to clean up your CRM or improve your lead generation, our bulk verification service provides peace of mind with fast, accurate results.",
     },
   ];
 
@@ -64,7 +64,7 @@ function Services() {
             {/* Services Cards */}
             <section className="servicesCards2">
               <div className="servicesContainer"></div>
-              <section className="SERVICES">SERVICES</section>
+              <section className="SERVICES">PRODUCTS</section>
               <section className="main-s1">
                 {services.map((service, index) => (
                   <div key={index} className="service">

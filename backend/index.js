@@ -566,7 +566,7 @@ if (
 
 
 
-app.post('/api/credit-cost', async (req, res) => {
+app.get('/api/credit-cost', async (req, res) => {
   try {
     const { email } = req.query;
 
@@ -1156,7 +1156,8 @@ app.post('/api/deduct-credits_v', async (req, res) => {
 
      // Update all VerificationUpload records with this uniqueId to include the credits used
     await VerificationUpload.update(
-      { creditsUsed: credits },
+      { creditsUsed: credits,
+        remainingCredits: user.credits },
       { where: { uniqueId } }
     );
 
@@ -1205,26 +1206,49 @@ app.delete('/api/delete-verification-uploads/:uniqueId', async (req, res) => {
 
 
 // Add this to your backend routes
+// In your backend route handler
 app.get('/api/verification-uploads/:uniqueId', async (req, res) => {
   try {
     const { uniqueId } = req.params;
     
-    const uploads = await VerificationUpload.findAll({
-      where: { uniqueId },
-      raw: true
+    // Get all records for this uniqueId
+    const records = await VerificationUpload.findAll({
+      where: { uniqueId }
     });
 
-    if (!uploads || uploads.length === 0) {
-      return res.status(404).json({ error: 'No data found for this uniqueId' });
-    }
+    // Calculate group status (same logic as frontend)
+    const getGroupStatus = (group) => {
+      if (!group || group.length === 0) return "completed";
+      
+      const hasPending = group.some(item => 
+        item.remark === 'pending' || 
+        (!item.matchLink && item.remark !== 'invalid')
+      );
+      
+      const allCompleted = group.every(item => 
+        item.matchLink || 
+        item.remark === 'invalid' || 
+        item.remark === 'processed'
+      );
 
-    res.json(uploads);
+      if (hasPending) return "pending";
+      if (allCompleted) return "completed";
+      return "incompleted";
+    };
+
+    const groupStatus = getGroupStatus(records);
+
+    // Add status to each record
+    const responseData = records.map(record => ({
+      ...record.get({ plain: true }),
+      groupStatus // Add the calculated group status
+    }));
+
+    res.json(responseData);
   } catch (error) {
-    console.error('Error fetching verification uploads:', error);
-    res.status(500).json({ error: 'Failed to fetch verification data' });
+    res.status(500).json({ error: error.message });
   }
 });
-
 
 
 
@@ -1241,14 +1265,30 @@ app.post('/sync-temp-to-main/:uniqueId', async (req, res) => {
 
     let updatedCount = 0;
     let skippedCount = 0;
+    let markedCompletedCount = 0;
 
-    // Update verification_upload records with data from temp table
     for (const tempRecord of tempRecords) {
-      // Find the matching record in verification_upload using both uniqueId and link_id
-      const [updated] = await VerificationUpload.update(
-        {
-          // Profile information
-          full_name: tempRecord.full_name,
+      // Convert to plain object to better check values
+      const tempData = tempRecord.get({ plain: true });
+      
+      // Debug logging
+      console.log('Processing record:', {
+        id: tempData.id,
+        final_remarks: tempData.final_remarks,
+        list_contacts_id: tempData.list_contacts_id,
+        currentStatus: tempData.status
+      });
+
+      // Check if both fields have valid values (not null/undefined and not empty strings)
+      const hasValidFinalRemarks = tempData.final_remarks && 
+                                 tempData.final_remarks.trim() !== '';
+      const hasValidContactsId = tempData.list_contacts_id && 
+                                tempData.list_contacts_id.trim() !== '';
+      const shouldMarkCompleted = hasValidFinalRemarks && hasValidContactsId;
+
+      // Prepare update data for main table
+      const updateData = {
+        full_name: tempRecord.full_name,
           head_title: tempRecord.head_title,
           head_location: tempRecord.head_location,
           title_1: tempRecord.title_1,
@@ -1266,35 +1306,53 @@ app.post('/sync-temp-to-main/:uniqueId', async (req, res) => {
           final_remarks: tempRecord.final_remarks,
           list_contacts_id: tempRecord.list_contacts_id,
           url_id: tempRecord.url_id,
-          
-          // Link information
-          clean_link: tempRecord.clean_linkedin_link,
-          remark: tempRecord.remark,
-          
-          // Mark as synced
-          last_sync: new Date()
-        },
-        { 
-          where: { 
-            uniqueId,
-            link_id: tempRecord.link_id // Match by link_id instead of URL
-          } 
+
+        last_sync: new Date()
+      };
+
+      // FORCE STATUS UPDATE - This is the key change
+      if (shouldMarkCompleted) {
+        updateData.status = 'Completed'; // Note the capital 'C' to match your model
+        
+      }
+
+      // Update main table
+      const [updated] = await VerificationUpload.update(updateData, {
+        where: { 
+          uniqueId,
+          link_id: tempData.link_id
         }
-      );
+      });
 
       if (updated > 0) {
         updatedCount++;
+        
+        // If marked as completed, update temp table too
+        if (shouldMarkCompleted) {
+          const [tempUpdated] = await VerificationTemp.update({
+            status: 'Completed', // Consistent capitalization
+            
+          }, {
+            where: { id: tempData.id }
+          });
+
+          if (tempUpdated > 0) {
+            markedCompletedCount++;
+            console.log(`Marked record ${tempData.id} as completed`);
+          }
+        }
       } else {
         skippedCount++;
-        console.warn(`No matching record found for link_id: ${tempRecord.link_id}`);
+        console.warn(`No matching record found for link_id: ${tempData.link_id}`);
       }
     }
 
     res.json({
       success: true,
-      message: `Sync completed - Updated ${updatedCount} records, skipped ${skippedCount}`,
+      message: `Sync completed - Updated ${updatedCount} records (${markedCompletedCount} marked as completed), skipped ${skippedCount}`,
       uniqueId,
       updatedCount,
+      markedCompletedCount,
       skippedCount,
       totalRecords: tempRecords.length
     });
@@ -1405,7 +1463,7 @@ app.post('/sync-temp-to-main/:uniqueId', async (req, res) => {
 const axios = require('axios');
 // Scheduled sync job
 function setupScheduledSync() {
-  cron.schedule('* * * * *', async () => {
+  cron.schedule('*/30 * * * * *', async () => {
     try {
       console.log('Running scheduled sync from temp to main table...');
       
@@ -1473,5 +1531,889 @@ app.post('/api/contact', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error sending email' });
+  }
+});
+
+
+
+
+
+
+const VerificationUpload_com = require('./model/VerificationUpload_com');
+
+
+app.post('/upload-excel-verification-com', upload.single('file'), async (req, res) => {
+  try {
+    const email = req.headers['user-email'];
+    if (!email) return res.status(400).json({ error: "Email required" });
+
+    const filePath = req.file.path;
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+    const links = rows.flat().filter(cell =>
+      typeof cell === 'string' &&
+      cell.toLowerCase().includes('linkedin.com')
+    );
+
+    if (links.length === 0) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ message: 'No LinkedIn links found.' });
+    }
+
+    const uniqueId = uuidv4();
+    let pendingCount = 0;
+
+    const categorizedLinks = links.map(link => {
+      let remark;
+      let clean_link = link;
+      
+      // First check for company links and clean them
+      if (/linkedin\.com\/(company|school|organizations|showcase|sales\/company|talent\/company)/i.test(link)) {
+        remark = 'pending'; // Changed from 'Company Link' to 'pending'
+        pendingCount++;
+        // Clean company link according to the provided logic
+        const companySlug = link.match(/linkedin\.com\/(company|school|organizations|showcase|sales\/company|talent\/company)\/([^/?#]+)/i)?.[2] || 'unknown-company';
+        clean_link = `https://www.linkedin.com/company/${companySlug}/about`;
+      } 
+      // Then check for Sales Navigator links
+      else if (/linkedin\.com\/(sales\/lead|sales\/people)\/ACw|ACo|acw|acw/i.test(link)) {
+        remark = 'Sales Navigator Link';
+      } 
+      else if (/linkedin\.com\/(in)\/(ACw|ACo|acw)([^a-z0-9]|$)/i.test(link)) {
+        remark = 'Sales Navigator Link';
+      } 
+      // Check for old pub links
+      else if (/linkedin\.com\/pub\//i.test(link)) {
+        remark = "This page doesn't exist";
+      } 
+      // Check for invalid profile links
+      else if (/linkedin\.com\/in\/[^\/]{1,4}$/i.test(link)) {
+        remark = 'Invalid Profile Link';
+      } 
+      // Check for junk links (no /in/)
+      else if (!/linkedin\.com\/in\//i.test(link)) {
+        remark = 'Junk Link';
+      } 
+      // Everything else is pending
+      else {
+        remark = "invalid company";
+      }
+
+      return {
+        uniqueId,
+        email,
+        link,
+        totallink: links.length,
+        clean_link,
+        remark,
+        fileName: req.file.originalname,
+        pendingCount,
+        
+      };
+    });
+
+    // Save to database
+    await VerificationUpload_com.bulkCreate(categorizedLinks);
+    fs.unlinkSync(filePath);
+
+    res.json({
+      message: 'Links categorized successfully',
+      uniqueId,
+      fileName: req.file.originalname,
+      totalLinks: links.length,
+      pendingCount,
+       
+      categorizedLinks: categorizedLinks.map(l => ({
+        link: l.link,
+        clean_link: l.clean_link,
+        remark: l.remark
+      })),
+      date: new Date().toISOString(),
+      nextStep: 'confirm'
+    });
+
+  } catch (err) {
+    console.error('Upload error:', err);
+    if (req.file?.path) fs.unlinkSync(req.file.path);
+    res.status(500).json({ error: 'Upload failed', details: err.message });
+  }
+});
+
+
+
+const VerificationTemp_com = require('./model/VerificationTemp_com');
+
+app.post('/process-matching-com/:uniqueId', async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+    const email = req.headers['user-email'];
+
+    if (!email) return res.status(400).json({ error: "Email required" });
+
+    // Get pending links for this batch
+    const pendingLinks = await VerificationUpload_com.findAll({
+      where: { uniqueId, email, remark: 'pending' }
+    });
+
+    let processedCount = 0;
+
+    // Process each link
+    for (const linkRecord of pendingLinks) {
+      // Update verification_upload table
+      await VerificationUpload_com.update(
+        { clean_link: linkRecord.clean_link },
+        { where: { id: linkRecord.id } }
+      );
+
+      // Insert into verification_temp table
+      await VerificationTemp_com.create({
+        uniqueId,
+        clean_linkedin_link: linkRecord.clean_link,
+        link_id: linkRecord.link_id,
+        remark: 'pending',
+       company_name:linkRecord.company_name,
+      company_url: linkRecord.company_url || null,
+      company_headquater: linkRecord.company_headquater || null,
+      company_industry: linkRecord.company_industry || null,
+      company_size: linkRecord.company_size || null,
+      employee_count: linkRecord.employee_count || null,
+      year_founded: linkRecord.year_founded || null,
+      company_speciality: linkRecord.company_speciality || null,
+      linkedin_url: linkRecord.linkedin_url || null,
+      company_stock_name: linkRecord.company_stock_name || null,
+      verified_page_date: linkRecord.verified_page_date || null,
+      phone_number: linkRecord.phone_number || null,
+      company_followers: linkRecord.company_followers || null,
+      location_total: linkRecord.location_total || null,
+      overview: linkRecord.overview || null,
+      visit_website: linkRecord.visit_website || null,
+      final_remaks: linkRecord.final_remaks || null,
+      company_id: linkRecord.company_id || null
+      });
+
+      processedCount++;
+    }
+
+    res.json({
+      message: 'Processed and updated links successfully',
+      uniqueId,
+      processedCount,
+      totalPending: pendingLinks.length
+    });
+
+  } catch (err) {
+    console.error('Processing error:', err);
+    res.status(500).json({ 
+      error: 'Processing failed', 
+      details: err.message
+    });
+  }
+});
+
+
+
+app.get('/get-verification-links-com', async (req, res) => {
+  try {
+    const userEmail = req.headers['user-email'];
+    
+    if (!userEmail || userEmail === 'Guest') {
+      return res.status(400).json({ error: 'Valid email is required' });
+    }
+
+    // Fetch all verification uploads for this user
+    const uploads = await VerificationUpload_com.findAll({
+      where: { email: userEmail },
+      order: [['id', 'DESC']] // Newest first
+    });
+
+    if (!uploads || uploads.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    // Group by uniqueId and transform data
+    const result = uploads.reduce((acc, upload) => {
+      const existingGroup = acc.find(g => g.uniqueId === upload.uniqueId);
+      const linkData = {
+        id: upload.id,
+        link: upload.link,
+        clean_link: upload.clean_link,
+        remark: upload.remark || 'pending',
+        
+        date: upload.date
+      };
+
+      if (existingGroup) {
+        existingGroup.links.push(linkData);
+        existingGroup.totalLinks += 1;
+        if (upload.remark === 'pending') existingGroup.pendingCount += 1;
+        if (upload.matchLink) existingGroup.matchCount += 1;
+      } else {
+        acc.push({
+          uniqueId: upload.uniqueId,
+          fileName: upload.fileName,
+          date: upload.date,
+          totalLinks: 1,
+          pendingCount: upload.remark === 'pending' ? 1 : 0,
+          matchCount: upload.matchLink ? 1 : 0,
+         creditsUsed: upload.creditsUsed,
+          status: upload.remark === 'pending' ? 'pending' : 'completed',
+          links: [linkData]
+        });
+      }
+      return acc;
+    }, []);
+
+    // Calculate totals and status for each group
+    result.forEach(group => {
+      group.creditDeducted = group.matchCount * 2;
+      group.status = group.pendingCount > 0 ? 'pending' : 'completed';
+    });
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error fetching verification links:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+
+app.get('/api/verification-uploads-com/:uniqueId', async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+    
+    // Get all records for this uniqueId
+    const records = await VerificationUpload_com.findAll({
+      where: { uniqueId }
+    });
+
+    // Calculate group status (same logic as frontend)
+    const getGroupStatus = (group) => {
+      if (!group || group.length === 0) return "completed";
+      
+      const hasPending = group.some(item => 
+        item.remark === 'pending' || 
+        (!item.matchLink && item.remark !== 'invalid')
+      );
+      
+      const allCompleted = group.every(item => 
+        item.matchLink || 
+        item.remark === 'invalid' || 
+        item.remark === 'processed'
+      );
+
+      if (hasPending) return "pending";
+      if (allCompleted) return "completed";
+      return "incompleted";
+    };
+
+    const groupStatus = getGroupStatus(records);
+
+    // Add status to each record
+    const responseData = records.map(record => ({
+      ...record.get({ plain: true }),
+      groupStatus // Add the calculated group status
+    }));
+
+    res.json(responseData);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+
+
+app.post('/api/deduct-credits_v-com', async (req, res) => {
+  try {
+    const { userEmail, credits, uniqueId } = req.body;
+
+    if (!userEmail || !credits || credits <= 0) {
+      return res.status(400).json({ error: 'Invalid credit deduction request' });
+    }
+
+    const user = await User.findOne({ where: { userEmail } });
+
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (user.credits < 0) {
+      return res.status(400).json({ error: 'Insufficient credits' });
+    }
+
+    // Deduct credits
+    user.credits -= credits;
+    await user.save();
+
+     // Update all VerificationUpload records with this uniqueId to include the credits used
+    await VerificationUpload_com.update(
+      { creditsUsed: credits,
+        remainingCredits: user.credits
+       },
+      { where: { uniqueId } }
+    );
+
+    res.json({ updatedCredits: user.credits });
+
+  } catch (err) {
+    console.error('Credit deduction error:', err);
+    res.status(500).json({ error: 'Failed to deduct credits' });
+  }
+});
+
+
+
+
+// Add this to your backend routes (e.g., in your Express server)
+app.delete('/api/delete-verification-uploads-com/:uniqueId', async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+    
+    if (!uniqueId) {
+      return res.status(400).json({ error: 'Unique ID is required' });
+    }
+
+    const result = await VerificationUpload_com.destroy({
+      where: { uniqueId }
+    });
+
+    if (result === 0) {
+      return res.status(404).json({ error: 'No records found to delete' });
+    }
+
+    res.json({ 
+      success: true,
+      message: `Deleted ${result} verification uploads`
+    });
+  } catch (error) {
+    console.error('Error deleting verification uploads:', error);
+    res.status(500).json({ error: 'Failed to delete verification uploads' });
+  }
+});
+
+
+
+
+
+app.post('/sync-temp-to-main-com/:uniqueId', async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+    
+    // Get all records from temp table for this uniqueId
+    const tempRecords = await VerificationTemp_com.findAll({
+      where: { uniqueId }
+    });
+
+    let updatedCount = 0;
+    let skippedCount = 0;
+    let markedCompletedCount = 0;
+
+    for (const tempRecord of tempRecords) {
+      // Convert to plain object to better check values
+      const tempData = tempRecord.get({ plain: true });
+      
+      // Debug logging
+      console.log('Processing record:', {
+        id: tempData.id,
+        final_remarks: tempData.final_remarks,
+        company_id  : tempData.company_id,
+        currentStatus: tempData.status
+      });
+
+      // Check if both fields have valid values (not null/undefined and not empty strings)
+      const hasValidFinalRemarks = tempData.final_remaks && 
+                                 tempData.final_remaks.trim() !== '';
+      const hasValidContactsId = tempData.company_id&& 
+                                tempData.company_id.trim() !== '';
+      const shouldMarkCompleted = hasValidFinalRemarks && hasValidContactsId;
+
+      // Prepare update data for main table
+      const updateData = {
+        // All your existing fields...
+         company_name: tempData.company_name || null,
+      company_url: tempData.company_url || null,
+      company_headquater: tempData.company_headquater || null,
+      company_industry: tempData.company_industry || null,
+      company_size: tempData.company_size || null,
+      employee_count: tempData.employee_count || null,
+      year_founded: tempData.year_founded || null,
+      company_speciality: tempData.company_speciality || null,
+      linkedin_url: tempData.linkedin_url || null,
+      company_stock_name: tempData.company_stock_name || null,
+      verified_page_date: tempData.verified_page_date || null,
+      phone_number: tempData.phone_number || null,
+      company_followers: tempData.company_followers || null,
+      location_total: tempData.location_total || null,
+      overview: tempData.overview || null,
+      visit_website: tempData.visit_website || null,
+      final_remaks: tempData.final_remaks || null,
+      company_id: tempData.company_id || null,
+
+        last_sync: new Date()
+      };
+
+      // FORCE STATUS UPDATE - This is the key change
+      if (shouldMarkCompleted) {
+        updateData.status = 'Completed'; // Note the capital 'C' to match your model
+        
+      }
+
+      // Update main table
+      const [updated] = await VerificationUpload_com.update(updateData, {
+        where: { 
+          uniqueId,
+          link_id: tempData.link_id
+        }
+      });
+
+      if (updated > 0) {
+        updatedCount++;
+        
+        // If marked as completed, update temp table too
+        if (shouldMarkCompleted) {
+          const [tempUpdated] = await VerificationTemp_com.update({
+            status: 'Completed', // Consistent capitalization
+            
+          }, {
+            where: { id: tempData.id }
+          });
+
+          if (tempUpdated > 0) {
+            markedCompletedCount++;
+            console.log(`Marked record ${tempData.id} as completed`);
+          }
+        }
+      } else {
+        skippedCount++;
+        console.warn(`No matching record found for link_id: ${tempData.link_id}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Sync completed - Updated ${updatedCount} records (${markedCompletedCount} marked as completed), skipped ${skippedCount}`,
+      uniqueId,
+      updatedCount,
+      markedCompletedCount,
+      skippedCount,
+      totalRecords: tempRecords.length
+    });
+
+  } catch (error) {
+    console.error('Sync error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to sync temp data to main table',
+      details: error.message
+    });
+  }
+});
+
+// // Download endpoint with merged data
+// app.get('/download-verification-data/:uniqueId', async (req, res) => {
+//   try {
+//     const { uniqueId } = req.params;
+
+//     // Get data from both tables
+//     const [mainRecords, tempRecords] = await Promise.all([
+//       VerificationUpload.findAll({ where: { uniqueId } }),
+//       VerificationTemp.findAll({ where: { uniqueId } })
+//     ]);
+
+//     // Merge data - prioritize temp records but fall back to main records
+//     const mergedData = mainRecords.map(mainRecord => {
+//       const tempRecord = tempRecords.find(t => 
+//         t.clean_linkedin_link === mainRecord.clean_link ||
+//         t.clean_linkedin_link.replace('/details/experience/', '') === mainRecord.link
+//       );
+      
+//       return {
+//         // From main table
+//         id: mainRecord.id,
+//         uniqueId: mainRecord.uniqueId,
+//         email: mainRecord.email,
+//         link: mainRecord.link,
+//         fileName: mainRecord.fileName,
+//         creditsUsed: mainRecord.creditsUsed,
+//         status: mainRecord.status,
+//         date: mainRecord.date,
+        
+//         // From temp table (if available) or main table
+//         full_name: tempRecord?.full_name || mainRecord.full_name,
+//         head_title: tempRecord?.head_title || mainRecord.head_title,
+//         head_location: tempRecord?.head_location || mainRecord.head_location,
+//         title_1: tempRecord?.title_1 || mainRecord.title_1,
+//         company_1: tempRecord?.company_1 || mainRecord.company_1,
+//         company_link_1: tempRecord?.company_link_1 || mainRecord.company_link_1,
+//         exp_duration: tempRecord?.exp_duration || mainRecord.exp_duration,
+//         exp_location: tempRecord?.exp_location || mainRecord.exp_location,
+//         job_type: tempRecord?.job_type || mainRecord.job_type,
+//         title_2: tempRecord?.title_2 || mainRecord.title_2,
+//         company_2: tempRecord?.company_2 || mainRecord.company_2,
+//         company_link_2: tempRecord?.company_link_2 || mainRecord.company_link_2,
+//         exp_duration_2: tempRecord?.exp_duration_2 || mainRecord.exp_duration_2,
+//         exp_location_2: tempRecord?.exp_location_2 || mainRecord.exp_location_2,
+//         job_type_2: tempRecord?.job_type_2 || mainRecord.job_type_2,
+//         final_remarks: tempRecord?.final_remarks || mainRecord.final_remarks,
+//         list_contacts_id: tempRecord?.list_contacts_id || mainRecord.list_contacts_id,
+//         url_id: tempRecord?.url_id || mainRecord.url_id,
+//         clean_link: tempRecord?.clean_linkedin_link || mainRecord.clean_link,
+//         remark: tempRecord?.remark || mainRecord.remark,
+        
+//         // Sync info
+//         last_sync: mainRecord.last_sync || 'Not synced'
+//       };
+//     });
+
+//     // Create Excel file
+//     const worksheet = XLSX.utils.json_to_sheet(mergedData);
+//     const workbook = XLSX.utils.book_new();
+//     XLSX.utils.book_append_sheet(workbook, worksheet, "VerificationData");
+    
+//     // Generate filename
+//     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+//     const fileName = `VerificationData_${uniqueId}_${timestamp}.xlsx`;
+//     const filePath = path.join(__dirname, 'downloads', fileName);
+    
+//     // Ensure downloads directory exists
+//     if (!fs.existsSync(path.join(__dirname, 'downloads'))) {
+//       fs.mkdirSync(path.join(__dirname, 'downloads'));
+//     }
+    
+//     // Save file
+//     XLSX.writeFile(workbook, filePath);
+    
+//     // Send file
+//     res.download(filePath, fileName, (err) => {
+//       if (err) {
+//         console.error('Download error:', err);
+//       }
+//       // Clean up file after download
+//       fs.unlinkSync(filePath);
+//     });
+
+//   } catch (error) {
+//     console.error('Download error:', error);
+//     res.status(500).json({
+//       success: false,
+//       error: 'Failed to generate download',
+//       details: error.message
+//     });
+//   }
+// });
+
+
+// Scheduled sync job
+function setupScheduledSyncCom() {
+  cron.schedule('*/30 * * * * *', async () => {
+    try {
+      console.log('Running scheduled sync from temp to main table...');
+      
+      const uniqueIds = await VerificationTemp_com.findAll({
+        attributes: ['uniqueId'],
+        group: ['uniqueId'],
+        raw: true
+      });
+
+      for (const { uniqueId } of uniqueIds) {
+        try {
+          const response = await axios.post(
+            `http://3.109.203.132:8000/sync-temp-to-main-com/${uniqueId}`
+          );
+          console.log(`Sync completed for ${uniqueId}:`, response.data);
+        } catch (err) {
+          console.error(`Error syncing ${uniqueId}:`, err.message);
+        }
+      }
+    } catch (error) {
+      console.error('Scheduled job error:', error);
+    }
+  });
+
+  console.log('Scheduled sync job initialized');
+}
+
+setupScheduledSyncCom();
+
+
+
+
+
+
+
+
+
+
+
+async function processVerificationUploads() {
+  try {
+    // Get all unique groups that need processing
+    const uniqueGroups = await VerificationUpload_com.findAll({
+      attributes: ['id'],
+      group: ['id'],
+      where: {
+        final_status: {
+          [Op.ne]: 'Completed' // Only process groups not already marked Completed
+        }
+      }
+    });
+
+    for (const group of uniqueGroups) {
+      const id = group.id;
+      
+      // Get all records for this uniqueId
+      const records = await VerificationUpload_com.findAll({
+        where: { id }
+      });
+
+      // Determine final status based on your rules
+      let finalStatus = 'Completed'; // Assume completed unless we find reasons otherwise
+
+      for (const record of records) {
+        // Rule 1: If any record has status 'Pending' AND remark contains 'pending'
+        if (record.status === 'Pending' && 
+            
+            record.remark.toLowerCase().includes('pending')) {
+          finalStatus = 'Pending';
+          break; // No need to check further
+        }
+        
+        // Rule 2: If any record has status 'Pending' (regardless of remark)
+        // We don't break here because a later record might trigger Rule 1
+        if (record.status === 'Pending') {
+          finalStatus = 'Completed';
+        }
+      }
+
+      // Update all records in this group
+      await VerificationUpload_com.update(
+        { final_status: finalStatus },
+        { where: { id } }
+      );
+
+      console.log(`Processed group ${id}: Final status = ${finalStatus}`);
+    }
+  } catch (error) {
+    console.error('Error processing verification uploads:', error);
+  }
+}
+
+
+// Run every minute
+setInterval(processVerificationUploads, 10 * 1000);
+
+// Initial run
+processVerificationUploads();
+
+
+
+app.get('/check-status/:uniqueId', async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+
+    // Find all records with the given uniqueId
+    const records = await VerificationUpload_com.findAll({
+      where: { uniqueId },
+      attributes: ['final_status'] // Only fetch the final_status field
+    });
+
+    if (records.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No records found with the provided uniqueId'
+      });
+    }
+
+    // Check if all records have final_status as 'completed'
+    const allCompleted = records.every(record => record.final_status === 'Completed');
+
+    res.json({
+      success: true,
+      uniqueId,
+      totalRecords: records.length,
+      completedRecords: records.filter(r => r.final_status === 'Completed').length,
+      allCompleted,
+      status: allCompleted ? 'completed' : 'pending'
+    });
+
+  } catch (error) {
+    console.error('Error checking status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+
+
+app.post('/check-status-link/:uniqueId', async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+
+    // Find all records with the given uniqueId
+    const records = await VerificationUpload.findAll({
+      where: { uniqueId },
+      attributes: ['final_status'] // Only fetch the final_status field
+    });
+
+    if (records.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No records found with the provided uniqueId'
+      });
+    }
+
+    // Check if all records have final_status as 'completed'
+    const allCompleted = records.every(record => record.final_status === 'Completed');
+
+    res.json({
+      success: true,
+      uniqueId,
+      totalRecords: records.length,
+      completedRecords: records.filter(r => r.final_status === 'Completed').length,
+      allCompleted,
+      status: allCompleted ? 'completed' : 'pending'
+    });
+
+  } catch (error) {
+    console.error('Error checking status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+
+
+
+async function processVerificationUploads_link() {
+  try {
+    // Get all unique groups that need processing
+    const uniqueGroups = await VerificationUpload.findAll({
+      attributes: ['id'],
+      group: ['id'],
+      where: {
+        final_status: {
+          [Op.ne]: 'Completed' // Only process groups not already marked Completed
+        }
+      }
+    });
+
+    for (const group of uniqueGroups) {
+      const id = group.id;
+      
+      // Get all records for this uniqueId
+      const records = await VerificationUpload.findAll({
+        where: { id }
+      });
+
+      // Determine final status based on your rules
+      let finalStatus = 'Completed'; // Assume completed unless we find reasons otherwise
+
+      for (const record of records) {
+        // Rule 1: If any record has status 'Pending' AND remark contains 'pending'
+        if (record.status === 'Pending' && 
+            
+            record.remark.toLowerCase().includes('pending')) {
+          finalStatus = 'Pending';
+          break; // No need to check further
+        }
+        
+        // Rule 2: If any record has status 'Pending' (regardless of remark)
+        // We don't break here because a later record might trigger Rule 1
+        if (record.status === 'Pending') {
+          finalStatus = 'Completed';
+        }
+      }
+
+      // Update all records in this group
+      await VerificationUpload.update(
+        { final_status: finalStatus },
+        { where: { id } }
+      );
+
+      console.log(`Processed group ${id}: Final status = ${finalStatus}`);
+    }
+  } catch (error) {
+    console.error('Error processing verification uploads:', error);
+  }
+}
+
+
+// Run every minute
+setInterval(processVerificationUploads_link, 10 * 1000);
+
+// Initial run
+processVerificationUploads_link();
+
+
+
+
+
+
+
+app.get('/get-verification-uploads', async (req, res) => {
+  try {
+    const userEmail = req.headers['user-email'];
+    
+    if (!userEmail) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User email is required in headers' 
+      });
+    }
+
+    const uploads = await VerificationUpload.findAll({
+      where: { email: userEmail },
+      order: [['date', 'DESC']]
+    });
+
+    res.json(uploads);
+  } catch (error) {
+    console.error('Error fetching verification uploads:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch verification uploads',
+      error: error.message 
+    });
+  }
+});
+
+
+
+
+
+// Get company verification uploads for a specific user
+app.get('/get-company-verification-uploads', async (req, res) => {
+  try {
+    const userEmail = req.headers['user-email'];
+    
+    if (!userEmail) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User email is required in headers' 
+      });
+    }
+
+    const uploads = await VerificationUpload_com.findAll({
+      where: { email: userEmail },
+      order: [['date', 'DESC']]
+    });
+
+    res.json(uploads);
+  } catch (error) {
+    console.error('Error fetching company verification uploads:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch company verification uploads',
+      error: error.message 
+    });
   }
 });

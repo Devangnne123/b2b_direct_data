@@ -19,7 +19,7 @@ function Index() {
   const services = [
     {
       icon: "Capture-removebg-preview (2).png",
-      title: "Direct Data Enrichment",
+      title: "Direct Number Enrichment",
       link:"./mobile-enrichment"
     },
     {
@@ -128,7 +128,7 @@ function Index() {
 
       <section className="servicesCards">
         <div className="servicesContainer">.</div>
-        <section className="SERVICES">SERVICES</section>
+        <section className="SERVICES1">PRODUCTS</section>
         <section className="main-s">
           {services.map((service, index) => (
             <article key={index} className="serviceCard">

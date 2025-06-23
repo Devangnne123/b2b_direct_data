@@ -1,7 +1,8 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
+const { v4: uuidv4 } = require('uuid'); // For generating UUIDs
 
-const VerificationTemp = sequelize.define('verification_temp', {
+const VerificationTemp_com = sequelize.define('verification_temp_com', {
   uniqueId: {
     type: DataTypes.STRING,
     allowNull: false
@@ -15,92 +16,92 @@ const VerificationTemp = sequelize.define('verification_temp', {
     allowNull: true,
     defaultValue: 'Pending',
   },
-  
-    link_id: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+ link_id: {
+     type: DataTypes.STRING,
+     allowNull: true, 
+   },
 
   remark: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  full_name: {
+  company_name: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  head_title: {
+  company_url: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  head_location: {
+ company_headquater: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  title_1: {
+ company_industry: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  company_1: {
+  company_size: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  company_link_1: {
+  employee_count: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  exp_duration: {
+  year_founded: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  exp_location: {
+  company_speciality: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  job_type: {
+  linkedin_url: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  title_2: {
+  company_stock_name: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  company_2: {
+  verified_page_date: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  company_link_2: {
+  phone_number: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  exp_duration_2: {
+  company_followers: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  exp_location_2: {
+  location_total: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  job_type_2: {
+  overview: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  final_remarks: {
+  visit_website: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  final_remaks: {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  list_contacts_id: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  url_id: {
+  company_id: {
     type: DataTypes.STRING,
     allowNull: true
   }
+
 }, {
-  tableName: 'verification_temps',
+  tableName: 'verification_temps_com',
   timestamps: false, // Enable createdAt and updatedAt
   
 });
 
-module.exports = VerificationTemp;
+module.exports = VerificationTemp_com;

@@ -39,7 +39,7 @@ import Checkout from "./components/Checkout";
 import PaymentStatus from "./components/PaymentStatus";
 import PayPalReturnHandler from "./components/PayPalReturnHandler";
 import VerificationLinks from "./components/Verification_links";
-
+import Verification_company from "./components/Verification_company";
 
 
 function App() {
@@ -52,6 +52,7 @@ function App() {
     "/add-user",
     "/checkout",
    "/buy",
+   "/verfication_com",
    "/verfication_links",
     "/Alladmincompanycredits",
     "/Linkedin_Contect",
@@ -84,6 +85,7 @@ function App() {
           <Route path="/payment-status" element={<PaymentStatus />} />
           <Route path="/api/payments/capture" element={<PayPalReturnHandler />} />
           <Route path="/verfication_links" element={<VerificationLinks />} />
+          <Route path="/verfication_com" element={<Verification_company />} />
        <Route path="/Alladmincompanycredits" element={<Alladmincompanycredits />} />
         <Route path="/Linkedin_Contect" element={<Linkedin_Contect />} />
         <Route path="/Linkedin_Company" element={<Linkedin_Company />} />

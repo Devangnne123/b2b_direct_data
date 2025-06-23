@@ -202,6 +202,48 @@ exports.getUserCredits = async (req, res) => {
 
 
 
+exports.updateCreditCost_V = async (req, res) => {
+  try {
+    const { userEmail, creditCostPerLink_V } = req.body;
+    
+    // Validate input
+    if (!userEmail || creditCostPerLink_V === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and credit cost are required'
+      });
+    }
+
+    // Find user
+    const user = await User.findOne({ where: { userEmail } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Update and save
+    user.creditCostPerLink = creditCostPerLink_V;
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: 'Credit cost updated successfully',
+      newCost: user.creditCostPerLink
+    });
+
+  } catch (error) {
+    console.error('Credit cost update error:', {
+      error: error.message,
+      stack: error.stack,
+      body: req.body
+    });
+    
+  }
+};
+
+
 exports.updateCreditCost = async (req, res) => {
   try {
     const { userEmail, creditCostPerLink } = req.body;

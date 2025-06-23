@@ -17,9 +17,9 @@ function footer() {
         <div className="footer-container1">
           <div className="footer-section">
             <div className='footer-title'>
-            <h3> <img width="150px" src="new.png" alt="" /><br /></h3>
+            <h3> <img width="170px" src="new.png" alt="" /><br /></h3>
             </div>
-            <div className="social-icons">
+            {/* <div className="social-icons">
               <a href="#">
               <img width="48" height="48" src="https://img.icons8.com/color/48/instagram-new--v1.png" alt="instagram-new--v1"/>
               </a>
@@ -30,7 +30,7 @@ function footer() {
               <img width="48" height="48" src="https://img.icons8.com/color/48/youtube-play.png" alt="youtube-play"/>
               </a>
               <a href="#"><img width="48" height="48" src="https://img.icons8.com/color/48/whatsapp--v1.png" alt="whatsapp--v1"/></a>
-            </div>
+            </div> */}
             
           </div>
           <div className='menu-product'>
@@ -74,7 +74,7 @@ function footer() {
             </ul>
           </div>
           <div className="footer-section">
-            <h4>Services</h4>
+            <h4>Products</h4>
             <ul>
               <li>
                 <a ><Link to="/services" onClick={handleLinkClick}>

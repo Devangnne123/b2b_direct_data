@@ -2,21 +2,16 @@ import React, { useEffect, useState } from "react";
 import {
   Eye,
   EyeOff,
-  CreditCard,
   Mail,
   Search,
   User,
   Building,
   RefreshCw,
   Link as LinkIcon,
-} from "lucide-react";
-import Sidebar from "../components/Sidebar";
-import {
-  Building2,
   Phone,
-  CircleDollarSign,
   Wallet,
 } from "lucide-react";
+import Sidebar from "../components/Sidebar";
 import "../css/AllUser.css";
 
 const AllAdmin = () => {
@@ -28,8 +23,7 @@ const AllAdmin = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
 
-  const loggedInUserEmail =
-    JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
+  const loggedInUserEmail = JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
 
   useEffect(() => {
     fetchUsersWithCredits();
@@ -40,8 +34,19 @@ const AllAdmin = () => {
     setError("");
 
     try {
-      const response = await fetch("http://3.109.203.132:8000/users/getAllAdmin");
-      if (!response.ok) throw new Error(`Admin API error: ${response.status}`);
+      const response = await fetch("http://3.109.203.132:8000/users/getAllAdmin", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({})
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Admin API error: ${response.status}`);
+      }
 
       const result = await response.json();
       const updatedUsers = (result.users || []).map((user) => ({
@@ -54,7 +59,7 @@ const AllAdmin = () => {
       setUsers(updatedUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
-      setError("Failed to fetch admins. Try again later.");
+      setError(error.message || "Failed to fetch admins. Try again later.");
     } finally {
       setLoading(false);
     }
@@ -74,8 +79,8 @@ const AllAdmin = () => {
   };
 
   const handleUpdateCredits = async (userEmail, newCredits) => {
-    if (newCredits === "") {
-      alert("Please enter credits");
+    if (newCredits === "" || isNaN(newCredits)) {
+      alert("Please enter valid credits");
       return;
     }
 
@@ -86,30 +91,31 @@ const AllAdmin = () => {
     }
 
     const updatedCredits = Number(user.credits) + Number(newCredits);
-    const senderEmail =
-      JSON.parse(sessionStorage.getItem("user"))?.email || "Super Admin";
+    const senderEmail = JSON.parse(sessionStorage.getItem("user"))?.email || "Super Admin";
 
     try {
-      const response = await fetch(
-        "http://3.109.203.132:8000/users/update-credits",
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userEmail, credits: updatedCredits }),
-        }
-      );
+      const response = await fetch("http://3.109.203.132:8000/users/update-credits", {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ userEmail, credits: updatedCredits }),
+      });
 
       const result = await response.json();
       if (!response.ok) {
-        alert(result.message);
-        return;
+        throw new Error(result.message || "Failed to update credits");
       }
 
       const transactionResponse = await fetch(
         "http://3.109.203.132:8000/super-admin/assign-credits",
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem('token')}`
+          },
           body: JSON.stringify({
             senderEmail,
             recipientEmail: userEmail,
@@ -121,63 +127,58 @@ const AllAdmin = () => {
 
       const transactionResult = await transactionResponse.json();
       if (!transactionResponse.ok) {
-        alert(transactionResult.message);
-        return;
+        throw new Error(transactionResult.message || "Failed to record transaction");
       }
 
       alert("Credits assigned successfully!");
       fetchUsersWithCredits();
     } catch (error) {
       console.error("Error updating credits:", error);
-      alert("Failed to update credits. Try again later.");
+      alert(`Failed to update credits: ${error.message}`);
     }
   };
 
- // AllAdmin.jsx - Updated handler
-const handleUpdateCreditCost = async (userEmail, newCost) => {
-  if (!newCost || isNaN(newCost) || newCost < 1) {
-    alert("Please enter a valid cost (minimum 1)");
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `$http://3.109.203.132:8000/users/update-credit-cost`,
-      {
-        method: "PATCH",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ 
-          userEmail, 
-          creditCostPerLink: parseInt(newCost) 
-        }),
-      }
-    );
-
-    const result = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(result.message || 'Failed to update credit cost');
+  const handleUpdateCreditCost = async (userEmail, newCost) => {
+    if (!newCost || isNaN(newCost) || newCost < 1) {
+      alert("Please enter a valid cost (minimum 1)");
+      return;
     }
 
-    alert(`Credit cost updated to ${result.newCost}!`);
-    fetchUsersWithCredits();
-  } catch (error) {
-    console.error("Credit cost update failed:", {
-      error: error.message,
-      userEmail,
-      newCost,
-      time: new Date().toISOString()
-    });
-    alert(`Update failed: ${error.message}`);
-  }
-};
+    try {
+      const response = await fetch(
+        "http://3.109.203.132:8000/users/update-credit-cost",
+        {
+          method: "PATCH",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ 
+            userEmail, 
+            creditCostPerLink: parseInt(newCost) 
+          }),
+        }
+      );
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to update credit cost');
+      }
+
+      alert(`Credit cost updated to ${newCost}!`);
+      fetchUsersWithCredits();
+    } catch (error) {
+      console.error("Credit cost update failed:", error);
+      alert(`Update failed: ${error.message}`);
+    }
+  };
+
   const filteredUsers = users.filter(
     (user) =>
       user.userEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phoneNumber?.includes(searchTerm)
+      user.phoneNumber?.includes(searchTerm) ||
+      user.companyName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const indexOfLastRow = currentPage * rowsPerPage;
@@ -186,6 +187,7 @@ const handleUpdateCreditCost = async (userEmail, newCost) => {
   const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   return (
     <div className="main">
       <div className="main-con">
@@ -246,36 +248,40 @@ const handleUpdateCreditCost = async (userEmail, newCost) => {
                                       <th title="Email">
                                         <div className="flex items-center justify-center gap-1">
                                           <Mail className="h-4 w-4" />
+                                          <span>Email</span>
                                         </div>
                                       </th>
                                       <th title="Password">
                                         <div className="flex items-center justify-center gap-1">
                                           <User className="h-4 w-4" />
+                                          <span>Password</span>
                                         </div>
                                       </th>
                                       <th title="Company">
                                         <div className="flex items-center justify-center gap-1">
                                           <Building className="h-4 w-4" />
+                                          <span>Company</span>
                                         </div>
                                       </th>
                                       <th title="Phone">
                                         <div className="flex items-center justify-center gap-1">
                                           <Phone className="h-4 w-4" />
+                                          <span>Phone</span>
                                         </div>
                                       </th>
                                       <th title="Credits">
                                         <div className="flex items-center justify-center gap-1">
                                           <Wallet className="h-4 w-4" />
+                                          <span>Credits</span>
                                         </div>
                                       </th>
                                       <th title="Credit Cost Per Link">
                                         <div className="flex items-center justify-center gap-1">
                                           <LinkIcon className="h-4 w-4" />
+                                          <span>Cost/Link</span>
                                         </div>
                                       </th>
-                                      <th title="Actions">
-                                        Actions
-                                      </th>
+                                      <th>Actions</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -303,9 +309,7 @@ const handleUpdateCreditCost = async (userEmail, newCost) => {
                                                 }
                                                 className="password-toggle1 p-1 rounded hover:bg-gray-100"
                                               >
-                                                {showPasswords[
-                                                  user.userEmail
-                                                ] ? (
+                                                {showPasswords[user.userEmail] ? (
                                                   <EyeOff className="h-4 w-4 text-gray-600 hover:text-blue-600" />
                                                 ) : (
                                                   <Eye className="h-4 w-4 text-gray-600 hover:text-blue-600" />
@@ -317,10 +321,32 @@ const handleUpdateCreditCost = async (userEmail, newCost) => {
                                           <td>{user.phoneNumber || "N/A"}</td>
                                           <td>{user.credits || 0}</td>
                                           <td>
-                                            <span className="credit-cost-display">
-                                              {user.creditCostPerLink || 5}
-                                            </span>
+                                            <input
+                                              type="number"
+                                              value={user.newCreditCost}
+                                              onChange={(e) =>
+                                                handleInputChange(
+                                                  index,
+                                                  "newCreditCost",
+                                                  e.target.value
+                                                )
+                                              }
+                                              min="1"
+                                              className="credit-cost-input"
+                                            />
+                                            <button
+                                              onClick={() =>
+                                                handleUpdateCreditCost(
+                                                  user.userEmail,
+                                                  user.newCreditCost
+                                                )
+                                              }
+                                              className="update-btn ml-2"
+                                            >
+                                              Update
+                                            </button>
                                           </td>
+                                          
                                           <td>
                                             <input
                                               type="number"
@@ -359,110 +385,6 @@ const handleUpdateCreditCost = async (userEmail, newCost) => {
                                   </tbody>
                                 </table>
                               </div>
-                            </div>
-
-                            {/* Mobile View */}
-                            <div className="mobile-view">
-                              {currentRows.length > 0 ? (
-                                currentRows.map((user, index) => (
-                                  <div key={index} className="mobile-card">
-                                    <div className="mobile-card-header">
-                                      <Mail className="h-4 w-4" />
-                                      <span className="mobile-email">
-                                        {user.userEmail || "N/A"}
-                                      </span>
-                                    </div>
-
-                                    <div className="mobile-card-row">
-                                      <span className="mobile-label">
-                                        Password:
-                                      </span>
-                                      <div className="flex items-center gap-2">
-                                        <span className="password-text">
-                                          {showPasswords[user.userEmail]
-                                            ? user.userPassword
-                                            : "********"}
-                                        </span>
-                                        <button
-                                          onClick={() =>
-                                            togglePasswordVisibility(
-                                              user.userEmail
-                                            )
-                                          }
-                                          className="password-toggle1 p-1 rounded hover:bg-gray-100"
-                                        >
-                                          {showPasswords[user.userEmail] ? (
-                                            <EyeOff className="h-4 w-4 text-gray-600 hover:text-blue-600" />
-                                          ) : (
-                                            <Eye className="h-4 w-4 text-gray-600 hover:text-blue-600" />
-                                          )}
-                                        </button>
-                                      </div>
-                                    </div>
-
-                                    <div className="mobile-card-row">
-                                      <span className="mobile-label">
-                                        Company:
-                                      </span>
-                                      <span>{user.companyName || "N/A"}</span>
-                                    </div>
-
-                                    <div className="mobile-card-row">
-                                      <span className="mobile-label">
-                                        Phone:
-                                      </span>
-                                      <span>{user.phoneNumber || "N/A"}</span>
-                                    </div>
-
-                                    <div className="mobile-card-row">
-                                      <span className="mobile-label">
-                                        Credits:
-                                      </span>
-                                      <span>{user.credits || 0}</span>
-                                    </div>
-
-                                    <div className="mobile-card-row">
-                                      <span className="mobile-label">
-                                        Credit Cost:
-                                      </span>
-                                      <span className="credit-cost-display">
-                                        {user.creditCostPerLink || 5}
-                                      </span>
-                                    </div>
-
-                                    <div className="mobile-card-actions">
-                                      <input
-                                        type="number"
-                                        value={user.newCredits}
-                                        onChange={(e) =>
-                                          handleInputChange(
-                                            index,
-                                            "newCredits",
-                                            e.target.value
-                                          )
-                                        }
-                                        placeholder="Add Credits"
-                                        className="mobile-credit-input"
-                                      />
-                                      <button
-                                        onClick={() =>
-                                          handleUpdateCredits(
-                                            user.userEmail,
-                                            user.newCredits
-                                          )
-                                        }
-                                        className="mobile-update-btn"
-                                      >
-                                        Add Credits
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="no-data-mobile">
-                                  No admins found.
-                                </div>
-                              )}
                             </div>
 
                             {/* Pagination */}
@@ -505,4 +427,5 @@ const handleUpdateCreditCost = async (userEmail, newCost) => {
     </div>
   );
 };
+
 export default AllAdmin;

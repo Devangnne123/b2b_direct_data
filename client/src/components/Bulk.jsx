@@ -54,7 +54,7 @@ function App() {
 
   const fetchUserLinks = async (email) => {
     try {
-      const res = await axios.get("http://3.109.203.132:8000/get-links", {
+      const res = await axios.post("http://3.109.203.132:8000/get-links", {
         headers: { "user-email": email },
       });
       setUploadedData(res.data);

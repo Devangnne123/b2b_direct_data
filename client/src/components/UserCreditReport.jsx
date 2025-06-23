@@ -13,10 +13,12 @@ import "react-toastify/dist/ReactToastify.css";
 import "../css/Creditreport.css";
 
 const UserCreditReport = () => {
-   const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [adminCredits, setAdminCredits] = useState([]);
   const [fileUploads, setFileUploads] = useState([]);
+  const [verificationUploads, setVerificationUploads] = useState([]);
+  const [companyVerificationUploads, setCompanyVerificationUploads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,7 +36,7 @@ const UserCreditReport = () => {
     fetchCreditData();
   }, [userEmail]);
 
-   const fetchUsers = async () => {
+  const fetchUsers = async () => {
     try {
       const response = await fetch(
         `http://3.109.203.132:8000/users/created-by/${userEmail}`
@@ -44,7 +46,8 @@ const UserCreditReport = () => {
       const { data } = await response.json();
       setUsers(data);
     } catch (error) {
-      setError(error.message || "Failed to fetch user data.");
+      console.error("Failed to fetch users:", error);
+      setError("Failed to load user data. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -53,16 +56,53 @@ const UserCreditReport = () => {
   const fetchCreditData = async () => {
     setLoading(true);
     setError(null);
+    
     try {
-      const [userTxnsRes, adminTxnsRes, uploadsRes] = await Promise.all([
-        axios.get(`http://3.109.203.132:8000/transactions/credit-transactions/${userEmail}`),
-        axios.get(`http://3.109.203.132:8000/super-admin/get-credit-transactions`),
+      const apiCalls = [
+        axios.get(`http://3.109.203.132:8000/transactions/credit-transactions/${userEmail}`)
+          .catch(error => {
+            console.error("Failed to fetch user transactions:", error);
+            return { data: { data: [] } };
+          }),
+        
+        axios.get(`http://3.109.203.132:8000/super-admin/get-credit-transactions`)
+          .catch(error => {
+            console.error("Failed to fetch admin transactions:", error);
+            return { data: { data: [] } };
+          }),
+        
         axios.get(`http://3.109.203.132:8000/get-links`, {
           headers: { "user-email": userEmail }
+        }).catch(error => {
+          console.error("Failed to fetch file uploads:", error);
+          return { data: [] };
+        }),
+        
+        axios.get(`http://3.109.203.132:8000/get-verification-uploads`, {
+          headers: { "user-email": userEmail },
+          timeout: 10000
+        }).catch(error => {
+          console.error("Failed to fetch verification uploads:", error);
+          return { data: [] };
+        }),
+        
+        axios.get(`http://3.109.203.132:8000/get-company-verification-uploads`, {
+          headers: { "user-email": userEmail },
+          timeout: 10000
+        }).catch(error => {
+          console.error("Failed to fetch company verification uploads:", error);
+          return { data: [] };
         })
-      ]);
+      ];
 
-      // Process user transactions (both sent and received)
+      const [
+        userTxnsRes, 
+        adminTxnsRes, 
+        uploadsRes,
+        verificationRes,
+        companyVerificationRes
+      ] = await Promise.all(apiCalls);
+
       const processedUserTxns = (userTxnsRes.data?.data || []).map(t => ({
         ...t,
         type: "USER_TRANSACTION",
@@ -77,7 +117,6 @@ const UserCreditReport = () => {
         createdBy: t.createdBy || userEmail
       }));
 
-      // Process admin transactions where user is involved (either recipient or creator)
       const processedAdminCredits = (adminTxnsRes.data?.data || [])
         .filter(txn => txn.recipientEmail === userEmail || txn.createdBy === userEmail)
         .map(txn => ({
@@ -94,17 +133,20 @@ const UserCreditReport = () => {
           createdBy: txn.createdBy
         }));
 
-      // Process file uploads - show all uploads by this user
       const processedUploads = processFileUploads(uploadsRes.data || []);
+      const processedVerificationUploads = processVerificationUploads(verificationRes.data || []);
+      const processedCompanyVerificationUploads = processCompanyVerificationUploads(companyVerificationRes.data || []);
 
       setTransactions(processedUserTxns);
       setAdminCredits(processedAdminCredits);
       setFileUploads(processedUploads);
+      setVerificationUploads(processedVerificationUploads);
+      setCompanyVerificationUploads(processedCompanyVerificationUploads);
 
     } catch (error) {
       console.error("API Error:", error);
-      setError("Failed to load credit history. Please try again later.");
-      toast.error("Failed to load credit history");
+      setError("Failed to load some data. Please try again later.");
+      toast.error("Failed to load some data. Showing partial information.");
     } finally {
       setLoading(false);
     }
@@ -147,6 +189,75 @@ const UserCreditReport = () => {
     }));
   };
 
+  const processVerificationUploads = (uploads) => {
+    if (!Array.isArray(uploads)) return [];
+    
+    // Use a Map to ensure unique entries by uniqueId
+    const uploadsMap = new Map();
+    
+    uploads.forEach(upload => {
+      if (!upload?.uniqueId) return;
+      
+      if (!uploadsMap.has(upload.uniqueId)) {
+        uploadsMap.set(upload.uniqueId, {
+          id: upload.uniqueId,
+          type: "VERIFICATION_UPLOAD",
+          sortKey: new Date(upload.date || new Date()),
+          displayDate: upload.date || new Date().toISOString(),
+          description: `Verification: ${upload.fileName || 'Unknown'}`,
+          details: upload.final_status || 'Pending',
+          amount: -Math.abs(upload.creditsUsed || 0),
+          remainingCredits: upload.remainingCredits,
+          fileName: upload.fileName,
+          status: upload.final_status || 'Pending',
+          icon: <FileText className="h-4 w-4 text-green-500" />,
+          isCredit: false,
+          createdBy: upload.email || userEmail,
+          remark: upload.remark,
+          totalLinks: upload.totallink,
+          pendingCount: upload.pendingCount
+        });
+      }
+    });
+
+    return Array.from(uploadsMap.values());
+  };
+
+  const processCompanyVerificationUploads = (uploads) => {
+    if (!Array.isArray(uploads)) return [];
+    
+    // Use a Map to ensure unique entries by uniqueId
+    const uploadsMap = new Map();
+    
+    uploads.forEach(upload => {
+      if (!upload?.uniqueId) return;
+      
+      if (!uploadsMap.has(upload.uniqueId)) {
+        uploadsMap.set(upload.uniqueId, {
+          id: upload.uniqueId,
+          type: "COMPANY_VERIFICATION_UPLOAD",
+          sortKey: new Date(upload.date || new Date()),
+          displayDate: upload.date || new Date().toISOString(),
+          description: `Company Verification: ${upload.fileName || 'Unknown'}`,
+          details: upload.final_status || 'Pending',
+          amount: -Math.abs(upload.creditsUsed || 0),
+          remainingCredits: upload.remainingCredits,
+          fileName: upload.fileName,
+          status: upload.final_status || 'Pending',
+          icon: <FileSpreadsheet className="h-4 w-4 text-blue-500" />,
+          isCredit: false,
+          createdBy: upload.email || userEmail,
+          remark: upload.remark,
+          totalLinks: upload.totallink,
+          pendingCount: upload.pendingCount,
+          companyName: upload.company_name
+        });
+      }
+    });
+
+    return Array.from(uploadsMap.values());
+  };
+
   const requestSort = (key) => {
     setSortConfig(prev => ({
       key,
@@ -158,16 +269,19 @@ const UserCreditReport = () => {
     let data = [];
     
     if (activeTab === "all") {
-      data = [...transactions, ...adminCredits, ...fileUploads];
+      data = [...transactions, ...adminCredits, ...fileUploads, ...verificationUploads, ...companyVerificationUploads];
     } else if (activeTab === "transactions") {
       data = [...transactions];
     } else if (activeTab === "admin") {
       data = [...adminCredits];
     } else if (activeTab === "uploads") {
-      data = [...fileUploads];
+      data = [...fileUploads, ...verificationUploads, ...companyVerificationUploads];
+    } else if (activeTab === "verifications") {
+      data = [...verificationUploads];
+    } else if (activeTab === "company-verifications") {
+      data = [...companyVerificationUploads];
     }
 
-    // Filter to show transactions where user is involved (either as sender/receiver or creator)
     data = data.filter(item => 
       item.sender === userEmail || 
       item.receiver === userEmail || 
@@ -185,9 +299,8 @@ const UserCreditReport = () => {
         ? b.sortKey - a.sortKey 
         : a.sortKey - b.sortKey;
     });
-  }, [transactions, adminCredits, fileUploads, activeTab, sortConfig, userEmail]);
+  }, [transactions, adminCredits, fileUploads, verificationUploads, companyVerificationUploads, activeTab, sortConfig, userEmail]);
 
-  // Rest of the component remains the same...
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentRows = sortedData.slice(indexOfFirstRow, indexOfLastRow);
@@ -245,7 +358,6 @@ const UserCreditReport = () => {
               </div>
             </nav>
             
-
             <section>
               <div className="main-body0">
                 <div className="main-body1">
@@ -259,6 +371,8 @@ const UserCreditReport = () => {
                               <th>Transactions</th>
                               <th>Admin Credits</th>
                               <th>File Uploads</th>
+                              <th>Verifications</th>
+                              <th>Company Verifications</th>
                               <th>Active Tab</th>
                               <th>Sorted Data</th>
                               <th className="refresh-cell">Actions</th>
@@ -270,6 +384,8 @@ const UserCreditReport = () => {
                               <td className="debug-table-cell debug-value">{transactions.length}</td>
                               <td className="debug-table-cell debug-value">{adminCredits.length}</td>
                               <td className="debug-table-cell debug-value">{fileUploads.length}</td>
+                              <td className="debug-table-cell debug-value">{verificationUploads.length}</td>
+                              <td className="debug-table-cell debug-value">{companyVerificationUploads.length}</td>
                               <td className="debug-table-cell debug-value">{activeTab}</td>
                               <td className="debug-table-cell debug-value">{sortedData.length}</td>
                               <td className="debug-table-cell refresh-cell">
@@ -323,6 +439,18 @@ const UserCreditReport = () => {
                         onClick={() => { setActiveTab("uploads"); setCurrentPage(1); }}
                       >
                         File Processing
+                      </button>
+                      <button 
+                        className={`tab-btn ${activeTab === "verifications" ? "active" : ""}`}
+                        onClick={() => { setActiveTab("verifications"); setCurrentPage(1); }}
+                      >
+                        Verifications
+                      </button>
+                      <button 
+                        className={`tab-btn ${activeTab === "company-verifications" ? "active" : ""}`}
+                        onClick={() => { setActiveTab("company-verifications"); setCurrentPage(1); }}
+                      >
+                        Company Verifications
                       </button>
                     </div>
 
@@ -385,6 +513,10 @@ const UserCreditReport = () => {
                                                 ? item.createdBy === userEmail ? "Admin Credit (Sent)" : "Admin Credit" 
                                                 : item.type === "FILE_UPLOAD"
                                                 ? "File Process"
+                                                : item.type === "VERIFICATION_UPLOAD"
+                                                ? "Verification"
+                                                : item.type === "COMPANY_VERIFICATION_UPLOAD"
+                                                ? "Company Verification"
                                                 : "Transaction"}
                                             </span>
                                           </div>
@@ -395,6 +527,16 @@ const UserCreditReport = () => {
                                               <div className="font-medium">{item.fileName || "Unknown file"}</div>
                                               <div className="text-sm text-gray-500">
                                                 {item.matchCount || 0} matches
+                                              </div>
+                                            </div>
+                                          ) : item.type === "VERIFICATION_UPLOAD" || item.type === "COMPANY_VERIFICATION_UPLOAD" ? (
+                                            <div>
+                                              <div className="font-medium">{item.fileName || "Unknown file"}</div>
+                                              <div className="text-sm text-gray-500">
+                                                Status: {item.status}
+                                                {item.type === "COMPANY_VERIFICATION_UPLOAD" && item.companyName && (
+                                                  <div>Company: {item.companyName}</div>
+                                                )}
                                               </div>
                                             </div>
                                           ) : (
@@ -480,6 +622,10 @@ const UserCreditReport = () => {
                                             ? item.createdBy === userEmail ? "Admin Credit (Sent)" : "Admin Credit"
                                             : item.type === "FILE_UPLOAD"
                                             ? "File Process"
+                                            : item.type === "VERIFICATION_UPLOAD"
+                                            ? "Verification"
+                                            : item.type === "COMPANY_VERIFICATION_UPLOAD"
+                                            ? "Company Verification"
                                             : "Transaction"}
                                         </div>
                                         <div className="date-badge">
@@ -502,6 +648,16 @@ const UserCreditReport = () => {
                                             <div>{item.fileName || "Unknown file"}</div>
                                             <div className="text-sm text-gray-500">
                                               {item.matchCount || 0} matches processed
+                                            </div>
+                                          </>
+                                        ) : item.type === "VERIFICATION_UPLOAD" || item.type === "COMPANY_VERIFICATION_UPLOAD" ? (
+                                          <>
+                                            <div>{item.fileName || "Unknown file"}</div>
+                                            <div className="text-sm text-gray-500">
+                                              Status: {item.status}
+                                              {item.type === "COMPANY_VERIFICATION_UPLOAD" && item.companyName && (
+                                                <div>Company: {item.companyName}</div>
+                                              )}
                                             </div>
                                           </>
                                         ) : (
@@ -534,6 +690,18 @@ const UserCreditReport = () => {
                                           {item.remainingCredits !== undefined ? item.remainingCredits : "N/A"}
                                         </span>
                                       </div>
+                                      {item.type === "VERIFICATION_UPLOAD" || item.type === "COMPANY_VERIFICATION_UPLOAD" ? (
+                                        <>
+                                          <div className="stat-item">
+                                            <span className="stat-label">Total Links:</span>
+                                            <span>{item.totalLinks || 0}</span>
+                                          </div>
+                                          <div className="stat-item">
+                                            <span className="stat-label">Pending:</span>
+                                            <span>{item.pendingCount || 0}</span>
+                                          </div>
+                                        </>
+                                      ) : null}
                                     </div>
                                   </div>
                                 </div>
