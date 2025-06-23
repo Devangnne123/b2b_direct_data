@@ -566,7 +566,7 @@ if (
 
 
 
-app.get('/api/credit-cost', async (req, res) => {
+app.post('/api/credit-cost', async (req, res) => {
   try {
     const { email } = req.query;
 
