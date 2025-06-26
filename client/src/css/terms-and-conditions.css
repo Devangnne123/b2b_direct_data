@@ -1,0 +1,106 @@
+/* src/css/terms-and-conditions.css */
+.terms-and-conditions {
+  background-color: #f9f9f9;
+  padding: 40px 0;
+  font-family: 'Arial', sans-serif;
+  line-height: 1.6;
+  color: #333;
+  min-height: 100vh;
+}
+
+.terms-and-conditions .container {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: white;
+  padding: 40px;
+  border-radius: 8px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+
+.terms-and-conditions h1 {
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 2.2rem;
+}
+
+.last-updated {
+  text-align: right;
+  color: #666;
+  font-style: italic;
+  margin-bottom: 30px;
+}
+
+.terms-and-conditions h2 {
+  color: #2c3e50;
+  margin-top: 40px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 1.5rem;
+}
+
+.terms-and-conditions h3 {
+  color: #34495e;
+  margin-top: 25px;
+  font-size: 1.2rem;
+}
+
+.terms-and-conditions p {
+  margin-bottom: 15px;
+}
+
+.terms-and-conditions ul, 
+.terms-and-conditions ol {
+  margin-bottom: 20px;
+  padding-left: 20px;
+}
+
+.terms-and-conditions li {
+  margin-bottom: 8px;
+}
+
+.lettered-list {
+  list-style-type: lower-alpha;
+  padding-left: 30px;
+}
+
+.back-to-home {
+  margin-top: 50px;
+  text-align: center;
+}
+
+.back-link {
+  color: #3498db;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1rem;
+  transition: color 0.3s;
+  display: inline-block;
+  padding: 8px 16px;
+  border: 1px solid #3498db;
+  border-radius: 4px;
+}
+
+.back-link:hover {
+  color: #fff;
+  background-color: #3498db;
+  text-decoration: none;
+}
+
+@media (max-width: 768px) {
+  .terms-and-conditions .container {
+    padding: 20px;
+  }
+  
+  .terms-and-conditions h1 {
+    font-size: 1.8rem;
+  }
+  
+  .terms-and-conditions h2 {
+    font-size: 1.3rem;
+  }
+  
+  .terms-and-conditions h3 {
+    font-size: 1.1rem;
+  }
+}

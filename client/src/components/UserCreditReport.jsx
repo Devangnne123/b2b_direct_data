@@ -39,7 +39,7 @@ const UserCreditReport = () => {
   const fetchUsers = async () => {
     try {
       const response = await fetch(
-        `http://3.109.203.132:8000/users/created-by/${userEmail}`
+        `http://13.203.218.236:8000/users/created-by/${userEmail}`
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
@@ -59,26 +59,26 @@ const UserCreditReport = () => {
     
     try {
       const apiCalls = [
-        axios.get(`http://3.109.203.132:8000/transactions/credit-transactions/${userEmail}`)
+        axios.get(`http://13.203.218.236:8000/transactions/credit-transactions/${userEmail}`)
           .catch(error => {
             console.error("Failed to fetch user transactions:", error);
             return { data: { data: [] } };
           }),
         
-        axios.get(`http://3.109.203.132:8000/super-admin/get-credit-transactions`)
+        axios.get(`http://13.203.218.236:8000/super-admin/get-credit-transactions`)
           .catch(error => {
             console.error("Failed to fetch admin transactions:", error);
             return { data: { data: [] } };
           }),
         
-        axios.get(`http://3.109.203.132:8000/get-links`, {
+        axios.get(`http://13.203.218.236:8000/get-links`, {
           headers: { "user-email": userEmail }
         }).catch(error => {
           console.error("Failed to fetch file uploads:", error);
           return { data: [] };
         }),
         
-        axios.get(`http://3.109.203.132:8000/get-verification-uploads`, {
+        axios.get(`http://13.203.218.236:8000/get-verification-uploads`, {
           headers: { "user-email": userEmail },
           timeout: 10000
         }).catch(error => {
@@ -86,7 +86,7 @@ const UserCreditReport = () => {
           return { data: [] };
         }),
         
-        axios.get(`http://3.109.203.132:8000/get-company-verification-uploads`, {
+        axios.get(`http://13.203.218.236:8000/get-company-verification-uploads`, {
           headers: { "user-email": userEmail },
           timeout: 10000
         }).catch(error => {

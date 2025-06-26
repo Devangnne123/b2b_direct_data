@@ -39,11 +39,11 @@ const UserCreditReport = () => {
     setError(null);
     try {
       const [creditsRes, linksRes, companiesRes] = await Promise.all([
-        axios.post(`http://3.109.203.132:8000/api/user/${userEmail}`),
-        axios.post("http://3.109.203.132:8000/get-verification-links", {
+        axios.post(`http://13.203.218.236:8000/api/user/${userEmail}`),
+        axios.post("http://13.203.218.236:8000/get-verification-links", {
           headers: { "user-email": userEmail }
         }),
-        axios.post("http://3.109.203.132:8000/get-verification-links-com", {
+        axios.post("http://13.203.218.236:8000/get-verification-links-com", {
           headers: { "user-email": userEmail }
         })
       ]);

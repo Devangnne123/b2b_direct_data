@@ -100,7 +100,7 @@ function Verification_company() {
       if (!email || email === "Guest") return;
       
       try {
-        const response = await axios.get(`http://3.109.203.132:8000/api/user/${email}`);
+        const response = await axios.get(`http://13.203.218.236:8000/api/user/${email}`);
         setCredits(response.data.credits);
         setCreditCostPerLink(response.data.creditCostPerLink_V || 5);
         dataRef.current.credits = response.data.credits;
@@ -117,7 +117,7 @@ function Verification_company() {
     try {
       if (!email || email === "Guest") return;
       
-      const response = await axios.get("http://3.109.203.132:8000/get-verification-links-com", {
+      const response = await axios.get("http://13.203.218.236:8000/get-verification-links-com", {
         headers: { "user-email": email },
       });
 
@@ -135,7 +135,7 @@ function Verification_company() {
         dataRef.current.categorizedLinks = transformedData;
       }
 
-      const creditRes = await axios.get(`http://3.109.203.132:8000/api/user/${email}`);
+      const creditRes = await axios.get(`http://13.203.218.236:8000/api/user/${email}`);
       if (creditRes.data.credits !== dataRef.current.credits) {
         setCredits(creditRes.data.credits);
         dataRef.current.credits = creditRes.data.credits;
@@ -147,7 +147,7 @@ function Verification_company() {
 
   const fetchCreditCost = async (email) => {
     try {
-      const response = await axios.post("http://3.109.203.132:8000/users/getAllAdmin");
+      const response = await axios.post("http://13.203.218.236:8000/users/getAllAdmin");
       if (response.data && response.data.users) {
         const adminUser = response.data.users.find(
           (user) => user.userEmail === email  
@@ -171,7 +171,7 @@ function Verification_company() {
     try {
       setIsProcessing(true);
       const response = await axios.get(
-        `http://3.109.203.132:8000/check-status/${uniqueId}`
+        `http://13.203.218.236:8000/check-status/${uniqueId}`
       );
       setStatusCheckData(response.data);
       toast.success(`Status checked for ${uniqueId}`);
@@ -214,7 +214,7 @@ function Verification_company() {
     try {
       setIsProcessing(true);
       setUploadProgress(0);
-      const response = await axios.post('http://3.109.203.132:8000/upload-excel-verification-com', formData, {
+      const response = await axios.post('http://13.203.218.236:8000/upload-excel-verification-com', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'user-email': email
@@ -279,13 +279,13 @@ function Verification_company() {
     setIsProcessing(true);
     try {
       const response = await axios.post(
-        `http://3.109.203.132:8000/process-matching-com/${pendingUpload.uniqueId}`, 
+        `http://13.203.218.236:8000/process-matching-com/${pendingUpload.uniqueId}`, 
         {}, 
         { headers: { 'user-email': email } }
       );
 
       const creditRes = await axios.post(
-        "http://3.109.203.132:8000/api/deduct-credits_v-com",
+        "http://13.203.218.236:8000/api/deduct-credits_v-com",
         {
           userEmail: email,
           credits: pendingUpload.creditCost,
@@ -327,7 +327,7 @@ function Verification_company() {
     try {
       setIsProcessing(true);
       await axios.delete(
-        `http://3.109.203.132:8000/api/delete-verification-uploads-com/${pendingUpload.uniqueId}`
+        `http://13.203.218.236:8000/api/delete-verification-uploads-com/${pendingUpload.uniqueId}`
       );
       
       setProcessingStatus(prev => {
@@ -412,7 +412,7 @@ function Verification_company() {
       setIsProcessing(true);
       
       const response = await axios.get(
-        `http://3.109.203.132:8000/api/verification-uploads-com/${uniqueId}`
+        `http://13.203.218.236:8000/api/verification-uploads-com/${uniqueId}`
       );
       
       const allData = response.data;

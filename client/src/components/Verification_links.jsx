@@ -97,7 +97,7 @@ function VerificationLinks() {
       if (!email || email === "Guest") return;
       
       try {
-        const response = await axios.post(`http://3.109.203.132:8000/api/user/${email}`);
+        const response = await axios.post(`http://13.203.218.236:8000/api/user/${email}`);
         setCredits(response.data.credits);
         setCreditCostPerLink(response.data.creditCostPerLink_V || 5);
         dataRef.current.credits = response.data.credits;
@@ -114,7 +114,7 @@ function VerificationLinks() {
     try {
       setIsProcessing(true);
       const response = await axios.post(
-        `http://3.109.203.132:8000/check-status-link/${uniqueId}`
+        `http://13.203.218.236:8000/check-status-link/${uniqueId}`
       );
       setStatusCheckData(response.data);
       toast.success(`Status checked for ${uniqueId}`);
@@ -130,7 +130,7 @@ function VerificationLinks() {
     try {
       if (!email || email === "Guest") return;
       
-      const response = await axios.get("http://3.109.203.132:8000/get-verification-links", {
+      const response = await axios.get("http://13.203.218.236:8000/get-verification-links", {
         headers: { "user-email": email },
       });
 
@@ -150,7 +150,7 @@ function VerificationLinks() {
       }
 
       // Refresh credits
-      const creditRes = await axios.get(`http://3.109.203.132:8000/api/user/${email}`);
+      const creditRes = await axios.get(`http://13.203.218.236:8000/api/user/${email}`);
       if (creditRes.data.credits !== dataRef.current.credits) {
         setCredits(creditRes.data.credits);
         dataRef.current.credits = creditRes.data.credits;
@@ -197,7 +197,7 @@ function VerificationLinks() {
     try {
       setIsProcessing(true);
       setUploadProgress(0);
-      const response = await axios.post('http://3.109.203.132:8000/upload-excel-verification', formData, {
+      const response = await axios.post('http://13.203.218.236:8000/upload-excel-verification', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'user-email': email
@@ -262,7 +262,7 @@ function VerificationLinks() {
     try {
       // Process the matching
       const response = await axios.post(
-        `http://3.109.203.132:8000/process-matching/${pendingUpload.uniqueId}`, 
+        `http://13.203.218.236:8000/process-matching/${pendingUpload.uniqueId}`, 
         {}, 
         {
           headers: {
@@ -273,7 +273,7 @@ function VerificationLinks() {
 
       // Deduct credits
       const creditRes = await axios.post(
-        "http://3.109.203.132:8000/api/deduct-credits_v",
+        "http://13.203.218.236:8000/api/deduct-credits_v",
         {
           userEmail: email,
           credits: pendingUpload.creditCost,
@@ -308,7 +308,7 @@ function VerificationLinks() {
     try {
       setIsProcessing(true);
       await axios.delete(
-        `http://3.109.203.132:8000/api/delete-verification-uploads/${pendingUpload.uniqueId}`
+        `http://13.203.218.236:8000/api/delete-verification-uploads/${pendingUpload.uniqueId}`
       );
       
       toast.success('Upload cancelled and data deleted');
@@ -409,7 +409,7 @@ function VerificationLinks() {
       
       // Fetch all data for this uniqueId
       const response = await axios.get(
-        `http://3.109.203.132:8000/api/verification-uploads/${uniqueId}`
+        `http://13.203.218.236:8000/api/verification-uploads/${uniqueId}`
       );
       
       const allData = response.data;

@@ -40,6 +40,8 @@ import PaymentStatus from "./components/PaymentStatus";
 import PayPalReturnHandler from "./components/PayPalReturnHandler";
 import VerificationLinks from "./components/Verification_links";
 import Verification_company from "./components/Verification_company";
+import PrivacyPolicy from "./components/PrivacyPolicy";
+import TermsAndConditions from "./components/TermsAndConditions";
 
 
 function App() {
@@ -86,6 +88,8 @@ function App() {
           <Route path="/api/payments/capture" element={<PayPalReturnHandler />} />
           <Route path="/verfication_links" element={<VerificationLinks />} />
           <Route path="/verfication_com" element={<Verification_company />} />
+          <Route path="/privacy_policy" element={<PrivacyPolicy/>} />
+           <Route path="/terms-and-conditions" element={<TermsAndConditions/>} />
        <Route path="/Alladmincompanycredits" element={<Alladmincompanycredits />} />
         <Route path="/Linkedin_Contect" element={<Linkedin_Contect />} />
         <Route path="/Linkedin_Company" element={<Linkedin_Company />} />

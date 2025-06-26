@@ -17,7 +17,7 @@ const Statistics = () => {
   useEffect(() => {
     const fetchUserList = async () => {
       try {
-        const response = await fetch("http://3.109.203.132:8000/users/user");
+        const response = await fetch("http://13.203.218.236:8000/users/user");
         if (!response.ok) throw new Error("Failed to fetch users");
   
         const result = await response.json();
@@ -51,7 +51,7 @@ const Statistics = () => {
     const fetchStatistics = async () => {
       try {
         const response = await fetch(
-          "http://3.109.203.132:8000/bulkUpload/allstatistics"
+          "http://13.203.218.236:8000/bulkUpload/allstatistics"
         );
         if (!response.ok) throw new Error("Failed to fetch statistics");
 

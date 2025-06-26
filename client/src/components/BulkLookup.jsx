@@ -116,10 +116,10 @@ const silentRefresh = useCallback(async () => {
     if (!savedEmail || savedEmail === "Guest") return;
     
     const [linksRes, creditsRes] = await Promise.all([
-      axios.get("http://3.109.203.132:8000/get-links", {
+      axios.get("http://13.203.218.236:8000/get-links", {
         headers: { "user-email": savedEmail },
       }),
-      axios.get(`http://3.109.203.132:8000/api/user/${savedEmail}`)
+      axios.get(`http://13.203.218.236:8000/api/user/${savedEmail}`)
     ]);
 
     const now = Date.now();
@@ -165,7 +165,7 @@ const silentRefresh = useCallback(async () => {
 
   const fetchCreditCost = async (email) => {
     try {
-      const response = await axios.post("http://3.109.203.132:8000/users/getAllAdmin");
+      const response = await axios.post("http://13.203.218.236:8000/users/getAllAdmin");
       if (response.data && response.data.users) {
         const adminUser = response.data.users.find(
           (user) => user.userEmail === email  
@@ -244,7 +244,7 @@ const getGroupStatus = (group) => {
 
     try {
     const res = await axios.post(
-      "http://3.109.203.132:8000/upload-excel",
+      "http://13.203.218.236:8000/upload-excel",
       formData,
       { headers: { "user-email": savedEmail } }
     );
@@ -307,7 +307,7 @@ const getGroupStatus = (group) => {
   try {
     // First create the TempLinkMobile records
     const tempRes = await axios.post(
-      "http://3.109.203.132:8000/confirm-upload",
+      "http://13.203.218.236:8000/confirm-upload",
       {
         uniqueId: pendingUpload.uniqueId,
         email: savedEmail
@@ -316,7 +316,7 @@ const getGroupStatus = (group) => {
 
     // Then deduct credits
     const creditRes = await axios.post(
-      "http://3.109.203.132:8000/api/upload-file",
+      "http://13.203.218.236:8000/api/upload-file",
       {
         userEmail: savedEmail,
         creditCost: pendingUpload.creditToDeduct,
@@ -329,7 +329,7 @@ const getGroupStatus = (group) => {
     
     // Send email notification
     try {
-      await axios.post("http://3.109.203.132:8000/send-upload-notification", {
+      await axios.post("http://13.203.218.236:8000/send-upload-notification", {
         email: savedEmail,
         fileName: pendingUpload.file,
         totalLinks: pendingUpload.totallink || 0,
@@ -374,7 +374,7 @@ const getGroupStatus = (group) => {
     setLoading(true);
     try {
       await axios.delete(
-        `http://3.109.203.132:8000/cancel-upload/${pendingUpload.uniqueId}`
+        `http://13.203.218.236:8000/cancel-upload/${pendingUpload.uniqueId}`
       );
       toast.info("Upload canceled - all data removed");
       

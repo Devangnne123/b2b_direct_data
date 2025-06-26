@@ -1266,6 +1266,7 @@ app.post('/sync-temp-to-main/:uniqueId', async (req, res) => {
     let updatedCount = 0;
     let skippedCount = 0;
     let markedCompletedCount = 0;
+    let deletedCount = 0;
 
     for (const tempRecord of tempRecords) {
       // Convert to plain object to better check values
@@ -1289,31 +1290,29 @@ app.post('/sync-temp-to-main/:uniqueId', async (req, res) => {
       // Prepare update data for main table
       const updateData = {
         full_name: tempRecord.full_name,
-          head_title: tempRecord.head_title,
-          head_location: tempRecord.head_location,
-          title_1: tempRecord.title_1,
-          company_1: tempRecord.company_1,
-          company_link_1: tempRecord.company_link_1,
-          exp_duration: tempRecord.exp_duration,
-          exp_location: tempRecord.exp_location,
-          job_type: tempRecord.job_type,
-          title_2: tempRecord.title_2,
-          company_2: tempRecord.company_2,
-          company_link_2: tempRecord.company_link_2,
-          exp_duration_2: tempRecord.exp_duration_2,
-          exp_location_2: tempRecord.exp_location_2,
-          job_type_2: tempRecord.job_type_2,
-          final_remarks: tempRecord.final_remarks,
-          list_contacts_id: tempRecord.list_contacts_id,
-          url_id: tempRecord.url_id,
-
+        head_title: tempRecord.head_title,
+        head_location: tempRecord.head_location,
+        title_1: tempRecord.title_1,
+        company_1: tempRecord.company_1,
+        company_link_1: tempRecord.company_link_1,
+        exp_duration: tempRecord.exp_duration,
+        exp_location: tempRecord.exp_location,
+        job_type: tempRecord.job_type,
+        title_2: tempRecord.title_2,
+        company_2: tempRecord.company_2,
+        company_link_2: tempRecord.company_link_2,
+        exp_duration_2: tempRecord.exp_duration_2,
+        exp_location_2: tempRecord.exp_location_2,
+        job_type_2: tempRecord.job_type_2,
+        final_remarks: tempRecord.final_remarks,
+        list_contacts_id: tempRecord.list_contacts_id,
+        url_id: tempRecord.url_id,
         last_sync: new Date()
       };
 
-      // FORCE STATUS UPDATE - This is the key change
+      // FORCE STATUS UPDATE
       if (shouldMarkCompleted) {
         updateData.status = 'Completed'; // Note the capital 'C' to match your model
-        
       }
 
       // Update main table
@@ -1327,18 +1326,16 @@ app.post('/sync-temp-to-main/:uniqueId', async (req, res) => {
       if (updated > 0) {
         updatedCount++;
         
-        // If marked as completed, update temp table too
+        // If marked as completed, delete from temp table
         if (shouldMarkCompleted) {
-          const [tempUpdated] = await VerificationTemp.update({
-            status: 'Completed', // Consistent capitalization
-            
-          }, {
+          const deleted = await VerificationTemp.destroy({
             where: { id: tempData.id }
           });
 
-          if (tempUpdated > 0) {
+          if (deleted > 0) {
             markedCompletedCount++;
-            console.log(`Marked record ${tempData.id} as completed`);
+            deletedCount++;
+            console.log(`Marked as completed and deleted temp record ${tempData.id}`);
           }
         }
       } else {
@@ -1349,10 +1346,11 @@ app.post('/sync-temp-to-main/:uniqueId', async (req, res) => {
 
     res.json({
       success: true,
-      message: `Sync completed - Updated ${updatedCount} records (${markedCompletedCount} marked as completed), skipped ${skippedCount}`,
+      message: `Sync completed - Updated ${updatedCount} records (${markedCompletedCount} marked as completed and deleted), skipped ${skippedCount}`,
       uniqueId,
       updatedCount,
       markedCompletedCount,
+      deletedCount,
       skippedCount,
       totalRecords: tempRecords.length
     });
@@ -1476,7 +1474,7 @@ function setupScheduledSync() {
       for (const { uniqueId } of uniqueIds) {
         try {
           const response = await axios.post(
-            `http://3.109.203.132:8000/sync-temp-to-main/${uniqueId}`
+            `http://13.203.218.236:8000/sync-temp-to-main/${uniqueId}`
           );
           console.log(`Sync completed for ${uniqueId}:`, response.data);
         } catch (err) {
@@ -1910,6 +1908,7 @@ app.post('/sync-temp-to-main-com/:uniqueId', async (req, res) => {
     let updatedCount = 0;
     let skippedCount = 0;
     let markedCompletedCount = 0;
+    let deletedCount = 0;
 
     for (const tempRecord of tempRecords) {
       // Convert to plain object to better check values
@@ -1919,46 +1918,43 @@ app.post('/sync-temp-to-main-com/:uniqueId', async (req, res) => {
       console.log('Processing record:', {
         id: tempData.id,
         final_remarks: tempData.final_remarks,
-        company_id  : tempData.company_id,
+        company_id: tempData.company_id,
         currentStatus: tempData.status
       });
 
       // Check if both fields have valid values (not null/undefined and not empty strings)
       const hasValidFinalRemarks = tempData.final_remaks && 
                                  tempData.final_remaks.trim() !== '';
-      const hasValidContactsId = tempData.company_id&& 
+      const hasValidContactsId = tempData.company_id && 
                                 tempData.company_id.trim() !== '';
       const shouldMarkCompleted = hasValidFinalRemarks && hasValidContactsId;
 
       // Prepare update data for main table
       const updateData = {
-        // All your existing fields...
-         company_name: tempData.company_name || null,
-      company_url: tempData.company_url || null,
-      company_headquater: tempData.company_headquater || null,
-      company_industry: tempData.company_industry || null,
-      company_size: tempData.company_size || null,
-      employee_count: tempData.employee_count || null,
-      year_founded: tempData.year_founded || null,
-      company_speciality: tempData.company_speciality || null,
-      linkedin_url: tempData.linkedin_url || null,
-      company_stock_name: tempData.company_stock_name || null,
-      verified_page_date: tempData.verified_page_date || null,
-      phone_number: tempData.phone_number || null,
-      company_followers: tempData.company_followers || null,
-      location_total: tempData.location_total || null,
-      overview: tempData.overview || null,
-      visit_website: tempData.visit_website || null,
-      final_remaks: tempData.final_remaks || null,
-      company_id: tempData.company_id || null,
-
+        company_name: tempData.company_name || null,
+        company_url: tempData.company_url || null,
+        company_headquater: tempData.company_headquater || null,
+        company_industry: tempData.company_industry || null,
+        company_size: tempData.company_size || null,
+        employee_count: tempData.employee_count || null,
+        year_founded: tempData.year_founded || null,
+        company_speciality: tempData.company_speciality || null,
+        linkedin_url: tempData.linkedin_url || null,
+        company_stock_name: tempData.company_stock_name || null,
+        verified_page_date: tempData.verified_page_date || null,
+        phone_number: tempData.phone_number || null,
+        company_followers: tempData.company_followers || null,
+        location_total: tempData.location_total || null,
+        overview: tempData.overview || null,
+        visit_website: tempData.visit_website || null,
+        final_remaks: tempData.final_remaks || null,
+        company_id: tempData.company_id || null,
         last_sync: new Date()
       };
 
       // FORCE STATUS UPDATE - This is the key change
       if (shouldMarkCompleted) {
         updateData.status = 'Completed'; // Note the capital 'C' to match your model
-        
       }
 
       // Update main table
@@ -1974,16 +1970,15 @@ app.post('/sync-temp-to-main-com/:uniqueId', async (req, res) => {
         
         // If marked as completed, update temp table too
         if (shouldMarkCompleted) {
-          const [tempUpdated] = await VerificationTemp_com.update({
-            status: 'Completed', // Consistent capitalization
-            
-          }, {
+          // Delete the record from temp table instead of updating
+          const deleted = await VerificationTemp_com.destroy({
             where: { id: tempData.id }
           });
 
-          if (tempUpdated > 0) {
+          if (deleted > 0) {
             markedCompletedCount++;
-            console.log(`Marked record ${tempData.id} as completed`);
+            deletedCount++;
+            console.log(`Marked and deleted completed record ${tempData.id}`);
           }
         }
       } else {
@@ -1994,10 +1989,11 @@ app.post('/sync-temp-to-main-com/:uniqueId', async (req, res) => {
 
     res.json({
       success: true,
-      message: `Sync completed - Updated ${updatedCount} records (${markedCompletedCount} marked as completed), skipped ${skippedCount}`,
+      message: `Sync completed - Updated ${updatedCount} records (${markedCompletedCount} marked as completed), deleted ${deletedCount} temp records, skipped ${skippedCount}`,
       uniqueId,
       updatedCount,
       markedCompletedCount,
+      deletedCount,
       skippedCount,
       totalRecords: tempRecords.length
     });
@@ -2011,7 +2007,6 @@ app.post('/sync-temp-to-main-com/:uniqueId', async (req, res) => {
     });
   }
 });
-
 // // Download endpoint with merged data
 // app.get('/download-verification-data/:uniqueId', async (req, res) => {
 //   try {
@@ -2121,7 +2116,7 @@ function setupScheduledSyncCom() {
       for (const { uniqueId } of uniqueIds) {
         try {
           const response = await axios.post(
-            `http://3.109.203.132:8000/sync-temp-to-main-com/${uniqueId}`
+            `http://13.203.218.236:8000/sync-temp-to-main-com/${uniqueId}`
           );
           console.log(`Sync completed for ${uniqueId}:`, response.data);
         } catch (err) {

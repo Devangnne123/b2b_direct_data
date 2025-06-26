@@ -38,15 +38,15 @@ const UserCreditReport = () => {
     setError(null);
     try {
       // First get all users created by this user
-      const createdUsersRes = await axios.get(`http://3.109.203.132:8000/users/created-by/${userEmail}`);
+      const createdUsersRes = await axios.get(`http://13.203.218.236:8000/users/created-by/${userEmail}`);
       const createdUserEmails = createdUsersRes.data.data.map(user => user.userEmail);
       setCreatedUsers(createdUserEmails);
 
       // Then fetch all related data in parallel
       const [userTxnsRes, adminTxnsRes, uploadsRes] = await Promise.all([
-        axios.get(`http://3.109.203.132:8000/transactions/credit-transactions/${userEmail}`),
-        axios.get(`http://3.109.203.132:8000/super-admin/get-credit-transactions`),
-        axios.get(`http://3.109.203.132:8000/get-links`, {
+        axios.get(`http://13.203.218.236:8000/transactions/credit-transactions/${userEmail}`),
+        axios.get(`http://13.203.218.236:8000/super-admin/get-credit-transactions`),
+        axios.get(`http://13.203.218.236:8000/get-links`, {
           headers: { "user-email": userEmail }
         })
       ]);

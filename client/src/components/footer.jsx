@@ -127,12 +127,12 @@ function footer() {
             <h4>Legal</h4>
             <ul>
               <li>
-                <a ><Link to="/" onClick={handleLinkClick}>
+                <a ><Link to="/terms-and-conditions" onClick={handleLinkClick}>
                                Terms and Conditions
                               </Link></a>
               </li>
               <li>
-                <a ><Link to="/" onClick={handleLinkClick}>
+                <a ><Link to="/privacy_policy" onClick={handleLinkClick}>
                                Privacy Policy
                               </Link></a>
               </li>
