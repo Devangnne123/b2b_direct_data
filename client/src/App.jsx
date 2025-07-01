@@ -42,6 +42,7 @@ import VerificationLinks from "./components/Verification_links";
 import Verification_company from "./components/Verification_company";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import TermsAndConditions from "./components/TermsAndConditions";
+import CheckoutPage from "./components/CheckoutPage";
 
 
 function App() {
@@ -83,7 +84,8 @@ function App() {
         {/* <Route path="/bulk" element={<Bulk />} /> */}
         <Route path="/statistic" element={<Statistic />} />
         <Route path="/Temp" element={<TempLinkMobileForm />} />
-<Route path="/checkout" element={<Checkout />} />
+<Route path="/checkout" element={<CheckoutPage/>} />
+          <Route path="/" element={<CheckoutPage />} />
           <Route path="/payment-status" element={<PaymentStatus />} />
           <Route path="/api/payments/capture" element={<PayPalReturnHandler />} />
           <Route path="/verfication_links" element={<VerificationLinks />} />

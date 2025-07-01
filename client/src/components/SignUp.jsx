@@ -255,8 +255,8 @@ const SignUp = ({ closeModal, setShowModal }) => {
               <button type="submit" className="login-button">Create account</button>
               
               <p className="terms">
-                By signing up, you agree to our <a href="#">Terms of Service</a> and
-                our <a href="#">Privacy Policy</a>.
+                By signing up, you agree to our <a href="/terms-and-conditions">Terms of Service</a> and
+                our <a href="/privacy_policy">Privacy Policy</a>.
               </p>
             </form>
             

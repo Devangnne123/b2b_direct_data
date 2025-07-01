@@ -3,7 +3,8 @@ import {
   Users, ArrowUpDown, Database, Download, Calendar, 
   CreditCard, ArrowUpRight, ArrowDownLeft, Loader2, 
   ChevronLeft, ChevronRight, FileSpreadsheet,
-  FileText, FileInput, AlertCircle, Coins, Mail, Plus, Minus, Tag, Send, Banknote
+  FileText, FileInput, AlertCircle, Coins, Mail, Plus, Minus, Tag, Send, Banknote,
+  CheckCircle, XCircle, Clock
 } from "lucide-react";
 
 import Sidebar from "../components/Sidebar";
@@ -19,6 +20,9 @@ const UserCreditReport = () => {
   const [fileUploads, setFileUploads] = useState([]);
   const [verificationUploads, setVerificationUploads] = useState([]);
   const [companyVerificationUploads, setCompanyVerificationUploads] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(true);
+  const [paymentsError, setPaymentsError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,6 +38,7 @@ const UserCreditReport = () => {
   useEffect(() => {
     fetchUsers();
     fetchCreditData();
+    fetchPaymentHistory();
   }, [userEmail]);
 
   const fetchUsers = async () => {
@@ -51,6 +56,36 @@ const UserCreditReport = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchPaymentHistory = async () => {
+    try {
+      setPaymentsLoading(true);
+      const response = await axios.get(`http://13.203.218.236:8000/api/payments/${userEmail}`);
+      setPayments(processPayments(response.data));
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+      setPaymentsError('Failed to load payment history');
+    } finally {
+      setPaymentsLoading(false);
+    }
+  };
+
+  const processPayments = (payments) => {
+    return payments.map(payment => ({
+      ...payment,
+      type: "PAYMENT",
+      sortKey: new Date(payment.created_at || payment.date),
+      displayDate: payment.created_at || payment.date,
+      description: `Payment for ${payment.credits} Amount`,
+      icon: <CreditCard className="h-4 w-4 text-indigo-500" />,
+      amount: payment.credits,
+      isCredit: true,
+      sender: "Payment System",
+      receiver: userEmail,
+      createdBy: userEmail,
+      remainingCredits: payment.remainingCredits
+    }));
   };
 
   const fetchCreditData = async () => {
@@ -192,7 +227,6 @@ const UserCreditReport = () => {
   const processVerificationUploads = (uploads) => {
     if (!Array.isArray(uploads)) return [];
     
-    // Use a Map to ensure unique entries by uniqueId
     const uploadsMap = new Map();
     
     uploads.forEach(upload => {
@@ -226,7 +260,6 @@ const UserCreditReport = () => {
   const processCompanyVerificationUploads = (uploads) => {
     if (!Array.isArray(uploads)) return [];
     
-    // Use a Map to ensure unique entries by uniqueId
     const uploadsMap = new Map();
     
     uploads.forEach(upload => {
@@ -269,7 +302,14 @@ const UserCreditReport = () => {
     let data = [];
     
     if (activeTab === "all") {
-      data = [...transactions, ...adminCredits, ...fileUploads, ...verificationUploads, ...companyVerificationUploads];
+      data = [
+        ...transactions, 
+        ...adminCredits, 
+        ...fileUploads, 
+        ...verificationUploads, 
+        ...companyVerificationUploads,
+        ...payments
+      ];
     } else if (activeTab === "transactions") {
       data = [...transactions];
     } else if (activeTab === "admin") {
@@ -280,6 +320,8 @@ const UserCreditReport = () => {
       data = [...verificationUploads];
     } else if (activeTab === "company-verifications") {
       data = [...companyVerificationUploads];
+    } else if (activeTab === "payments") {
+      data = [...payments];
     }
 
     data = data.filter(item => 
@@ -299,7 +341,7 @@ const UserCreditReport = () => {
         ? b.sortKey - a.sortKey 
         : a.sortKey - b.sortKey;
     });
-  }, [transactions, adminCredits, fileUploads, verificationUploads, companyVerificationUploads, activeTab, sortConfig, userEmail]);
+  }, [transactions, adminCredits, fileUploads, verificationUploads, companyVerificationUploads, payments, activeTab, sortConfig, userEmail]);
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
@@ -343,6 +385,81 @@ const UserCreditReport = () => {
     );
   };
 
+  const renderPaymentHistory = () => {
+    const getStatusIcon = (status) => {
+      switch (status.toLowerCase()) {
+        case 'completed':
+          return <CheckCircle className="h-4 w-4 text-green-500" />;
+        case 'failed':
+          return <XCircle className="h-4 w-4 text-red-500" />;
+        case 'pending':
+          return <Clock className="h-4 w-4 text-yellow-500" />;
+        default:
+          return <CreditCard className="h-4 w-4 text-blue-500" />;
+      }
+    };
+
+    if (paymentsLoading) {
+      return (
+        <div className="loading-state">
+          <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
+          <p className="text-gray-600 mt-2">Loading payment history...</p>
+        </div>
+      );
+    }
+
+    if (paymentsError) {
+      return (
+        <div className="error-alert">
+          <div className="flex items-center gap-2 p-3 bg-red-100 text-red-700 rounded">
+            <AlertCircle className="h-5 w-5" />
+            <span>{paymentsError}</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="payment-history-section">
+        {payments.length === 0 ? (
+          <div className="empty-state">
+            <p>No payment history found</p>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="payment-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Transaction ID</th>
+                  <th>Amount</th>
+                  <th>Credits</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map(payment => (
+                  <tr key={payment.id}>
+                    <td>{formatDate(payment.created_at || payment.date)}</td>
+                    <td className="transaction-id">{payment.transactionId}</td>
+                    <td>${payment.amount}</td>
+                    <td>{payment.credits}</td>
+                    <td>
+                      <div className="flex items-center gap-1">
+                        {getStatusIcon(payment.status)}
+                        <span>{payment.status}</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="main">
       <div className="main-con">
@@ -373,6 +490,7 @@ const UserCreditReport = () => {
                               <th>File Uploads</th>
                               <th>Verifications</th>
                               <th>Company Verifications</th>
+                              <th>Payments</th>
                               <th>Active Tab</th>
                               <th>Sorted Data</th>
                               <th className="refresh-cell">Actions</th>
@@ -386,11 +504,15 @@ const UserCreditReport = () => {
                               <td className="debug-table-cell debug-value">{fileUploads.length}</td>
                               <td className="debug-table-cell debug-value">{verificationUploads.length}</td>
                               <td className="debug-table-cell debug-value">{companyVerificationUploads.length}</td>
+                              <td className="debug-table-cell debug-value">{payments.length}</td>
                               <td className="debug-table-cell debug-value">{activeTab}</td>
                               <td className="debug-table-cell debug-value">{sortedData.length}</td>
                               <td className="debug-table-cell refresh-cell">
                                 <button 
-                                  onClick={fetchCreditData} 
+                                  onClick={() => {
+                                    fetchCreditData();
+                                    fetchPaymentHistory();
+                                  }} 
                                   className="refresh-button"
                                   title="Refresh all debug data"
                                 >
@@ -452,6 +574,12 @@ const UserCreditReport = () => {
                       >
                         Company Verifications
                       </button>
+                      <button 
+                        className={`tab-btn ${activeTab === "payments" ? "active" : ""}`}
+                        onClick={() => { setActiveTab("payments"); setCurrentPage(1); }}
+                      >
+                        Payment History
+                      </button>
                     </div>
 
                     {error && (
@@ -464,11 +592,13 @@ const UserCreditReport = () => {
                     )}
 
                     <div className="history-table">
-                      {loading ? (
+                      {loading && activeTab !== "payments" ? (
                         <div className="loading-state">
                           <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
                           <p className="text-gray-600 mt-2">Loading credit history...</p>
                         </div>
+                      ) : activeTab === "payments" ? (
+                        renderPaymentHistory()
                       ) : (
                         <>
                           <div className="desktop-view">
@@ -517,6 +647,8 @@ const UserCreditReport = () => {
                                                 ? "Verification"
                                                 : item.type === "COMPANY_VERIFICATION_UPLOAD"
                                                 ? "Company Verification"
+                                                : item.type === "PAYMENT"
+                                                ? "Payment"
                                                 : "Transaction"}
                                             </span>
                                           </div>
@@ -539,6 +671,13 @@ const UserCreditReport = () => {
                                                 )}
                                               </div>
                                             </div>
+                                          ) : item.type === "PAYMENT" ? (
+                                            <div>
+                                              <div className="font-medium">Payment ID: {item.transactionId}</div>
+                                              <div className="text-sm text-gray-500">
+                                                {item.credits} credits purchased
+                                              </div>
+                                            </div>
                                           ) : (
                                             <div>{item.description}</div>
                                           )}
@@ -550,6 +689,8 @@ const UserCreditReport = () => {
                                                 ? `To: ${item.receiver}` 
                                                 : `From Admin: ${item.sender}`}
                                             </div>
+                                          ) : item.type === "PAYMENT" ? (
+                                            <div>From: {item.sender}</div>
                                           ) : item.sender === userEmail ? (
                                             <div>To: {item.receiver}</div>
                                           ) : (
@@ -626,6 +767,8 @@ const UserCreditReport = () => {
                                             ? "Verification"
                                             : item.type === "COMPANY_VERIFICATION_UPLOAD"
                                             ? "Company Verification"
+                                            : item.type === "PAYMENT"
+                                            ? "Payment"
                                             : "Transaction"}
                                         </div>
                                         <div className="date-badge">
@@ -660,6 +803,13 @@ const UserCreditReport = () => {
                                               )}
                                             </div>
                                           </>
+                                        ) : item.type === "PAYMENT" ? (
+                                          <>
+                                            <div>Payment ID: {item.transactionId}</div>
+                                            <div className="text-sm text-gray-500">
+                                              {item.credits} credits purchased
+                                            </div>
+                                          </>
                                         ) : (
                                           <div>{item.description}</div>
                                         )}
@@ -675,6 +825,8 @@ const UserCreditReport = () => {
                                               ? `To: ${item.receiver}` 
                                               : `From Admin: ${item.sender}`}
                                           </div>
+                                        ) : item.type === "PAYMENT" ? (
+                                          <div>From: {item.sender}</div>
                                         ) : item.sender === userEmail ? (
                                           <div>To: {item.receiver}</div>
                                         ) : (

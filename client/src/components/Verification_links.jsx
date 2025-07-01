@@ -110,22 +110,56 @@ function VerificationLinks() {
     fetchCredits();
   }, [email]);
 
-  const checkStatus = async (uniqueId) => {
-    try {
-      setIsProcessing(true);
-      const response = await axios.post(
-        `http://13.203.218.236:8000/check-status-link/${uniqueId}`
+const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
+  try {
+    // Only show processing for manual checks
+    if (!isBackgroundCheck) setIsProcessing(true);
+    
+    const response = await axios.post(
+      `http://13.203.218.236:8000/check-status-link/${uniqueId}`
+    );
+
+    // Silent update for background checks
+    if (isBackgroundCheck) {
+      setCategorizedLinks(prev => 
+        prev.map(item => 
+          item.uniqueId === uniqueId 
+            ? { ...item, ...response.data } 
+            : item
+        )
       );
+    } else {
       setStatusCheckData(response.data);
       toast.success(`Status checked for ${uniqueId}`);
-    } catch (error) {
+    }
+
+    // Handle completion logic silently
+    if (response.data.status === 'completed' && !response.data.emailSent) {
+      await axios.post('http://13.203.218.236:8000/api/send-completion-email', {
+        email: email,
+        uniqueId: uniqueId,
+        totalRecords: response.data.totalRecords,
+        completedRecords: response.data.completedRecords
+      });
+      
+      // Update state silently
+      setCategorizedLinks(prev => 
+        prev.map(item => 
+          item.uniqueId === uniqueId 
+            ? { ...item, emailSent: true } 
+            : item
+        )
+      );
+    }
+  } catch (error) {
+    if (!isBackgroundCheck) {
       console.error('Error checking status:', error);
       toast.error(error.response?.data?.message || 'Failed to check status');
-    } finally {
-      setIsProcessing(false);
     }
-  };
-
+  } finally {
+    if (!isBackgroundCheck) setIsProcessing(false);
+  }
+};
   const silentRefresh = async () => {
     try {
       if (!email || email === "Guest") return;
@@ -143,6 +177,9 @@ function VerificationLinks() {
         date: item.date || item.createdAt || new Date().toISOString(),
         creditDeducted: item.creditDeducted || (item.matchCount || 0) * 2
       }));
+
+
+  
 
       if (JSON.stringify(transformedData) !== JSON.stringify(dataRef.current.categorizedLinks)) {
         setCategorizedLinks(transformedData);
@@ -768,7 +805,7 @@ function VerificationLinks() {
                                           <button
                                             onClick={() => downloadGroupedEntry(group)}
                                             className="download-btn"
-                                            disabled={isProcessing}
+                                            
                                           >
                                             {isProcessing ? (
                                               <Loader2 className="animate-spin h-4 w-4" />

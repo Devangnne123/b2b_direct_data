@@ -114,36 +114,44 @@ function Verification_company() {
   }, [email]);
 
   const silentRefresh = async () => {
-    try {
-      if (!email || email === "Guest") return;
-      
-      const response = await axios.get("http://13.203.218.236:8000/get-verification-links-com", {
-        headers: { "user-email": email },
+  try {
+    if (!email || email === "Guest") return;
+    
+    const response = await axios.get("http://13.203.218.236:8000/get-verification-links-com", {
+      headers: { "user-email": email },
+    });
+
+    const transformedData = response.data.map(item => ({
+      ...item,
+      link: item.link || item.profileUrl || '',
+      remark: item.remark || 'pending',
+      matchLink: item.matchLink || null,
+      date: item.date || item.createdAt || new Date().toISOString(),
+      creditDeducted: item.creditDeducted || (item.matchCount || 0) * creditCostPerLink
+    }));
+
+
+    // Check status for all pending/processing batches in background
+    transformedData
+      .filter(item => item.final_status !== 'completed')
+      .forEach(item => {
+        checkStatus(item.uniqueId, true); // true indicates background check
       });
-
-      const transformedData = response.data.map(item => ({
-        ...item,
-        link: item.link || item.profileUrl || '',
-        remark: item.remark || 'pending',
-        matchLink: item.matchLink || null,
-        date: item.date || item.createdAt || new Date().toISOString(),
-        creditDeducted: item.creditDeducted || (item.matchCount || 0) * creditCostPerLink
-      }));
-
-      if (JSON.stringify(transformedData) !== JSON.stringify(dataRef.current.categorizedLinks)) {
-        setCategorizedLinks(transformedData);
-        dataRef.current.categorizedLinks = transformedData;
-      }
-
-      const creditRes = await axios.get(`http://13.203.218.236:8000/api/user/${email}`);
-      if (creditRes.data.credits !== dataRef.current.credits) {
-        setCredits(creditRes.data.credits);
-        dataRef.current.credits = creditRes.data.credits;
-      }
-    } catch (error) {
-      console.error("Silent refresh error:", error);
+   
+    if (JSON.stringify(transformedData) !== JSON.stringify(dataRef.current.categorizedLinks)) {
+      setCategorizedLinks(transformedData);
+      dataRef.current.categorizedLinks = transformedData;
     }
-  };
+
+    const creditRes = await axios.get(`http://13.203.218.236:8000/api/user/${email}`);
+    if (creditRes.data.credits !== dataRef.current.credits) {
+      setCredits(creditRes.data.credits);
+      dataRef.current.credits = creditRes.data.credits;
+    }
+  } catch (error) {
+    console.error("Silent refresh error:", error);
+  }
+};
 
   const fetchCreditCost = async (email) => {
     try {
@@ -167,22 +175,57 @@ function Verification_company() {
     return () => clearInterval(intervalId);
   }, [email]);
 
-  const checkStatus = async (uniqueId) => {
-    try {
-      setIsProcessing(true);
-      const response = await axios.get(
-        `http://13.203.218.236:8000/check-status/${uniqueId}`
+
+const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
+  try {
+    // Only show processing for manual checks
+    if (!isBackgroundCheck) setIsProcessing(true);
+    
+    const response = await axios.get(
+      `http://13.203.218.236:8000/check-status/${uniqueId}`
+    );
+
+    // Silent update for background checks
+    if (isBackgroundCheck) {
+      setCategorizedLinks(prev => 
+        prev.map(item => 
+          item.uniqueId === uniqueId 
+            ? { ...item, ...response.data } 
+            : item
+        )
       );
+    } else {
       setStatusCheckData(response.data);
       toast.success(`Status checked for ${uniqueId}`);
-    } catch (error) {
+    }
+
+    // Handle completion logic silently
+    if (response.data.status === 'completed' && !response.data.emailSent) {
+      await axios.post('http://13.203.218.236:8000/api/send-completion-email-com', {
+        email: email,
+        uniqueId: uniqueId,
+        totalRecords: response.data.totalRecords,
+        completedRecords: response.data.completedRecords
+      });
+      
+      // Update state silently
+      setCategorizedLinks(prev => 
+        prev.map(item => 
+          item.uniqueId === uniqueId 
+            ? { ...item, emailSent: true } 
+            : item
+        )
+      );
+    }
+  } catch (error) {
+    if (!isBackgroundCheck) {
       console.error('Error checking status:', error);
       toast.error(error.response?.data?.message || 'Failed to check status');
-    } finally {
-      setIsProcessing(false);
     }
-  };
-
+  } finally {
+    if (!isBackgroundCheck) setIsProcessing(false);
+  }
+};
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
@@ -744,14 +787,21 @@ function Verification_company() {
                                         <td>{firstItem.totalLinks}</td>
                                         <td>{firstItem.pendingCount}</td>
                                         <td>
-                                          <button
-                                            onClick={() => checkStatus(uniqueId)}
-                                            className="status-check-btn"
-                                            disabled={isProcessing}
-                                          >
-                                            Check Status
-                                          </button>
-                                        </td>
+  <div className="status-indicator">
+    
+    <button
+      onClick={() => checkStatus(uniqueId)}
+      className="status-check-btn"
+      disabled={isProcessing}
+    >
+      {isProcessing ? (
+        <Loader2 className="animate-spin h-4 w-4" />
+      ) : (
+        "Check Status"
+      )}
+    </button>
+  </div>
+</td>
                                         <td>{formatDate(firstItem.date)}</td>
                                         <td>
                                           <div className="flex items-center gap-1">
@@ -847,44 +897,60 @@ function Verification_company() {
           
             {/* Status Check Modal */}
             {statusCheckData && (
-              <div className="status-modal">
-                <div className="status-modal-content">
-                  <h3>Verification Status for {statusCheckData.uniqueId}</h3>
-                  <div className="status-progress">
-                    <div className="progress-bar">
-                      <div 
-                        className="progress-fill"
-                        style={{ 
-                          width: `${(statusCheckData.completedRecords / statusCheckData.totalRecords) * 100}%` 
-                        }}
-                      ></div>
-                    </div>
-                    <div className="progress-text">
-                      {statusCheckData.completedRecords} of {statusCheckData.totalRecords} completed
-                    </div>
-                  </div>
-                  <div className="status-summary">
-                    <div className="status-item">
-                      <span className="status-label">Overall Status:</span>
-                      <span className={`status-value ${statusCheckData.status}`}>
-                        {statusCheckData.status.toUpperCase()}
-                      </span>
-                    </div>
-                    {statusCheckData.allCompleted && (
-                      <div className="completion-message">
-                        All verifications completed successfully!
-                      </div>
-                    )}
-                  </div>
-                  <button 
-                    onClick={() => setStatusCheckData(null)}
-                    className="close-modal-btn"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            )}
+  <div className="status-modal">
+    <div className="status-modal-content">
+      <h3>Verification Status for {statusCheckData.uniqueId}</h3>
+      <div className="status-progress">
+        <div className="progress-bar">
+          <div 
+            className="progress-fill"
+            style={{ 
+              width: `${(statusCheckData.completedRecords / statusCheckData.totalRecords) * 100}%` 
+            }}
+          ></div>
+        </div>
+        <div className="progress-text">
+          {statusCheckData.completedRecords} of {statusCheckData.totalRecords} completed
+        </div>
+      </div>
+      <div className="status-summary">
+        <div className="status-item">
+          <span className="status-label">Overall Status:</span>
+          <span className={`status-value ${statusCheckData.status}`}>
+            {statusCheckData.status.toUpperCase()}
+          </span>
+        </div>
+        {statusCheckData.status === 'completed' && (
+          <>
+            <div className="completion-message">
+              All verifications completed successfully!
+            </div>
+            <div className="email-notification">
+             {statusCheckData.status === 'completed' && (
+  <>
+    <div className="completion-message">
+      All verifications completed successfully!
+    </div>
+    <div className="email-notification">
+      
+    </div>
+  </>
+)}
+
+            </div>
+          </>
+        )}
+      </div>
+      <button 
+        onClick={() => setStatusCheckData(null)}
+        className="close-modal-btn"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
           </div>
         </div>
       </div>

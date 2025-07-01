@@ -719,8 +719,7 @@ app.get('/api/users/credits', async (req, res) => {
 app.use(express.urlencoded({ extended: true }));
 const paypal = require('@paypal/checkout-server-sdk');
 
-const paymentRoutes = require('./routes/paymentRoutes')
-app.use('/api/payments', paymentRoutes);
+
 
 // // Configure PayPal environment
 // const environment = new paypal.core.SandboxEnvironment(
@@ -2231,7 +2230,7 @@ app.get('/check-status/:uniqueId', async (req, res) => {
       totalRecords: records.length,
       completedRecords: records.filter(r => r.final_status === 'Completed').length,
       allCompleted,
-      status: allCompleted ? 'completed' : 'pending'
+      status: allCompleted ? 'completed' : 'pending'  
     });
 
   } catch (error) {
@@ -2412,3 +2411,431 @@ app.get('/get-company-verification-uploads', async (req, res) => {
     });
   }
 });
+
+
+
+
+const paymentRoutes = require('./routes/paymentRoutes');
+// Routes
+app.use('/api/payments', paymentRoutes);
+
+// Database test endpoint
+app.get('/api/test-db', async (req, res) => {
+  try {
+    const result = await db.query('SELECT NOW()');
+    res.json({ success: true, time: result.rows[0].now });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
+const PaymentTransaction = require('./model/PaymentTransaction');
+
+app.post('/api/payments/update-credits', async (req, res) => {
+  try {
+    const { email, creditsToAdd } = req.body;
+
+    // Find user and update credits
+    const user = await User.findOne({ where: { userEmail: email } });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update credits (existing + new)
+    const updatedCredits = user.credits + parseInt(creditsToAdd);
+    await user.update({ credits: updatedCredits });
+
+    res.status(200).json({ 
+      success: true,
+      newCredits: updatedCredits
+    });
+  } catch (error) {
+    console.error('Credit update error:', error);
+    res.status(500).json({ error: 'Failed to update credits' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
+const { sendOtpEmail } = require('../backend/routes/mailer');
+const rateLimit = require('express-rate-limit');
+
+// Rate limiting for OTP requests
+const otpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3, // limit each IP to 3 OTP requests per windowMs
+  message: 'Too many OTP requests from this IP, please try again later'
+});
+
+
+
+// Send OTP for password reset
+app.post('/send-otp', otpLimiter, async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Validate email format
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: "Please provide a valid email address." });
+    }
+
+    const user = await User.findOne({ where: { userEmail: email } });
+    if (!user) {
+      return res.status(404).json({ message: "If this email exists, we've sent an OTP to it." });
+    }
+
+    // Check if user is blocked from OTP requests
+    if (user.otpBlockedUntil && user.otpBlockedUntil > new Date()) {
+      return res.status(429).json({ 
+        message: `Too many attempts. Try again after ${user.otpBlockedUntil.toLocaleTimeString()}`
+      });
+    }
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
+
+    // Update user with OTP and expiry
+    await user.update({ 
+      resetPasswordOtp: otp,
+      resetPasswordOtpExpiry: otpExpiry,
+      otpAttempts: 0 // Reset attempts when new OTP is sent
+    });
+
+    // Send OTP via email
+    const emailSent = await sendOtpEmail(email, otp);
+    
+    if (!emailSent) {
+      return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
+    }
+
+    res.status(200).json({ 
+      message: "OTP sent to your email address.",
+      // Don't send OTP in response in production
+      otp: process.env.NODE_ENV === 'development' ? otp : null 
+    });
+  } catch (error) {
+    console.error("OTP send error:", error);
+    res.status(500).json({ message: "Server error.", error: error.message });
+  }
+});
+
+// Reset password with OTP
+app.post('/reset-password', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters long." });
+    }
+
+    const user = await User.findOne({ where: { userEmail: email } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Check if OTP matches and is not expired
+    if (user.resetPasswordOtp !== otp || new Date() > user.resetPasswordOtpExpiry) {
+      // Increment failed attempts
+      const attempts = (user.otpAttempts || 0) + 1;
+      let otpBlockedUntil = null;
+      
+      // Block after 3 failed attempts for 15 minutes
+      if (attempts >= 3) {
+        otpBlockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+      }
+      
+      await user.update({ 
+        otpAttempts: attempts,
+        otpBlockedUntil
+      });
+      
+      return res.status(400).json({ 
+        message: attempts >= 3 
+          ? "Too many incorrect attempts. Try again later." 
+          : "Invalid or expired OTP." 
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user password and clear OTP fields
+    await user.update({ 
+      userPassword: hashedPassword,
+      resetPasswordOtp: null,
+      resetPasswordOtpExpiry: null,
+      otpAttempts: 0,
+      otpBlockedUntil: null
+    });
+
+    res.status(200).json({ message: "Password reset successfully." });
+  } catch (error) {
+    console.error("Password reset error:", error);
+    res.status(500).json({ message: "Server error.", error: error.message });
+  }
+});
+
+
+
+
+// // Add this route to handle status completion emails
+// app.post('/api/send-completion-email', async (req, res) => {
+//   try {
+//     const { email, uniqueId, totalRecords, completedRecords } = req.body;
+
+
+
+//     // Send email
+//     await transporter.sendMail({
+//       from: '"Verification System" <your-email@example.com>',
+//       to: email,
+//       subject: `Verification Completed - ${uniqueId}`,
+//       html: `
+//         <h2>Verification Process Completed</h2>
+//         <p>Your verification job with ID <strong>${uniqueId}</strong> has been completed.</p>
+//         <p><strong>Results:</strong></p>
+//         <ul>
+//           <li>Total records: ${totalRecords}</li>
+//           <li>Completed records: ${completedRecords}</li>
+//         </ul>
+//         <p>You can now download the results from your dashboard.</p>
+//         <p>Thank you for using our service!</p>
+//       `
+//     });
+
+//     res.json({ success: true });
+//   } catch (error) {
+//     console.error('Email send error:', error);
+//     res.status(500).json({ error: 'Failed to send completion email' });
+//   }
+// });
+
+app.post('/api/send-completion-email', async (req, res) => {
+  try {
+    const { email, uniqueId, totalRecords, completedRecords } = req.body;
+
+    // First check if email was already sent
+    const existingRecord = await VerificationUpload.findOne({
+      where: { uniqueId }
+    });
+
+    if (existingRecord && existingRecord.emailSent) {
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Email was already sent previously' 
+      });
+    }
+
+    // Mark email as sent in database before actually sending
+    await VerificationUpload.update(
+      { 
+        emailSent: true,
+        emailSentAt: new Date() 
+      },
+      { where: { uniqueId } }
+    );
+
+    // Now send the email
+    await transporter.sendMail({
+      from: '"Verification System" <your-email@example.com>',
+      to: email,
+      subject: `Verification Completed - ${uniqueId}`,
+      html: `
+        <h2>Verification Process Completed</h2>
+        <p>Your verification job with ID <strong>${uniqueId}</strong> has been completed.</p>
+        <p><strong>Results:</strong></p>
+        // <ul>
+        //   <li>Total records: ${totalRecords}</li>
+        //   <li>Completed records: ${completedRecords}</li>
+        // </ul>
+        <p>You can now download the results from your dashboard.</p>
+        <p>Thank you for using our service!</p>
+      `
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Email send error:', error);
+    
+    // If email failed, reset the emailSent flag
+    await VerificationUpload.update(
+      { emailSent: false },
+      { where: { uniqueId } }
+    );
+    
+    res.status(500).json({ error: 'Failed to send completion email' });
+  }
+});
+
+
+
+// app.post('/api/send-completion-email-com', async (req, res) => {
+//   try {
+//     const { email, uniqueId, totalRecords, completedRecords } = req.body;
+
+//     // Send email
+//     await transporter.sendMail({
+//       from: '"Company Verification System" <noreply@yourdomain.com>',
+//       to: email,
+//       subject: `Company Verification Completed - ${uniqueId}`,
+//       html: `
+//         <h2>Company Verification Process Completed</h2>
+//         <p>Your company verification job with ID <strong>${uniqueId}</strong> has been completed.</p>
+//         <p><strong>Results:</strong></p>
+//         <ul>
+//           <li>Total companies processed: ${totalRecords}</li>
+//           <li>Successfully verified: ${completedRecords}</li>
+//         </ul>
+//         <p>You can now download the results from your dashboard.</p>
+//         <p>Thank you for using our service!</p>
+//       `
+//     });
+
+//     res.json({ success: true });
+//   } catch (error) {
+//     console.error('Email send error:', error);
+//     res.status(500).json({ error: 'Failed to send completion email' });
+//   }
+// });
+
+
+app.post('/api/send-completion-email-com', async (req, res) => {
+  try {
+    const { email, uniqueId, totalRecords, completedRecords } = req.body;
+
+    // First check if email was already sent
+    const existingRecord = await VerificationUpload_com.findOne({
+      where: { uniqueId }
+    });
+
+    if (existingRecord && existingRecord.emailSent) {
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Email was already sent previously' 
+      });
+    }
+
+    // Mark email as sent in database before actually sending
+    await VerificationUpload_com.update(
+      { 
+        emailSent: true,
+        emailSentAt: new Date() 
+      },
+      { where: { uniqueId } }
+    );
+
+    // Now send the email
+    await transporter.sendMail({
+      from: '"Verification System" <your-email@example.com>',
+      to: email,
+      subject: `Verification Completed - ${uniqueId}`,
+      html: `
+        <h2>Verification Process Completed</h2>
+        <p>Your verification job with ID <strong>${uniqueId}</strong> has been completed.</p>
+        <p><strong>Results:</strong></p>
+        <ul>
+          <li>Total records: ${totalRecords}</li>
+          <li>Completed records: ${completedRecords}</li>
+        </ul>
+        <p>You can now download the results from your dashboard.</p>
+        <p>Thank you for using our service!</p>
+      `
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Email send error:', error);
+    
+    // If email failed, reset the emailSent flag
+    await VerificationUpload_com.update(
+      { emailSent: false },
+      { where: { uniqueId } }
+    );
+    
+    res.status(500).json({ error: 'Failed to send completion email' });
+  }
+});
+
+
+app.post('/api/send-completion-email', async (req, res) => {
+  try {
+    const { email, uniqueId, totalRecords, completedRecords } = req.body;
+
+    // First check if email was already sent
+    const existingRecord = await VerificationUpload.findOne({
+      where: { uniqueId }
+    });
+
+    if (existingRecord && existingRecord.emailSent) {
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Email was already sent previously' 
+      });
+    }
+
+    // Mark email as sent in database before actually sending
+    await VerificationUpload.update(
+      { 
+        emailSent: true,
+        emailSentAt: new Date() 
+      },
+      { where: { uniqueId } }
+    );
+
+    // Now send the email
+    await transporter.sendMail({
+      from: '"Verification System" <your-email@example.com>',
+      to: email,
+      subject: `Verification Completed - ${uniqueId}`,
+      html: `
+        <h2>Verification Process Completed</h2>
+        <p>Your verification job with ID <strong>${uniqueId}</strong> has been completed.</p>
+        <p><strong>Results:</strong></p>
+        <ul>
+          <li>Total records: ${totalRecords}</li>
+          <li>Completed records: ${completedRecords}</li>
+        </ul>
+        <p>You can now download the results from your dashboard.</p>
+        <p>Thank you for using our service!</p>
+      `
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Email send error:', error);
+    
+    // If email failed, reset the emailSent flag
+    await VerificationUpload.update(
+      { emailSent: false },
+      { where: { uniqueId } }
+    );
+    
+    res.status(500).json({ error: 'Failed to send completion email' });
+  }
+});
+
+
+
+
+
+
+

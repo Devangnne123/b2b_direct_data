@@ -69,6 +69,15 @@ const VerificationUpload = sequelize.define('verification_upload', {
     allowNull: true,
     defaultValue: 'Pending',
   },
+   emailSent: {
+  type: DataTypes.BOOLEAN,
+  allowNull: false,
+  defaultValue: false
+},
+emailSentAt: {
+  type: DataTypes.DATE,
+  allowNull: true
+},
   
   full_name: {
     type: DataTypes.STRING,

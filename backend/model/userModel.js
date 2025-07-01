@@ -56,6 +56,22 @@ const User = sequelize.define("User", {
       }
     }
   },
+  resetPasswordOtp: {
+  type: DataTypes.STRING,
+  allowNull: true
+},
+resetPasswordOtpExpiry: {
+  type: DataTypes.DATE,
+  allowNull: true
+},
+otpAttempts: {
+  type: DataTypes.INTEGER,
+  defaultValue: 0
+},
+otpBlockedUntil: {
+  type: DataTypes.DATE,
+  allowNull: true
+},
   // In your User model definition
 // In your User model definition
 creditCostPerLink: {
@@ -101,6 +117,7 @@ creditCostPerLink_V: {
     type: DataTypes.DATE
   }
 }, {
+ 
   timestamps: true,
   paranoid: true, // Enables soft deletion
   hooks: {

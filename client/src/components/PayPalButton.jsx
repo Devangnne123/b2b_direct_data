@@ -1,0 +1,45 @@
+import React from 'react';
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+
+const PayPalButton = ({ amount, credits, email, onSuccess, onError }) => {
+  return (
+    <PayPalScriptProvider 
+      options={{ 
+        "client-id": "AaFSpy7c2U0m03JMrLR8VZH5t8errX0R4wI5PNVh2x6Q6-nyLgGBWTi6oxnUpl0WeNTXsqmnL5hsmkoe",
+        currency: "USD"
+      }}
+    >
+      <PayPalButtons
+        style={{ layout: "vertical" }}
+        createOrder={(data, actions) => {
+          return fetch('http://13.203.218.236:8000/api/payments/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ amount, credits, email })
+          })
+          .then((response) => response.json())
+          .then((order) => order.id);
+        }}
+        onApprove={(data, actions) => {
+          return fetch(`http://13.203.218.236:8000/api/payments/capture/${data.orderID}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, credits })
+          })
+          .then((response) => response.json())
+          .then((details) => {
+            onSuccess(details);
+          })
+          .catch((err) => onError(err));
+        }}
+        onError={onError}
+      />
+    </PayPalScriptProvider>
+  );
+};
+
+export default PayPalButton;

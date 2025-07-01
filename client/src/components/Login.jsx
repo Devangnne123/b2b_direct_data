@@ -11,6 +11,11 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
 
   const navigate = useNavigate();
 
@@ -24,6 +29,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
   
     setIsSubmitting(true);
     setErrorMessage("");
+    setSuccessMessage("");
   
     try {
       const response = await fetch("http://13.203.218.236:8000/users/login", {
@@ -71,6 +77,91 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setErrorMessage("Please enter your email first.");
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      setErrorMessage("");
+      setSuccessMessage("");
+      
+      const response = await fetch("http://13.203.218.236:8000/send-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setSuccessMessage("OTP sent to your email! Check your inbox.");
+        setOtpSent(true);
+        setShowForgotPassword(true);
+      } else {
+        setErrorMessage(result.message || "Failed to send OTP. Please try again.");
+      }
+    } catch (error) {
+      setErrorMessage("An error occurred. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
+    
+    if (newPassword.length < 8) {
+      setErrorMessage("Password must be at least 8 characters long.");
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      setErrorMessage("");
+      
+      const response = await fetch("http://13.203.218.236:8000/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          otp,
+          newPassword,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setSuccessMessage("Password reset successfully! You can now login.");
+        setTimeout(() => {
+          setShowForgotPassword(false);
+          setOtpSent(false);
+          setOtp("");
+          setNewPassword("");
+          setConfirmPassword("");
+        }, 2000);
+      } else {
+        setErrorMessage(result.message || "Failed to reset password. Please try again.");
+      }
+    } catch (error) {
+      setErrorMessage("An error occurred. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="main-container1">
       <div className="login-wrapper">
@@ -82,54 +173,157 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
                 src="new.png"
                 alt="Company Logo"
                 className="login-logo"
-              /><a className="svg" onClick={closeModal}><IoMdClose /></a>
-            </div>
-            <h2 className="login-title">Login</h2>
-            
-            <form className="login-form" onSubmit={handleLogin}>
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="login-input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
               />
-                <div className="login_main">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  className="login-input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  
-                /><button
-                type="button"
-                className="password-toggl"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <IoMdEyeOff /> : <IoMdEye />}
-              </button>
-              </div>
-             
-              <button type="submit" className="login-button1" disabled={isSubmitting}>
-                {isSubmitting ? "Logging in..." : "Log in"}
-              </button>
-            </form>
-            
-            {errorMessage && <p className="error-message">{errorMessage}</p>}
-            {successMessage && <p className="success-message">{successMessage}</p>}
-            
-            <div className="login-divider">
-              <hr className="divider-line" />
-              <span className="divider-text">OR</span>
-              <hr className="divider-line" />
+              <a className="svg" onClick={closeModal}><IoMdClose /></a>
             </div>
+            <h2 className="login-title">
+              {showForgotPassword ? "Reset Password" : "Login"}
+            </h2>
             
-            <a onClick={() => setShowModal("signup")} className="signup-link-text">
-              Sign up here
-            </a>
+            {!showForgotPassword ? (
+              <form className="login-form" onSubmit={handleLogin}>
+                <div className="input-group">
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    className="login-input"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="input-group">
+                  <div className="password-input-container">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      className="login-input"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <IoMdEyeOff /> : <IoMdEye />}
+                    </button>
+                  </div>
+                </div>
+                
+                <button 
+                  type="submit" 
+                  className={`login-button1 ${isSubmitting ? 'disabled' : ''}`}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Logging in..." : "Log in"}
+                </button>
+              </form>
+            ) : (
+              <form className="login-form" onSubmit={handleResetPassword}>
+                {otpSent && (
+                  <>
+                    <div className="input-group">
+                      <input
+                        type="text"
+                        placeholder="Enter OTP"
+                        className="login-input"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value)}
+                        required
+                      />
+                    </div>
+                    
+                    <div className="input-group">
+                      <input
+                        type="password"
+                        placeholder="New Password (min 8 characters)"
+                        className="login-input"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        minLength="8"
+                      />
+                    </div>
+                    
+                    <div className="input-group">
+                      <input
+                        type="password"
+                        placeholder="Confirm New Password"
+                        className="login-input"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        minLength="8"
+                      />
+                    </div>
+                    
+                    <button 
+                      type="submit" 
+                      className={`login-button1 ${isSubmitting ? 'disabled' : ''}`}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Resetting..." : "Reset Password"}
+                    </button>
+                  </>
+                )}
+              </form>
+            )}
+            
+            {errorMessage && (
+              <div className="message error-message">
+                <p>{errorMessage}</p>
+              </div>
+            )}
+            
+            {successMessage && (
+              <div className="message success-message">
+                <p>{successMessage}</p>
+              </div>
+            )}
+            
+            {!showForgotPassword ? (
+              <>
+                <div className="forgot-password-link">
+                  <button 
+                    onClick={handleForgotPassword} 
+                    className="forgot-password-btn"
+                    disabled={isSubmitting}
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+                
+                <div className="login-divider">
+                  <hr className="divider-line" />
+                  <span className="divider-text">OR</span>
+                  <hr className="divider-line" />
+                </div>
+                
+                <button 
+                  onClick={() => setShowModal("signup")} 
+                  className="signup-link-text"
+                >
+                  Don't have an account? Sign up
+                </button>
+              </>
+            ) : (
+              <div className="back-to-login">
+                <button 
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setOtpSent(false);
+                    setErrorMessage("");
+                    setSuccessMessage("");
+                  }} 
+                  className="back-to-login-btn"
+                >
+                  Back to Login
+                </button>
+              </div>
+            )}
           </div>
         </div>
         

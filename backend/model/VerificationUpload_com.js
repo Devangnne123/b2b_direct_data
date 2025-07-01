@@ -47,6 +47,15 @@ const VerificationUpload_com = sequelize.define('verification_upload_com', {
     type: DataTypes.STRING,
     allowNull: true
   },
+ emailSent: {
+  type: DataTypes.BOOLEAN,
+  allowNull: false,
+  defaultValue: false
+},
+emailSentAt: {
+  type: DataTypes.DATE,
+  allowNull: true
+},
    final_status: {
     type: DataTypes.STRING,
     allowNull: true,
