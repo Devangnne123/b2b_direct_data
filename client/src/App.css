@@ -845,3 +845,124 @@ button:disabled {
   padding: 6px;
   box-sizing: border-box;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Password Input Styling */
+.password-input-wrapper {
+  margin-bottom: 5px;
+  width: 100%;
+}
+
+.password-input-container {
+  position: relative;
+  width: 100%;
+}
+
+.password-input-container input {
+  width: 100%;
+  padding: 7px 30px 7px 17px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+}
+
+.password-input-container input:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  font-size: 13px;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  color: #333;
+}
+
+.password-toggle-login {
+  position: absolute;
+  right: 12px;
+  top: 38%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  font-size: 14px;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle-login:hover {
+  color: #333;
+}
+
+/* Form Submit Button */
+.form-submit-button {
+  margin-top: 20px;
+}
+
+.form-submit-button button {
+  width: 100%;
+  padding: 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.form-submit-button button:hover {
+  background-color: #45a049;
+}
+
+.form-submit-button button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Messages */
+.error-message {
+  color: #f44336;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.success-message {
+  color: #000000;
+  margin-bottom: 15px;
+  text-align: center;
+}

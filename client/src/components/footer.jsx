@@ -121,6 +121,9 @@ function footer() {
                                Data Processing
                               </Link></a>
               </li>
+              <li>
+                <a href="#" class="termly-display-preferences">Consent Preferences</a>
+              </li>
             </ul>
           </div>
           <div className="footer-section">
@@ -142,7 +145,7 @@ function footer() {
                               </Link></a>
               </li>
               <li>
-                <a ><Link to="/" onClick={handleLinkClick}>
+                <a ><Link to="/remove_data" onClick={handleLinkClick}>
                                Do Not Sell My Info
                               </Link></a>
               </li>

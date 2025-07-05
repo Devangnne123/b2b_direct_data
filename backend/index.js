@@ -3,7 +3,7 @@ const app = express()
 
 const multer = require('multer');
 const xlsx= require('xlsx');
-const { Op } = require('sequelize');
+const { Sequelize,Op } = require('sequelize');
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
 const { sequelize,LinkedInProfile } = require('./config/db');
@@ -2830,6 +2830,246 @@ app.post('/api/send-completion-email', async (req, res) => {
     );
     
     res.status(500).json({ error: 'Failed to send completion email' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+// Server-side route
+app.post('/change-password', async (req, res) => {
+  try {
+    const { email, currentPassword, newPassword } = req.body;
+    
+    // Find user in database
+    const user = await User.findOne({ where: { userEmail: email } });
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.userPassword);
+    
+    if (!isMatch) {
+      return res.status(401).json({ message: "Current password is incorrect." });
+    }
+    
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update password
+    await User.update(
+      { userPassword: hashedPassword },
+      { where: { userEmail: email } }
+    );
+    
+    res.json({ message: "Password changed successfully!" });
+  } catch (error) {
+    console.error("Error changing password:", error);
+    res.status(500).json({ message: "An error occurred while changing password." });
+  }
+});
+
+const { DataTypes } = require('sequelize');
+
+
+// Models
+const Subscriber = sequelize.define('subscriber', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+    validate: {
+      isEmail: true,
+    },
+  },
+  full_name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  phone: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  status: {
+    type: DataTypes.ENUM('pending', 'verified', 'rejected'),
+    defaultValue: 'pending',
+  },
+  remark: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+}, {
+  tableName: 'subscribers',
+  timestamps: true,
+});
+
+
+const OtpVerification = sequelize.define('otp_verification', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  otp: {
+    type: DataTypes.STRING(6),
+    allowNull: false,
+  },
+  expires_at: {
+    type: DataTypes.DATE,
+    allowNull: false,
+  },
+  verified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+}, {
+  tableName: 'otp_verifications',
+  timestamps: true,
+});
+
+
+app.post('/api/send-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires_at = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes from now
+
+    await OtpVerification.create({
+      email,
+      otp,
+      expires_at,
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER || "b2bdirectdata@gmail.com",
+      to: email,
+      subject: 'Your OTP for API Waitlist',
+      text: `Your OTP is: ${otp}\n\nThis OTP will expire in 2 minutes.`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({ success: true, message: 'OTP sent successfully' });
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    res.status(500).json({ success: false, message: 'Failed to send OTP' });
+  }
+});
+
+app.post('/api/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // Find the most recent OTP for this email
+    const verification = await OtpVerification.findOne({
+      where: {
+        email,
+        verified: false,
+        expires_at: { [Op.gt]: new Date() }, // Changed expiresAt to expires_at
+      },
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (!verification) {
+      return res.status(400).json({ success: false, message: 'OTP expired or not found' });
+    }
+
+    if (verification.otp !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    }
+
+    await verification.update({ verified: true });
+
+    res.status(200).json({ success: true, message: 'OTP verified successfully' });
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    res.status(500).json({ success: false, message: 'Failed to verify OTP' });
+  }
+});
+
+app.post('/api/subscribe', async (req, res) => {
+  try {
+    const { email, fullName, phone } = req.body;
+    
+    // Validate required fields
+    if (!email || !fullName) {
+      return res.status(400).json({ 
+        message: 'Email and full name are required',
+        existingSubscriber: false
+      });
+    }
+
+    // Check if subscriber already exists in database
+    const existingSubscriber = await Subscriber.findOne({ 
+      where: { email } // Fixed: Added where clause
+    });
+    
+    if (existingSubscriber) {
+      return res.status(200).json({ 
+        message: 'You are already in our removal queue',
+        existingSubscriber: true
+      });
+    }
+    
+    // Create new subscriber
+    const newSubscriber = await Subscriber.create({
+      email,
+      full_name: fullName, // Make sure this matches your model definition
+      phone: phone || null, // Phone is optional
+      removal_requested_at: new Date() // Make sure this matches your model definition
+    });
+    
+    res.status(200).json({ 
+      message: 'Your removal request has been processed',
+      existingSubscriber: false
+    });
+  } catch (error) {
+    console.error('Error processing removal request:', error);
+    res.status(500).json({ 
+      message: 'Failed to process removal request',
+      error: error.message 
+    });
+  }
+});
+
+
+
+// Send confirmation email route
+app.post('/api/send-confirmation', async (req, res) => {
+  try {
+    const { email, subject, message } = req.body;
+
+    const mailOptions = {
+      from: "b2bdirectdata@gmail.com",
+      to: email,
+      subject: subject,
+      text: message
+    };
+
+    await transporter.sendMail(mailOptions);
+    
+    res.status(200).json({ message: 'Confirmation email sent successfully' });
+  } catch (error) {
+    console.error('Error sending confirmation email:', error);
+    res.status(500).json({ message: 'Failed to send confirmation email' });
   }
 });
 

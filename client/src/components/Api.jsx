@@ -3,7 +3,7 @@ import "../css/Api.css";
 
 export default function Api() {
   const calculateTimeLeft = () => {
-    const launchDate = new Date("2025-04-01").getTime();
+    const launchDate = new Date("2025-12-12").getTime();
     const now = new Date().getTime();
     const difference = launchDate - now;
 
@@ -35,13 +35,13 @@ export default function Api() {
         <p className="description">
           Get ready! Our API will be launching soon with powerful features.
         </p>
-        <div className="countdown">
+        {/* <div className="countdown">
           <span>{timeLeft.days}d</span>
           <span>{timeLeft.hours}h</span>
           <span>{timeLeft.minutes}m</span>
           <span>{timeLeft.seconds}s</span>
-        </div>
-        <button className="notify-button">Stay Notified</button>
+        </div> */}
+        <a href="/contactus" className="notify-button">Contact US</a>
       </div>
     </div>
   );

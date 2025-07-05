@@ -38,6 +38,7 @@ function VerificationLinks() {
     direction: 'desc'
   });
   const [showConfirmation, setShowConfirmation] = useState(false);
+ const [completedVerifications, setCompletedVerifications] = useState([]);
   const [pendingUpload, setPendingUpload] = useState(null);
   const [isConfirmationActive, setIsConfirmationActive] = useState(false);
   const dataRef = useRef({ categorizedLinks: [], credits: null });
@@ -80,6 +81,9 @@ function VerificationLinks() {
       }
     }
   }, []);
+
+
+  
 
   // Auto-set email from session storage
   useEffect(() => {
@@ -178,7 +182,12 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
         creditDeducted: item.creditDeducted || (item.matchCount || 0) * 2
       }));
 
-
+ // Check status for all pending/processing batches in background
+    transformedData
+      .filter(item => item.final_status !== 'completed')
+      .forEach(item => {
+        checkStatus(item.uniqueId, true); // true indicates background check
+      });
   
 
       if (JSON.stringify(transformedData) !== JSON.stringify(dataRef.current.categorizedLinks)) {
@@ -785,12 +794,16 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
                                         <td>{firstItem.pendingCount}</td>
                                         <td>
                                           <button
-                                            onClick={() => checkStatus(uniqueId)}
-                                            className="status-check-btn"
-                                            disabled={isProcessing}
-                                          >
-                                            Check Status
-                                          </button>
+                                                onClick={() => checkStatus(uniqueId)}
+                                                className="status-check-btn"
+                                                disabled={isProcessing}
+                                              >
+                                                {isProcessing ? (
+                                                  <Loader2 className="animate-spin h-4 w-4" />
+                                                ) : (
+                                                  "Check Status"
+                                                )}
+                                              </button>
                                         </td>
                                         <td>{formatDate(firstItem.date)}</td>
                                         <td>

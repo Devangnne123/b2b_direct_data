@@ -23,6 +23,7 @@ import "../css/BulkLookup.css";
 import "../css/UserS.css";
 import Checkout from "../components/Checkout";
 import Verification_links from "../components/Verification_links";
+import RequestResetForm from "./RequestResetForm";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -874,6 +875,7 @@ const getGroupStatus = (group) => {
              
              
               <ToastContainer position="top-center" autoClose={5000} />
+             
             </div>
           </div>
         </div>

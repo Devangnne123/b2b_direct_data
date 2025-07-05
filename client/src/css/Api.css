@@ -1,79 +1,366 @@
-/* ApiComingSoon.css */
+/* API.css - Modern Coming Soon Form Design */
 
+:root {
+  --primary: #4361ee;
+  --primary-dark: #3a56d4;
+  --secondary: #3f37c9;
+  --accent: #4895ef;
+  --light: #f8f9fa;
+  --dark: #212529;
+  --gray: #6c757d;
+  --light-gray: #e9ecef;
+  --success: #4bb543;
+  --error: #7bbd65;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --transition: all 0.3s ease;
+}
 
+/* Base Styles */
+.container_api {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100%;
+  background-color: #f5f7ff;
+  padding: 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  width: 100%;
+  max-width: 800px;
+  padding: 2.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+}
+
+/* Form Header */
+.notification-form h2 {
+  color: var(--dark);
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
   
+  font-weight: 600;
+}
+
+/* Form Groups */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--dark);
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid rgb(126, 126, 126);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+}
+
+.form-group input::placeholder {
+  color: var(--gray);
+  opacity: 0.6;
+}
+
+.form-group input:disabled {
+  background-color: var(--light-gray);
+  cursor: not-allowed;
+}
+
+/* CAPTCHA Section */
+.captcha-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  background-color: rgba(248, 249, 250, 0.5);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+}
+
+.captcha-display {
+  flex: 1;
+  font-family: monospace;
+  font-size: 1.2rem;
+  width: 200px;
+  letter-spacing: 3px;
+  text-align: center;
+  padding: 0.5rem;
+  background-color: white;
+  border-radius: var(--border-radius);
+  user-select: none;
+}
+
+.refresh-captcha {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: var(--transition);
+}
+
+.refresh-captcha:hover {
+  background-color: rgba(67, 97, 238, 0.1);
+}
+
+/* CAPTCHA Input Group */
+.captcha-input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.captcha-input-group input {
+  flex: 1;
+}
+
+/* Buttons */
+.verify-button,
+.otp-button,
+.notify-button {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  text-decoration: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  width: 100%;
+}
+
+.verify-button {
+  width: auto;
+  min-width: 100px;
+}
+
+.verify-button:hover,
+.otp-button:hover,
+.notify-button:hover {
+  background-color: var(--primary-dark);
+}
+
+.verify-button:disabled,
+.otp-button:disabled,
+.notify-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* OTP Section */
+.otp-input-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.otp-timer {
+  font-size: 0.85rem;
+  color: var(--gray);
+  margin-top: 0.5rem;
+  text-align: right;
+}
+
+.resend-otp {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-top: 0.5rem;
+  display: inline-block;
+}
+
+/* Messages */
+/* .message {
+  padding: 0.8rem 1rem;
+  border-radius: var(--border-radius);
+  margin: 1rem 0;
+  font-size: 0.9rem;
+} */
+
+.message.success {
+  background-color: rgba(75, 181, 67, 0.1);
+  color: var(--success);
+  border: 1px solid rgba(75, 181, 67, 0.2);
+}
+
+/* .message:not(.success) {
+  background-color: rgba(255, 51, 51, 0.1);
+  color: var(--error);
+  border: 1px solid rgba(255, 51, 51, 0.2);
+} */
+
+/* Privacy Notice */
+.privacy-notice {
+  font-size: 0.8rem;
+  color: var(--gray);
+  text-align: center;
+  margin-top: 1.5rem;
+  line-height: 1.5;
+}
+
+/* Loading Spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
   .container_api {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin:  100px 0px;
-    width: 100%;
-    text-align: center;
+    padding: 1rem;
   }
   
   .card {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2);
-    max-width: 400px;
-    
+    padding: 1.5rem;
   }
   
-  .title {
-    font-size: 28px;
-    font-weight: bold;
-    margin-bottom: 15px;
+  .notification-form h2 {
+    font-size: 1.5rem;
   }
   
-  .description {
-    font-size: 16px;
-    margin-bottom: 20px;
-    opacity: 0.9;
+  .captcha-input-group,
+  .otp-input-group {
+    flex-direction: column;
   }
   
-  .countdown {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    font-size: 22px;
-    font-weight: bold;
-    margin-bottom: 20px;
+  .verify-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 1.25rem;
   }
   
-  .countdown span {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 10px 15px;
-  
-    border-radius: 10px;
+  .captcha-container {
+    flex-direction: column;
   }
   
-  .notify-button {
-    background: white;
-    color: #667eea;
-    border: none;
-    padding: 10px 20px;
-    font-size: 16px;
-    font-weight: bold;
-    border-radius: 25px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  .captcha-display {
+    width: 100%;
+    font-size: 1.5rem;
   }
+}
+
+
+
+.card-content {
+  display: flex;
+  flex-direction: row;
+  gap: 5rem;
+}
+
+.privacy-section {
+ display: flex;
+  padding: 1.5rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  flex-direction: column;
   
-  .notify-button:hover {
-    background: #667eea;
-    color: white;
-  }
-  @media (max-width:582px){
-    .card{
-      width: 200px;
-    }
-    .countdown{
-      font-size: small;
-    }
-    .container_api{
-      margin: 50px 0px 100px 0px;
-    }
-  }
   
+}
+
+.form-section {
+  flex: 1;
+
+  padding: 1.5rem;
+}
+
+.process-steps {
+  padding-left: 1.5rem;
+}
+
+.process-steps li {
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .card-content {
+    flex-direction: column;
+  }
+}
+
+
+
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.popup-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+}
+
+.popup-close-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.popup-close-button:hover {
+  background-color: #45a049;
+}

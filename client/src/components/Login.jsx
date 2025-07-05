@@ -179,10 +179,17 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
             <h2 className="login-title">
               {showForgotPassword ? "Reset Password" : "Login"}
             </h2>
+
+             {errorMessage && (
+              <div className="message error-message">
+                <p>{errorMessage}</p>
+              </div>
+            )}
             
             {!showForgotPassword ? (
               <form className="login-form" onSubmit={handleLogin}>
-                <div className="input-group">
+              
+                  <div className="password-input-container">
                   <input
                     type="email"
                     placeholder="Enter your email"
@@ -191,9 +198,10 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                   />
-                </div>
+                  </div>
+              
                 
-                <div className="input-group">
+                
                   <div className="password-input-container">
                     <input
                       type={showPassword ? "text" : "password"}
@@ -205,13 +213,13 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
                     />
                     <button
                       type="button"
-                      className="password-toggle"
+                      className="password-toggle-login"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <IoMdEyeOff /> : <IoMdEye />}
                     </button>
                   </div>
-                </div>
+              
                 
                 <button 
                   type="submit" 
@@ -220,6 +228,15 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
                 >
                   {isSubmitting ? "Logging in..." : "Log in"}
                 </button>
+                
+                  <button 
+                    onClick={handleForgotPassword} 
+                     className={`login-button1 ${isSubmitting ? 'disabled' : ''}`}
+                    disabled={isSubmitting}
+                  >
+                    Forgot Password?
+                  </button>
+               
               </form>
             ) : (
               <form className="login-form" onSubmit={handleResetPassword}>
@@ -272,11 +289,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
               </form>
             )}
             
-            {errorMessage && (
-              <div className="message error-message">
-                <p>{errorMessage}</p>
-              </div>
-            )}
+           
             
             {successMessage && (
               <div className="message success-message">
@@ -286,15 +299,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
             
             {!showForgotPassword ? (
               <>
-                <div className="forgot-password-link">
-                  <button 
-                    onClick={handleForgotPassword} 
-                    className="forgot-password-btn"
-                    disabled={isSubmitting}
-                  >
-                    Forgot Password?
-                  </button>
-                </div>
+                
                 
                 <div className="login-divider">
                   <hr className="divider-line" />

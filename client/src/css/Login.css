@@ -58,6 +58,7 @@
 .login-left,
 .login-right {
   flex: 1;
+  
   padding: 20px;
   display: none;
 }
@@ -94,7 +95,7 @@
 .login-title {
   font-size: 24px;
   font-weight: bold;
-  margin-bottom: 70px;
+  margin-bottom: 50px;
 }
 
 .login-form {
@@ -106,7 +107,7 @@
 
 .login-input {
   width: 110%;
-  padding: 8px;
+  padding: 6px;
   margin-bottom: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
@@ -119,20 +120,21 @@
 }
 
 .login-button1 {
-  width: 120%;
-  padding: 10px;
+  width: 100%;
+  padding: 7px;
   background-color: rgb(90, 137, 203);
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin-bottom: 15px;
+  margin-top: 10px;
+  margin-bottom: 1px;
   transition: background-color 0.3s ease-in-out;
 }
 
 .login-button1:hover {
   background-color: #333;
-  transform: scale(1.05);
+  transform: scale(1.0);
 }
 
 .login-divider {
@@ -178,12 +180,12 @@
 .signup-link-text {
   color: blue;
   text-decoration: none;
-  margin-top: 15px;
+  margin-top: 1px;
 }
 
 .signup-link-text:hover {
   text-decoration: underline;
-  transform: scale(1.1);
+  transform: scale(1.0);
 }
 
 .login-right {
@@ -252,17 +254,18 @@
 /* Add this to your Login.css file */
 .success-message {
   color: #4CAF50; /* Green color for success */
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 500;
   position: absolute;
-  top: 150px;
+  top: 134px;
   text-align: center;
   margin: 15px 0;
   background-color: antiquewhite;
   background-color: rgba(76, 175, 80, 0.1);
-  padding: 5px;
+  padding-left: 10px;
   border-radius: 5px;
-  border-left: 4px solid #4CAF50;
+  width: 200px;
+  border-left: 4px solid #36ae3a;
   animation: fadeInOut 2s ease-in-out;
 }
 

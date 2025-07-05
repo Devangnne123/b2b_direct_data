@@ -69,6 +69,7 @@ function Sidebar() {
       options: [
         { name: "Add User", path: "/add-user" },
         { name: "User Lists", path: "/user-list" },
+         { name: "Reset Password", path: "/change_your_password" },
         { name: "Sign out", path: "/" },
       ],
     },

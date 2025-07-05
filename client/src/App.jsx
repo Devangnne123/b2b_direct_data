@@ -43,6 +43,9 @@ import Verification_company from "./components/Verification_company";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 import TermsAndConditions from "./components/TermsAndConditions";
 import CheckoutPage from "./components/CheckoutPage";
+import ScrollToTop from "./components/ScrollToTop";
+import RequestResetForm from "./components/RequestResetForm";
+import Remove_form from "./components/Remove_form";
 
 
 function App() {
@@ -68,6 +71,8 @@ function App() {
     "/all-user-statistics",
     "/admin-credit-report",
     "/user-credit-report",
+    "/change_your_password",
+    "/remove_data"
   ]; // Paths without Header/Footer
 
   const isExcluded = excludePaths.includes(location.pathname); // Check if current path matches
@@ -85,7 +90,8 @@ function App() {
         <Route path="/statistic" element={<Statistic />} />
         <Route path="/Temp" element={<TempLinkMobileForm />} />
 <Route path="/checkout" element={<CheckoutPage/>} />
-          <Route path="/" element={<CheckoutPage />} />
+          
+           <Route path="/change_your_password" element={<RequestResetForm />} />
           <Route path="/payment-status" element={<PaymentStatus />} />
           <Route path="/api/payments/capture" element={<PayPalReturnHandler />} />
           <Route path="/verfication_links" element={<VerificationLinks />} />
@@ -95,6 +101,8 @@ function App() {
        <Route path="/Alladmincompanycredits" element={<Alladmincompanycredits />} />
         <Route path="/Linkedin_Contect" element={<Linkedin_Contect />} />
         <Route path="/Linkedin_Company" element={<Linkedin_Company />} />
+        <Route path="/remove_data" element={<Remove_form/>} />
+
         
          <Route path="/" element={<Login />} />
         <Route path="/" element={<SignUp />} />
@@ -113,6 +121,7 @@ function App() {
         <Route path="/linkedin-contact-verification" element={<LinkedinContactVerification />} />
       </Routes>
       {!isExcluded && <Footer />} {/* Show Footer if path is not excluded */}
+       <ScrollToTop /> {/* Add this line */}
     </>
   );
 }
