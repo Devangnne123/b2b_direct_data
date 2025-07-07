@@ -21,14 +21,14 @@ function Services() {
       title: "LinkedIn Company Details",
       titles: "LinkedIn Company Details",
       descriptions:
-"Streamline your business research with our Linkedin Company Details service. We gather comprehensive information from LinkedIn company pages to provide you with accurate and up-to-date company profiles in bulk. Whether you need details for lead generation, market analysis, or competitor research, our service offers valuable insights into company size, industry, key employees, and more. With our bulk data extraction, you can save time and effort while accessing detailed company information that helps drive smarter business decisions and targeted outreach. Let us provide you with the company data you need to scale your efforts efficiently.",
+"Streamline your business research with our Linkedin Company Details service. We gather comprehensive information from LinkedIn company pages to provide you with accurate and up-to-date company profiles in bulk. Whether you need details for lead generation, market analysis, or competitor research, our service offers valuable insights into company size, industry, key employees, and more. With our bulk data Processing, you can save time and effort while accessing detailed company information that helps drive smarter business decisions and targeted outreach. Let us provide you with the company data you need to scale your efforts efficiently.",
     },  
     {
       icon: "Captureq-removebg-preview (2).png",
       title: "LinkedIn Contact Verification",
       titles: "LinkedIn Contact Verification",
       descriptions:
-      "Ensure the accuracy and reliability of your LinkedIn network with our Bulk Contact Verification service. We help businesses, recruiters, and professionals verify large volumes of LinkedIn profiles to streamline connections, enhance outreach efforts, and maintain an up-to-date network. Our automated process efficiently cross-references contact details, employment history, and profile authenticity, saving you time and ensuring your LinkedIn connections are credible and current. Whether you're looking to clean up your CRM or improve your lead generation, our bulk verification service provides peace of mind with fast, accurate results.",
+      "Ensure the accuracy and reliability of your LinkedIn network with our Bulk Contact Verification service. We help businesses, recruiters, and professionals verify large volumes of LinkedIn profiles to streamline connections, enhance outreach efforts, and maintain an up-to-date network. Our bulk data Processing efficiently cross-references contact details, employment history, and profile authenticity, saving you time and ensuring your LinkedIn connections are credible and current. Whether you're looking to clean up your CRM or improve your lead generation, our bulk verification service provides peace of mind with fast, accurate results.",
     },
   ];
 

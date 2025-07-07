@@ -72,7 +72,7 @@ function App() {
     "/admin-credit-report",
     "/user-credit-report",
     "/change_your_password",
-    "/remove_data"
+    
   ]; // Paths without Header/Footer
 
   const isExcluded = excludePaths.includes(location.pathname); // Check if current path matches
@@ -101,12 +101,13 @@ function App() {
        <Route path="/Alladmincompanycredits" element={<Alladmincompanycredits />} />
         <Route path="/Linkedin_Contect" element={<Linkedin_Contect />} />
         <Route path="/Linkedin_Company" element={<Linkedin_Company />} />
-        <Route path="/remove_data" element={<Remove_form/>} />
+        
 
         
          <Route path="/" element={<Login />} />
         <Route path="/" element={<SignUp />} />
         <Route path="/api" element={<Api />} />
+        <Route path="/remove_data" element={<Remove_form/>} />
         <Route path="/aboutus" element={<AboutUs />} />
         <Route path="/contactus" element={<ContactUs />}/>
         <Route path="/add-user" element={<AddUser />} />

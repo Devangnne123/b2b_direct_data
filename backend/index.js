@@ -2879,6 +2879,7 @@ app.post('/change-password', async (req, res) => {
 });
 
 const { DataTypes } = require('sequelize');
+const TeamEmail = require('./model/team_notification');
 
 
 // Models
@@ -3078,4 +3079,178 @@ app.post('/api/send-confirmation', async (req, res) => {
 
 
 
+// // Route to create a new team email
+// app.post('/api/team-emails', async (req, res) => {
+//   try {
+//     const { email, name } = req.body;
 
+//     // Validate required fields
+//     if (!email) {
+//       return res.status(400).json({ error: 'Email is required' });
+//     }
+
+//     // Create the new team email record
+//     const newTeamEmail = await TeamEmail.create({
+//       email,
+//       name: name || null // Set to null if name is not provided
+//     });
+
+//     // Return the created record
+//     res.status(201).json({
+//       message: 'Team email created successfully',
+//       data: newTeamEmail
+//     });
+
+//   } catch (error) {
+//     console.error('Error creating team email:', error);
+    
+//     // Handle validation errors
+//     if (error.name === 'SequelizeValidationError') {
+//       const errors = error.errors.map(err => err.message);
+//       return res.status(400).json({ errors });
+//     }
+    
+//     // Handle duplicate email error
+//     if (error.name === 'SequelizeUniqueConstraintError') {
+//       return res.status(400).json({ error: 'Email already exists' });
+//     }
+
+//     // Generic error handler
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
+
+
+
+
+
+
+
+
+// app.post('/api/send-verification-confirmation', async (req, res) => {
+//   const { email, uniqueId, totalLinks, pendingCount, creditCost, initiatedBy } = req.body;
+
+//   try {
+//     const mailOptions = {
+//       from: "b2bdirectdata@gmail.com",
+//       to: email,
+//       subject: `LinkedIn Verification Process Started - ${uniqueId}`,
+//       html: `
+//         <h2>LinkedIn Verification Process Started</h2>
+//         <p><strong>Batch ID:</strong> ${uniqueId}</p>
+//         <p><strong>Total Links:</strong> ${totalLinks}</p>
+//         <p><strong>Pending Verification:</strong> ${pendingCount}</p>
+//         <p><strong>Credits Deducted:</strong> ${creditCost}</p>
+//         ${initiatedBy ? `<p><strong>Initiated By:</strong> ${initiatedBy}</p>` : ''}
+//         <p>You'll receive another email when the verification is complete.</p>
+//         <p>Thank you for using our service!</p>
+//       `
+//     };
+
+//     await transporter.sendMail(mailOptions);
+//     res.json({ success: true });
+//   } catch (error) {
+//     console.error('Error sending confirmation email:', error);
+//     res.status(500).json({ error: 'Failed to send confirmation email' });
+//   }
+// });
+
+
+
+
+
+
+
+
+
+
+// Route to get all team emails from database
+app.get('/get/team-emails', async (req, res) => {
+  try {
+    // Fetch all team emails from database
+    const teamEmails = await TeamEmail.findAll({
+      attributes: ['id', 'email', 'name'],
+      order: [['created_at', 'DESC']],
+      where: {
+        // Optional: add any filters you need
+        // For example, only active emails:
+        // is_active: true
+      }
+    });
+
+    // Format the response
+    const response = {
+      success: true,
+      data: teamEmails.map(email => ({
+        id: email.id,
+        email: email.email,
+        name: email.name
+      })),
+      count: teamEmails.length,
+      message: 'Team emails retrieved successfully'
+    };
+
+    console.log(`Fetched ${response.count} team emails`);
+    res.json(response);
+
+  } catch (error) {
+    console.error('Error fetching team emails:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch team emails',
+      error: error.message,
+    
+    });
+  }
+});
+
+
+
+
+
+
+
+
+// Email confirmation endpoint
+app.post('/api/send-verification-confirmation', async (req, res) => {
+  const { email, uniqueId, totalLinks, pendingCount, creditCost, initiatedBy } = req.body;
+
+  try {
+    // Validate recipient email
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid recipient email address'
+      });
+    }
+
+    const mailOptions = {
+      from: `"Verification Service" <b2bdirectdata@gmail.com>`,
+      to: email,
+      subject: `LinkedIn Verification Started - ${uniqueId}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">LinkedIn Verification Process Started</h2>
+          <p><strong>Batch ID:</strong> ${uniqueId}</p>
+          <p><strong>Total Links:</strong> ${totalLinks}</p>
+          <p><strong>Pending Verification:</strong> ${pendingCount}</p>
+          <p><strong>Credits Deducted:</strong> ${creditCost}</p>
+          ${initiatedBy ? `<p><strong>Initiated By:</strong> ${initiatedBy}</p>` : ''}
+          
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Email sent to ${email}`, info.messageId);
+    res.json({ success: true, messageId: info.messageId });
+  } catch (error) {
+    console.error(`Error sending to ${email}:`, error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message,
+      details: 'Failed to send confirmation email'
+    });
+  }
+});

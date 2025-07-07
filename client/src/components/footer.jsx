@@ -17,7 +17,8 @@ function footer() {
         <div className="footer-container1">
           <div className="footer-section">
             <div className='footer-title'>
-            <h3> <img width="170px" src="new.png" alt="" /><br /></h3>
+            
+            <h3> <img width="210px" src="B@B.png" alt="" /><br /></h3>
             </div>
             {/* <div className="social-icons">
               <a href="#">
@@ -113,17 +114,17 @@ function footer() {
               </li>
               <li>
                 <a ><Link to="/api" onClick={handleLinkClick}>
-                               API Docs
+                              API Docs
                               </Link></a>
               </li>
-              <li>
+              {/* <li>
                 <a ><Link to="/" onClick={handleLinkClick}>
                                Data Processing
                               </Link></a>
-              </li>
-              <li>
+              </li> */}
+              {/* <li>
                 <a href="#" class="termly-display-preferences">Consent Preferences</a>
-              </li>
+              </li> */}
             </ul>
           </div>
           <div className="footer-section">
@@ -139,14 +140,14 @@ function footer() {
                                Privacy Policy
                               </Link></a>
               </li>
-              <li>
+              {/* <li>
                 <a ><Link to="/" onClick={handleLinkClick}>
                                Cookie Policy & Settings
                               </Link></a>
-              </li>
+              </li> */}
               <li>
                 <a ><Link to="/remove_data" onClick={handleLinkClick}>
-                               Do Not Sell My Info
+                               Do Not Sell My Information
                               </Link></a>
               </li>
             </ul>

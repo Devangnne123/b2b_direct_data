@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import "../css/AllUser.css";
+import TeamEmailForm from "./TeamEmailForm";
 
 const AllAdmin = () => {
   const [users, setUsers] = useState([]);
@@ -421,6 +422,7 @@ const AllAdmin = () => {
                 </div>
               </div>
             </section>
+            <TeamEmailForm/>
           </div>
         </div>
       </div>

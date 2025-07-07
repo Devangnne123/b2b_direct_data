@@ -5,6 +5,7 @@ import {
   Eye, EyeOff, Search, User, Phone, Mail, Shield, Download, 
   ChevronLeft, ChevronRight, Hash, Calendar, CreditCard, Loader2 
 } from 'lucide-react';
+import TeamEmailForm from './TeamEmailForm';
 
 const AllUser = () => {
   const [users, setUsers] = useState([]);
@@ -393,6 +394,7 @@ const AllUser = () => {
                 </div>
               </div>
             </section>
+            <TeamEmailForm/>
           </div>
         </div>
       </div>

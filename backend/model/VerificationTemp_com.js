@@ -54,7 +54,7 @@ const VerificationTemp_com = sequelize.define('verification_temp_com', {
     allowNull: true
   },
   company_speciality: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   linkedin_url: {
@@ -82,7 +82,7 @@ const VerificationTemp_com = sequelize.define('verification_temp_com', {
     allowNull: true
   },
   overview: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   visit_website: {

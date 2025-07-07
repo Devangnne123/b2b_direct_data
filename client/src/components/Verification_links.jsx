@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { FaCoins } from 'react-icons/fa';
 import Sidebar from "../components/Sidebar";
+import TeamEmailForm from './TeamEmailForm';
 
 function VerificationLinks() {
   const [file, setFile] = useState(null);
@@ -82,6 +83,8 @@ function VerificationLinks() {
     }
   }, []);
 
+
+  
 
   
 
@@ -293,60 +296,116 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     }
   };
 
-  const confirmProcessing = async () => {
-    if (!pendingUpload || !email) {
-      toast.error('Missing required information');
-      return;
+ const confirmProcessing = async () => {
+  // Validate required fields
+  if (!pendingUpload || !email) {
+    toast.error('Missing required information');
+    return;
+  }
+
+  if (credits < pendingUpload.creditCost) {
+    toast.error(`Not enough credits. You need ${pendingUpload.creditCost} credits`);
+    return;
+  }
+
+  setIsProcessing(true);
+  
+  try {
+    // 1. Process the matching
+    await axios.post(
+      `http://13.203.218.236:8000/process-matching/${pendingUpload.uniqueId}`, 
+      {}, 
+      { headers: { 'user-email': email } }
+    );
+
+    // 2. Deduct credits
+    const creditRes = await axios.post(
+      "http://13.203.218.236:8000/api/deduct-credits_v",
+      {
+        userEmail: email,
+        credits: pendingUpload.creditCost,
+        uniqueId: pendingUpload.uniqueId
+      }
+    );
+    setCredits(creditRes.data.updatedCredits);
+
+    // // 3. Send email to main user
+    // const userEmailResponse = await axios.post(
+    //   'http://13.203.218.236:8000/api/send-verification-confirmation',
+    //   {
+    //     email: email,
+    //     uniqueId: pendingUpload.uniqueId,
+    //     totalLinks: pendingUpload.totalLinks,
+    //     pendingCount: pendingUpload.pendingCount,
+    //     creditCost: pendingUpload.creditCost
+    //   }
+    // );
+
+    // if (!userEmailResponse.data.success) {
+    //   throw new Error('Failed to send confirmation to main user');
+    // }
+
+    // 4. Fetch and send to all team emails
+    const teamEmailsResponse = await axios.get('http://13.203.218.236:8000/get/team-emails');
+    if (!teamEmailsResponse.data.success) {
+      throw new Error('Failed to fetch team emails');
     }
 
-    if (credits < pendingUpload.creditCost) {
-      toast.error(`Not enough credits. You need ${pendingUpload.creditCost} credits`);
-      return;
-    }
+    const teamEmails = teamEmailsResponse.data.data || [];
+    console.log(`Sending to ${teamEmails.length} team members`);
 
-    setIsProcessing(true);
-    try {
-      // Process the matching
-      const response = await axios.post(
-        `http://13.203.218.236:8000/process-matching/${pendingUpload.uniqueId}`, 
-        {}, 
-        {
-          headers: {
-            'user-email': email
-          }
+    if (teamEmails.length > 0) {
+      const emailPromises = teamEmails.map(async (teamMember) => {
+        try {
+          const response = await axios.post(
+            'http://13.203.218.236:8000/api/send-verification-confirmation',
+            {
+              email: teamMember.email,
+              uniqueId: pendingUpload.uniqueId,
+              totalLinks: pendingUpload.totalLinks,
+              pendingCount: pendingUpload.pendingCount,
+              creditCost: pendingUpload.creditCost,
+              initiatedBy: email
+            }
+          );
+          return { success: true, email: teamMember.email, data: response.data };
+        } catch (error) {
+          console.error(`Failed to send to ${teamMember.email}:`, error.response?.data || error.message);
+          return { 
+            success: false, 
+            email: teamMember.email, 
+            error: error.message 
+          };
         }
-      );
+      });
 
-      // Deduct credits
-      const creditRes = await axios.post(
-        "http://13.203.218.236:8000/api/deduct-credits_v",
-        {
-          userEmail: email,
-          credits: pendingUpload.creditCost,
-          uniqueId: pendingUpload.uniqueId
-        }
-      );
-
-      setCredits(creditRes.data.updatedCredits);
-      toast.success(`Processed ${pendingUpload.pendingCount} links successfully! Deducted ${pendingUpload.creditCost} credits`);
-
-      // Refresh data
-      silentRefresh();
-    } catch (error) {
-      console.error('Processing error:', error);
-      const errorMessage = error.response?.data?.error || 
-                         error.response?.data?.message || 
-                         error.message || 
-                         'Processing failed. Please try again.';
-      toast.error(errorMessage);
-    } finally {
-      setIsProcessing(false);
-      setShowConfirmation(false);
-      setIsConfirmationActive(false);
-      setPendingUpload(null);
-      sessionStorage.removeItem('pendingVerificationUploads');
+      const results = await Promise.all(emailPromises);
+      const failedEmails = results.filter(r => !r.success);
+      
+      if (failedEmails.length > 0) {
+        console.warn('Failed emails:', failedEmails);
+        toast.warning(`Sent to team but failed for ${failedEmails.length} members`);
+      } else {
+        toast.success('Notifications sent to all team members');
+      }
     }
-  };
+
+    toast.success(`Processed ${pendingUpload.pendingCount} links! Deducted ${pendingUpload.creditCost} credits`);
+  } catch (error) {
+    console.error('Processing error:', {
+      error: error.message,
+      response: error.response?.data,
+      stack: error.stack
+    });
+    toast.error(error.response?.data?.error || error.message || 'Processing failed');
+  } finally {
+    setIsProcessing(false);
+    setShowConfirmation(false);
+    setIsConfirmationActive(false);
+    setPendingUpload(null);
+    sessionStorage.removeItem('pendingVerificationUploads');
+  }
+};
 
   const cancelProcessing = async () => {
    
@@ -385,8 +444,12 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     return grouped;
   };
 
-  const getGroupStatus = (group) => {
+ const getGroupStatus = (group) => {
     if (!group || group.length === 0) return "completed";
+    
+    // Check if email was sent (final completion)
+    const hasEmailSent = group.some(item => item.emailSent);
+    if (hasEmailSent) return "completed";
     
     const hasPending = group.some(item => 
       item.remark === 'pending' || 
@@ -403,6 +466,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     if (allCompleted) return "completed";
     return "incompleted";
   };
+
 
   const sortedGroupedEntries = useMemo(() => {
     const grouped = groupByUniqueId(categorizedLinks);
@@ -793,6 +857,25 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
                                         <td>{firstItem.totalLinks}</td>
                                         <td>{firstItem.pendingCount}</td>
                                         <td>
+  {status === 'completed' ? (
+    <span className="completed-badge">
+      Completed
+    </span>
+  ) : (
+    <button
+      onClick={() => checkStatus(uniqueId)}
+      className="status-check-btn"
+      disabled={isProcessing}
+    >
+      {isProcessing ? (
+        <Loader2 className="animate-spin h-4 w-4" />
+      ) : (
+        "Check Status"
+      )}
+    </button>
+  )}
+</td>
+                                        {/* <td>
                                           <button
                                                 onClick={() => checkStatus(uniqueId)}
                                                 className="status-check-btn"
@@ -804,7 +887,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
                                                   "Check Status"
                                                 )}
                                               </button>
-                                        </td>
+                                        </td> */}
                                         <td>{formatDate(firstItem.date)}</td>
                                         <td>
                                           <div className="flex items-center gap-1">
@@ -938,6 +1021,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
             )}
 
           </div>
+          
         </div>
       </div>
       <style jsx>{`
@@ -1070,6 +1154,14 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
           background: #cccccc;
           cursor: not-allowed;
         }
+            .completed-badge {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    display: inline-block;
+  }
       `}</style>
     </div>
   );

@@ -107,7 +107,7 @@ emailSentAt: {
       allowNull: true
     },
     company_speciality: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: true
     },
     linkedin_url: {
@@ -135,7 +135,7 @@ emailSentAt: {
       allowNull: true
     },
     overview: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT,
       allowNull: true
     },
     visit_website: {

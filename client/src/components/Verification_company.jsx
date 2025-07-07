@@ -308,53 +308,87 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     }
   };
 
-  const confirmProcessing = async () => {
-    if (!pendingUpload || !email) {
-      toast.error('Missing required information');
-      return;
-    }
+ const confirmProcessing = async () => {
+  if (!pendingUpload || !email) {
+    toast.error('Missing required information');
+    return;
+  }
 
-    if (credits < pendingUpload.creditCost) {
-      toast.error(`Not enough credits. You need ${pendingUpload.creditCost} credits`);
-      return;
-    }
+  if (credits < pendingUpload.creditCost) {
+    toast.error(`Not enough credits. You need ${pendingUpload.creditCost} credits`);
+    return;
+  }
 
-    setIsProcessing(true);
-    try {
-      const response = await axios.post(
-        `http://13.203.218.236:8000/process-matching-com/${pendingUpload.uniqueId}`, 
-        {}, 
-        { headers: { 'user-email': email } }
+  setIsProcessing(true);
+  try {
+    // 1. Process the matching
+    const response = await axios.post(
+      `http://13.203.218.236:8000/process-matching-com/${pendingUpload.uniqueId}`, 
+      {}, 
+      { headers: { 'user-email': email } }
+    );
+
+    // 2. Deduct credits
+    const creditRes = await axios.post(
+      "http://13.203.218.236:8000/api/deduct-credits_v-com",
+      {
+        userEmail: email,
+        credits: pendingUpload.creditCost,
+        uniqueId: pendingUpload.uniqueId
+      }
+    );
+
+    setCredits(creditRes.data.updatedCredits);
+    toast.success(`Processed ${pendingUpload.pendingCount} links successfully! Deducted ${pendingUpload.creditCost} credits`);
+
+    // // 3. Send email to the current user
+    // await axios.post('http://13.203.218.236:8000/api/send-verification-confirmation', {
+    //   email: email,
+    //   uniqueId: pendingUpload.uniqueId,
+    //   totalLinks: pendingUpload.totalLinks,
+    //   pendingCount: pendingUpload.pendingCount,
+    //   creditCost: pendingUpload.creditCost
+    // });
+
+    // 4. Send emails to all team members
+    const teamEmailsResponse = await axios.get('http://13.203.218.236:8000/get/team-emails');
+    const teamEmails = teamEmailsResponse.data.data || [];
+    
+    if (teamEmails.length > 0) {
+      const emailPromises = teamEmails.map(teamMember => 
+        axios.post('http://13.203.218.236:8000/api/send-verification-confirmation', {
+          email: teamMember.email,
+          uniqueId: pendingUpload.uniqueId,
+          totalLinks: pendingUpload.totalLinks,
+          pendingCount: pendingUpload.pendingCount,
+          creditCost: pendingUpload.creditCost,
+          initiatedBy: email
+        }).catch(e => {
+          console.error(`Failed to send to ${teamMember.email}:`, e.response?.data || e.message);
+          return null;
+        })
       );
 
-      const creditRes = await axios.post(
-        "http://13.203.218.236:8000/api/deduct-credits_v-com",
-        {
-          userEmail: email,
-          credits: pendingUpload.creditCost,
-          uniqueId: pendingUpload.uniqueId
-        }
-      );
-
-      setCredits(creditRes.data.updatedCredits);
-      toast.success(`Processed ${pendingUpload.pendingCount} links successfully! Deducted ${pendingUpload.creditCost} credits`);
-
-      silentRefresh();
-    } catch (error) {
-      console.error('Processing error:', error);
-      const errorMessage = error.response?.data?.error || 
-                         error.response?.data?.message || 
-                         error.message || 
-                         'Processing failed. Please try again.';
-      toast.error(errorMessage);
-    } finally {
-      setIsProcessing(false);
-      setShowConfirmation(false);
-      setIsConfirmationActive(false);
-      setPendingUpload(null);
-      sessionStorage.removeItem('pendingVerificationUpload');
+      await Promise.all(emailPromises);
+      console.log('Notifications sent to all team members');
     }
-  };
+
+    silentRefresh();
+  } catch (error) {
+    console.error('Processing error:', error);
+    const errorMessage = error.response?.data?.error || 
+                       error.response?.data?.message || 
+                       error.message || 
+                       'Processing failed. Please try again.';
+    toast.error(errorMessage);
+  } finally {
+    setIsProcessing(false);
+    setShowConfirmation(false);
+    setIsConfirmationActive(false);
+    setPendingUpload(null);
+    sessionStorage.removeItem('pendingVerificationUpload');
+  }
+};
 
   const cancelProcessing = async () => {
     if (!pendingUpload?.uniqueId) {
@@ -405,14 +439,41 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     return grouped;
   };
 
+
+    const getGroupStatus = (group) => {
+    if (!group || group.length === 0) return "completed";
+    
+    // Check if email was sent (final completion)
+    const hasEmailSent = group.some(item => item.emailSent);
+    if (hasEmailSent) return "completed";
+    
+    const hasPending = group.some(item => 
+      item.remark === 'pending' || 
+      (!item.matchLink && item.remark !== 'invalid')
+    );
+    
+    const allCompleted = group.every(item => 
+      item.matchLink || 
+      item.remark === 'invalid' || 
+      item.remark === 'processed'
+    );
+
+    if (hasPending) return "pending";
+    if (allCompleted) return "completed";
+    return "incompleted";
+  };
+
+
   const sortedGroupedEntries = useMemo(() => {
     const grouped = groupByUniqueId(categorizedLinks);
     let entries = Object.entries(grouped);
 
     return entries.sort((a, b) => {
       if (sortConfig.key === "status") {
-        const aStatus = a[1][0]?.final_status || 'pending';
-        const bStatus = b[1][0]?.final_status || 'pending';
+        // const aStatus = a[1][0]?.final_status || 'pending';
+        // const bStatus = b[1][0]?.final_status || 'pending';
+        const aStatus = getGroupStatus(a[1]);
+        const bStatus = getGroupStatus(b[1]);
         return sortConfig.direction === "desc"
           ? bStatus.localeCompare(aStatus)
           : aStatus.localeCompare(bStatus);
@@ -769,7 +830,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
                                 <tbody>
                                   {currentEntries.map(([uniqueId, group], idx) => {
                                     const firstItem = group[0] || {};
-                                    const status = firstItem.final_status || 'pending';
+                                    const status = getGroupStatus(group);
                                     return (
                                       <tr key={idx}>
                                         <td>{indexOfFirstRow + idx + 1}</td>
@@ -786,22 +847,27 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
                                         </td>
                                         <td>{firstItem.totalLinks}</td>
                                         <td>{firstItem.pendingCount}</td>
-                                        <td>
-  <div className="status-indicator">
-    
-    <button
-      onClick={() => checkStatus(uniqueId)}
-      className="status-check-btn"
-      disabled={isProcessing}
-    >
-      {isProcessing ? (
-        <Loader2 className="animate-spin h-4 w-4" />
-      ) : (
-        "Check Status"
-      )}
-    </button>
-  </div>
-</td>
+                                       
+ <td>
+   {status === 'completed' ? (
+     <span className="completed-badge">
+       Completed
+     </span>
+   ) : (
+     <button
+       onClick={() => checkStatus(uniqueId)}
+       className="status-check-btn"
+       disabled={isProcessing}
+     >
+       {isProcessing ? (
+         <Loader2 className="animate-spin h-4 w-4" />
+       ) : (
+         "Check Status"
+       )}
+     </button>
+   )}
+ </td>
+ 
                                         <td>{formatDate(firstItem.date)}</td>
                                         <td>
                                           <div className="flex items-center gap-1">
@@ -1088,6 +1154,14 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
           background: #cccccc;
           cursor: not-allowed;
         }
+            .completed-badge {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    display: inline-block;
+  }
       `}</style>
     </div>
   );
