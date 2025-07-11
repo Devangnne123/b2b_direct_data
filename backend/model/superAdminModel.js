@@ -2,6 +2,11 @@ const { DataTypes } = require("sequelize");
 const { sequelize } = require('../config/db');// Import Sequelize connection
 
 const SuperAdminTransaction = sequelize.define("SuperAdminTransaction", {
+   uniqueId: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      allowNull: false,
+    },
   senderEmail: {
     type: DataTypes.STRING,
     allowNull: false,

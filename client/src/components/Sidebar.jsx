@@ -113,6 +113,8 @@ function Sidebar() {
     { name: "All Admin", path: "/all-admin", icon: <FaChartBar /> },
     { name: "All User", path: "/all-user", icon: <FaChartBar /> },
     { name: "Credit Report", path: "/admin-credit-report", icon: <FaChartBar /> },
+     { name: "all Report", path: "/all_history", icon: <FaChartBar /> },
+   
     { name: "Sign out", path: "/", icon: <FaChartBar /> },
   ];
 

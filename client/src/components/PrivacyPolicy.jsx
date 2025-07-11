@@ -235,7 +235,7 @@ const PrivacyPolicy = () => {
           <h4>Exercising access, data portability, and deletion rights</h4>
           <p>To exercise the access, data portability, and deletion rights described above, please submit a verifiable consumer request to us by either:</p>
           <ul>
-            <li>Visiting the link <Link to="/do-not-sell">Do Not Sell My Information</Link>.</li>
+            <li>Visiting the link <Link to="/remove_data">Do Not Sell My Information</Link>.</li>
             <li>Calling us at [US Toll-free Number].</li>
           </ul>
           <p>Only you, or a person registered with the California Secretary of State that you authorize to act on your behalf, may make a verifiable consumer request related to your personal information. You may also make a verifiable consumer request on behalf of your minor child.</p>

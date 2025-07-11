@@ -356,7 +356,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     
     if (teamEmails.length > 0) {
       const emailPromises = teamEmails.map(teamMember => 
-        axios.post('http://13.203.218.236:8000/api/send-verification-confirmation', {
+        axios.post('http://13.203.218.236:8000/api/send-verification-confirmation/company', {
           email: teamMember.email,
           uniqueId: pendingUpload.uniqueId,
           totalLinks: pendingUpload.totalLinks,

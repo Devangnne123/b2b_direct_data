@@ -2656,19 +2656,20 @@ app.post('/api/send-completion-email', async (req, res) => {
 
     // Now send the email
     await transporter.sendMail({
-      from: '"Verification System" <your-email@example.com>',
+      from: '"B2B Verification System" <b2bdirectdata@gmail.com>',
       to: email,
-      subject: `Verification Completed - ${uniqueId}`,
+      subject: `Contact Verification Completed - ${uniqueId}`,
       html: `
-        <h2>Verification Process Completed</h2>
+        <h2>Contact Verification Completed</h2>
         <p>Your verification job with ID <strong>${uniqueId}</strong> has been completed.</p>
         <p><strong>Results:</strong></p>
-        // <ul>
-        //   <li>Total records: ${totalRecords}</li>
-        //   <li>Completed records: ${completedRecords}</li>
-        // </ul>
+         <ul>
+           <li>Total records: ${totalRecords}</li>
+          <li>Completed records: ${completedRecords}</li>
+         </ul>
         <p>You can now download the results from your dashboard.</p>
         <p>Thank you for using our service!</p>
+        <p>Team,<br/>B2B Direct Data</p>
       `
     });
 
@@ -2745,11 +2746,11 @@ app.post('/api/send-completion-email-com', async (req, res) => {
 
     // Now send the email
     await transporter.sendMail({
-      from: '"Verification System" <your-email@example.com>',
+      from: '"B2B Verification System" <your-email@example.com>',
       to: email,
-      subject: `Verification Completed - ${uniqueId}`,
+      subject: `Company Details Completed - ${uniqueId}`,
       html: `
-        <h2>Verification Process Completed</h2>
+        <h2>Company Details Completed</h2>
         <p>Your verification job with ID <strong>${uniqueId}</strong> has been completed.</p>
         <p><strong>Results:</strong></p>
         <ul>
@@ -2758,6 +2759,7 @@ app.post('/api/send-completion-email-com', async (req, res) => {
         </ul>
         <p>You can now download the results from your dashboard.</p>
         <p>Thank you for using our service!</p>
+        <p>Team,<br/>B2B Direct Data</p>
       `
     });
 
@@ -2776,62 +2778,62 @@ app.post('/api/send-completion-email-com', async (req, res) => {
 });
 
 
-app.post('/api/send-completion-email', async (req, res) => {
-  try {
-    const { email, uniqueId, totalRecords, completedRecords } = req.body;
+// app.post('/api/send-completion-email', async (req, res) => {
+//   try {
+//     const { email, uniqueId, totalRecords, completedRecords } = req.body;
 
-    // First check if email was already sent
-    const existingRecord = await VerificationUpload.findOne({
-      where: { uniqueId }
-    });
+//     // First check if email was already sent
+//     const existingRecord = await VerificationUpload.findOne({
+//       where: { uniqueId }
+//     });
 
-    if (existingRecord && existingRecord.emailSent) {
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Email was already sent previously' 
-      });
-    }
+//     if (existingRecord && existingRecord.emailSent) {
+//       return res.status(200).json({ 
+//         success: true, 
+//         message: 'Email was already sent previously' 
+//       });
+//     }
 
-    // Mark email as sent in database before actually sending
-    await VerificationUpload.update(
-      { 
-        emailSent: true,
-        emailSentAt: new Date() 
-      },
-      { where: { uniqueId } }
-    );
+//     // Mark email as sent in database before actually sending
+//     await VerificationUpload.update(
+//       { 
+//         emailSent: true,
+//         emailSentAt: new Date() 
+//       },
+//       { where: { uniqueId } }
+//     );
 
-    // Now send the email
-    await transporter.sendMail({
-      from: '"Verification System" <your-email@example.com>',
-      to: email,
-      subject: `Verification Completed - ${uniqueId}`,
-      html: `
-        <h2>Verification Process Completed</h2>
-        <p>Your verification job with ID <strong>${uniqueId}</strong> has been completed.</p>
-        <p><strong>Results:</strong></p>
-        <ul>
-          <li>Total records: ${totalRecords}</li>
-          <li>Completed records: ${completedRecords}</li>
-        </ul>
-        <p>You can now download the results from your dashboard.</p>
-        <p>Thank you for using our service!</p>
-      `
-    });
+//     // Now send the email
+//     await transporter.sendMail({
+//       from: '"Verification System" <your-email@example.com>',
+//       to: email,
+//       subject: `Verification Completed - ${uniqueId}`,
+//       html: `
+//         <h2>Verification Process Completed</h2>
+//         <p>Your verification job with ID <strong>${uniqueId}</strong> has been completed.</p>
+//         <p><strong>Results:</strong></p>
+//         <ul>
+//           <li>Total records: ${totalRecords}</li>
+//           <li>Completed records: ${completedRecords}</li>
+//         </ul>
+//         <p>You can now download the results from your dashboard.</p>
+//         <p>Thank you for using our service!</p>
+//       `
+//     });
 
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Email send error:', error);
+//     res.json({ success: true });
+//   } catch (error) {
+//     console.error('Email send error:', error);
     
-    // If email failed, reset the emailSent flag
-    await VerificationUpload.update(
-      { emailSent: false },
-      { where: { uniqueId } }
-    );
+//     // If email failed, reset the emailSent flag
+//     await VerificationUpload.update(
+//       { emailSent: false },
+//       { where: { uniqueId } }
+//     );
     
-    res.status(500).json({ error: 'Failed to send completion email' });
-  }
-});
+//     res.status(500).json({ error: 'Failed to send completion email' });
+//   }
+// });
 
 
 
@@ -3213,7 +3215,7 @@ app.get('/get/team-emails', async (req, res) => {
 
 
 // Email confirmation endpoint
-app.post('/api/send-verification-confirmation', async (req, res) => {
+app.post('/api/send-verification-confirmation/link', async (req, res) => {
   const { email, uniqueId, totalLinks, pendingCount, creditCost, initiatedBy } = req.body;
 
   try {
@@ -3226,18 +3228,16 @@ app.post('/api/send-verification-confirmation', async (req, res) => {
     }
 
     const mailOptions = {
-      from: `"Verification Service" <b2bdirectdata@gmail.com>`,
+      from: `"B2B Full Details" <b2bdirectdata@gmail.com>`,
       to: email,
-      subject: `LinkedIn Verification Started - ${uniqueId}`,
+      subject: `Please Start Full Details`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">LinkedIn Verification Process Started</h2>
-          <p><strong>Batch ID:</strong> ${uniqueId}</p>
-          <p><strong>Total Links:</strong> ${totalLinks}</p>
-          <p><strong>Pending Verification:</strong> ${pendingCount}</p>
-          <p><strong>Credits Deducted:</strong> ${creditCost}</p>
-          ${initiatedBy ? `<p><strong>Initiated By:</strong> ${initiatedBy}</p>` : ''}
+          <h2 style="color: #2563eb;">Link Uploaded. Please Start Full Details</h2>
           
+          <p><strong>Total Links:</strong> ${totalLinks}</p>
+          
+          <p>Team,<br/>B2B Direct Data</p>
         </div>
       `
     };
@@ -3252,5 +3252,389 @@ app.post('/api/send-verification-confirmation', async (req, res) => {
       error: error.message,
       details: 'Failed to send confirmation email'
     });
+  }
+});
+
+
+// Email confirmation endpoint
+app.post('/api/send-verification-confirmation/compamy', async (req, res) => {
+  const { email, uniqueId, totalLinks, pendingCount, creditCost, initiatedBy } = req.body;
+
+  try {
+    // Validate recipient email
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid recipient email address'
+      });
+    }
+
+    const mailOptions = {
+      from: `"B2B Company Details" <b2bdirectdata@gmail.com>`,
+      to: email,
+      subject: `Please Start Company Details`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Link Uploaded . Please Start Company Details </h2>
+          
+          <p><strong>Total Links:</strong> ${totalLinks}</p>
+          
+          <p>Team,<br/>B2B Direct Data</p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Email sent to ${email}`, info.messageId);
+    res.json({ success: true, messageId: info.messageId });
+  } catch (error) {
+    console.error(`Error sending to ${email}:`, error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message,
+      details: 'Failed to send confirmation email'
+    });
+  }
+});
+
+
+
+
+
+// GET /api/links/report
+app.get('/api/links/report', async (req, res) => {
+  try {
+    // First get aggregated data
+    const links = await Link.findAll({
+      attributes: [
+        'uniqueId',
+        [sequelize.fn('COUNT', sequelize.col('link')), 'linkCount'],
+        [sequelize.fn('MIN', sequelize.col('totallink')), 'totallink'],
+        [sequelize.fn('COUNT', sequelize.col('matchLink')), 'matchCount'],
+        [sequelize.fn('MIN', sequelize.col('fileName')), 'fileName'],
+        [sequelize.fn('MIN', sequelize.col('date')), 'date'],
+        [sequelize.fn('MIN', sequelize.col('email')), 'email'],
+        [sequelize.fn('MIN', sequelize.col('creditDeducted')), 'creditDeducted'],
+        [sequelize.fn('SUM', sequelize.literal("CASE WHEN status != 'pending' THEN 1 ELSE 0 END")), 'completedCount'],
+        [sequelize.fn('COUNT', sequelize.col('id')), 'totalCount']
+      ],
+      group: ['uniqueId'],
+      order: [['date', 'DESC']]
+    });
+
+    // Then get status details for each uniqueId
+    const statusDetails = await Link.findAll({
+      attributes: [
+        'uniqueId',
+        'status'
+      ],
+      where: {
+        uniqueId: links.map(link => link.uniqueId)
+      }
+    });
+
+    // Group statuses by uniqueId
+    const statusByUniqueId = statusDetails.reduce((acc, item) => {
+      if (!acc[item.uniqueId]) {
+        acc[item.uniqueId] = [];
+      }
+      acc[item.uniqueId].push(item.status);
+      return acc;
+    }, {});
+
+    const report = {
+      tableName: "Direct Number Enrichment",
+      data: links.map(link => {
+        const allStatuses = statusByUniqueId[link.uniqueId] || [];
+        const isCompleted = allStatuses.every(status => status !== 'pending');
+        
+        return {
+          uniqueId: link.uniqueId,
+          totallink: link.get('totallink'),
+          matchCount: link.get('matchCount'),
+          fileName: link.get('fileName'),
+          date: link.get('date'),
+          email: link.get('email'),
+          creditDeducted: link.get('creditDeducted') || 0,
+          status: isCompleted ? 'completed' : 'pending',
+          completedCount: link.get('completedCount'),
+          totalCount: link.get('totalCount')
+        };
+      })
+    };
+
+    res.json(report);
+  } catch (error) {
+    console.error('Error fetching links report:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+
+
+
+
+// GET /api/company-verifications/report
+app.get('/api/company-verifications/report', async (req, res) => {
+  try {
+    const verifications = await VerificationUpload_com.findAll({
+      attributes: [
+        'uniqueId',
+        [sequelize.fn('MIN', sequelize.col('email')), 'email'],
+        [sequelize.fn('MIN', sequelize.col('fileName')), 'fileName'],
+        [sequelize.fn('MIN', sequelize.col('date')), 'date'],
+        [sequelize.fn('MIN', sequelize.col('totallink')), 'totallink'],
+        [sequelize.fn('MAX', sequelize.col('pendingCount')), 'pendingCount'],
+        [sequelize.fn('MIN', sequelize.col('status')), 'status'],
+        [sequelize.fn('MIN', sequelize.col('final_status')), 'final_status'],
+        [sequelize.fn('MIN', sequelize.col('company_name')), 'company_name'],
+        [sequelize.fn('MIN', sequelize.col('company_url')), 'company_url'],
+        [sequelize.fn('MIN', sequelize.col('company_industry')), 'company_industry'],
+        [sequelize.fn('MIN', sequelize.col('company_size')), 'company_size'],
+        [sequelize.fn('MIN', sequelize.col('employee_count')), 'employee_count'],
+        [sequelize.fn('MIN', sequelize.col('creditsUsed')), 'creditsUsed'],
+        [sequelize.fn('COUNT', sequelize.col('id')), 'totalRecords']
+      ],
+      group: ['uniqueId'],
+      order: [[sequelize.fn('MIN', sequelize.col('date')), 'DESC']]
+    });
+
+    const report = {
+      tableName: "Company Verification Report",
+      data: verifications.map(item => ({
+        uniqueId: item.uniqueId,
+        email: item.get('email'),
+        fileName: item.get('fileName'),
+        date: item.get('date'),
+        totallink: item.get('totallink'),
+        pendingCount: item.get('pendingCount'),
+        status: item.get('status'),
+        final_status: item.get('final_status'),
+        company_name: item.get('company_name'),
+        company_url: item.get('company_url'),
+        company_industry: item.get('company_industry'),
+        company_size: item.get('company_size'),
+        employee_count: item.get('employee_count'),
+        creditsUsed: item.get('creditsUsed') || 0,
+        totalRecords: item.get('totalRecords')
+      }))
+    };
+
+    res.json(report);
+  } catch (error) {
+    console.error('Error fetching company verification report:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+
+
+
+// GET /api/company-verifications/report
+app.get('/api/verifications/report', async (req, res) => {
+  try {
+    const verifications = await VerificationUpload.findAll({
+      attributes: [
+        'uniqueId',
+        [sequelize.fn('MIN', sequelize.col('email')), 'email'],
+        [sequelize.fn('MIN', sequelize.col('fileName')), 'fileName'],
+        [sequelize.fn('MIN', sequelize.col('date')), 'date'],
+        [sequelize.fn('MIN', sequelize.col('totallink')), 'totallink'],
+        [sequelize.fn('MAX', sequelize.col('pendingCount')), 'pendingCount'],
+        [sequelize.fn('MIN', sequelize.col('status')), 'status'],
+        [sequelize.fn('MIN', sequelize.col('final_status')), 'final_status'],
+       
+        [sequelize.fn('MIN', sequelize.col('creditsUsed')), 'creditsUsed'],
+        
+      ],
+      group: ['uniqueId'],
+      order: [[sequelize.fn('MIN', sequelize.col('date')), 'DESC']]
+    });
+
+    const report = {
+      tableName: "Company Verification Report",
+      data: verifications.map(item => ({
+        uniqueId: item.uniqueId,
+        email: item.get('email'),
+        fileName: item.get('fileName'),
+        date: item.get('date'),
+        totallink: item.get('totallink'),
+        pendingCount: item.get('pendingCount'),
+        status: item.get('status'),
+        final_status: item.get('final_status'),
+       
+        creditsUsed: item.get('creditsUsed') || 0,
+        
+      }))
+    };
+
+    res.json(report);
+  } catch (error) {
+    console.error('Error fetching company verification report:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+
+
+
+
+const CreditTransaction = require("../backend/model/creditTransactionModel");
+
+
+// GET /api/credit-transactions
+app.get('/api/credit-transactions', async (req, res) => {
+  try {
+    const transactions = await CreditTransaction.findAll({
+      order: [['createdAt', 'DESC']] // Show newest first
+    });
+    
+    res.json({
+      success: true,
+      data: transactions
+    });
+  } catch (error) {
+    console.error('Error fetching credit transactions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: error.message
+    });
+  }
+});
+
+
+const SuperAdminTransaction = require("../backend/model/superAdminModel");
+
+
+// GET /api/superadmin-transactions
+app.get('/api/superadmin-transactions', async (req, res) => {
+  try {
+    const transactions = await SuperAdminTransaction.findAll({
+      order: [['date', 'DESC']] // Show newest first
+    });
+    
+    res.json({
+      success: true,
+      data: transactions.map(t => ({
+        ...t.get({ plain: true }),
+        // Format date if needed
+        formattedDate: t.date.toISOString()
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching superadmin transactions:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: error.message
+    });
+  }
+});
+
+
+
+
+
+
+
+// Get createdBy value for a specific userEmail
+app.get('/user/creator/:userEmail', async (req, res) => {
+  try {
+    const { userEmail } = req.params;
+    
+    // Basic email validation
+    if (!userEmail.includes('@')) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    // Find user by email
+    const user = await User.findOne({
+      where: { 
+        userEmail: userEmail 
+      },
+      attributes: ['userEmail', 'createdBy'] // Only return these fields
+    });
+
+    if (!user) {
+      return res.status(404).json({ 
+        message: 'User not found',
+        userEmail: userEmail,
+        createdBy: null
+      });
+    }
+
+    res.json({
+      userEmail: user.userEmail,
+      createdBy: user.createdBy
+    });
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+
+
+
+
+const  CompletedReport = require("./model/CompletedReport")
+
+
+// In your routes file
+app.post('/api/save-completed-reports', async (req, res) => {
+  try {
+    const { reports } = req.body;
+    
+    // Save each report to your database
+    const savedReports = await Promise.all(
+      reports.map(async (report) => {
+        // Check if report already exists
+        const existing = await CompletedReport.findOne({ 
+          where: { 
+            uniqueId: report.uniqueId,
+            type: report.type 
+          } 
+        });
+        
+        if (existing) {
+          return existing;
+        }
+        
+        // Create new record
+        return await CompletedReport.create({
+          process: report.process,
+          uniqueId: report.uniqueId,
+          totalLinks: report.totallink,
+          matchCount: report.matchCount,
+          fileName: report.fileName,
+          date: report.date,
+          email: report.email,
+          createdBy: report.createdBy,
+          transactionType: report.transactionType,
+          amount: report.amount,
+          status: report.finalStatus,
+          type: report.type,
+          // Add any other relevant fields
+        });
+      })
+    );
+
+    res.json({
+      success: true,
+      count: savedReports.length,
+      savedReports
+    });
+  } catch (error) {
+    console.error('Error saving completed reports:', error);
+    res.status(500).json({ error: 'Failed to save completed reports' });
   }
 });

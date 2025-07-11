@@ -4,6 +4,12 @@ const { sequelize } = require('../config/db');// Import Sequelize connection
 const CreditTransaction = sequelize.define(
   "CreditTransaction",
   {
+
+     uniqueId: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        allowNull: false,
+      },
     userEmail: {
       type: DataTypes.STRING,
       allowNull: false,

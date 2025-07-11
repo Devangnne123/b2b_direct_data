@@ -46,6 +46,7 @@ import CheckoutPage from "./components/CheckoutPage";
 import ScrollToTop from "./components/ScrollToTop";
 import RequestResetForm from "./components/RequestResetForm";
 import Remove_form from "./components/Remove_form";
+import AllHistory from "./components/AllReport";
 
 
 function App() {
@@ -72,6 +73,7 @@ function App() {
     "/admin-credit-report",
     "/user-credit-report",
     "/change_your_password",
+    "/all_history"
     
   ]; // Paths without Header/Footer
 
@@ -101,9 +103,8 @@ function App() {
        <Route path="/Alladmincompanycredits" element={<Alladmincompanycredits />} />
         <Route path="/Linkedin_Contect" element={<Linkedin_Contect />} />
         <Route path="/Linkedin_Company" element={<Linkedin_Company />} />
-        
+         <Route path="/all_history" element={<AllHistory />} />
 
-        
          <Route path="/" element={<Login />} />
         <Route path="/" element={<SignUp />} />
         <Route path="/api" element={<Api />} />
