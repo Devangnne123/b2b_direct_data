@@ -26,7 +26,6 @@ import {
   Collapse
 } from '@mui/material';
 import { format } from 'date-fns';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import {
   Download,
   Calendar,
@@ -38,8 +37,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Hash,
+  Copy as ContentCopyIcon,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
-import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import Sidebar from './Sidebar';
 import * as XLSX from 'xlsx';
 
@@ -66,7 +67,7 @@ const AllHistory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
   const [expandedRows, setExpandedRows] = useState({});
-   const [roleId, setroleId] = useState("Guest");
+  const [roleId, setroleId] = useState("Guest");
 
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
@@ -74,7 +75,6 @@ const AllHistory = () => {
     setroleId(roleId);
     if (user?.email) {
       setSavedEmail(user.email);
-
     }
   }, []);
 
@@ -630,7 +630,7 @@ const AllHistory = () => {
                                       size="small"
                                       onClick={() => toggleRowExpand(rowId)}
                                     >
-                                      {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                     </IconButton>
                                   </Tooltip>
                                 </TableCell>
