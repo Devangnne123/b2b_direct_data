@@ -4,6 +4,15 @@ import { Link } from 'react-router-dom';
 import '../css/privacy-policy.css';
 
 const PrivacyPolicy = () => {
+
+   const handleLinkClick = () => {
+    // Scroll to top of the page
+    window.scrollTo({
+      top: 0,
+      behavior:"smooth"
+    });
+  };
+
   return (
     <div className="privacy-policy">
       <div className="container">
@@ -86,7 +95,7 @@ const PrivacyPolicy = () => {
         <section>
           <h2>Opting Out</h2>
           <p>All our marketing emails will have an "Unsubscribe" option. Once you choose to "Unsubscribe," your details will be removed from our database within 24 hours from the time of submission. You can any time choose to resubscribe or update your information by sending us an email at privacy@b2bdirectdata.com. You can even update your email address directly by using "Update your preferences" link mentioned in the footer of any of the marketing emails sent by us.</p>
-          <p>To exercise the right to opt-out, you (or your authorized representative) may submit a request to us by visiting the following Internet Web page link. <Link to="/do-not-sell">Do Not Sell My Information</Link>.</p>
+          <p>To exercise the right to opt-out, you (or your authorized representative) may submit a request to us by visiting the following Internet Web page link. <Link to="/remove_data" onClick={handleLinkClick}>Do Not Sell My Information</Link>.</p>
         </section>
 
         <section>
@@ -197,7 +206,7 @@ const PrivacyPolicy = () => {
 
           <h3>Sale of Personal Information</h3>
           <p>Within the last 12 months, we have disclosed the following categories of personal information in a manner that may be considered a "sale" as defined in the CCPA: identifiers, geolocation data, and professional and employment-related information.</p>
-          <p>You may opt-out of the "sale" of you personal information on an going-forward basis by clicking the link below <Link to="/do-not-sell">Do Not Sell My Information</Link>.</p>
+          <p>You may opt-out of the "sale" of you personal information on an going-forward basis by clicking the link below <Link to="/remove_data" onClick={handleLinkClick}>Do Not Sell My Information</Link>.</p>
 
           <h3>Your rights and choices</h3>
           <p>The CCPA provides consumers (California residents) with specific rights regarding their personal information. This section describes your CCPA rights and explains how to exercise those rights.</p>
@@ -235,7 +244,7 @@ const PrivacyPolicy = () => {
           <h4>Exercising access, data portability, and deletion rights</h4>
           <p>To exercise the access, data portability, and deletion rights described above, please submit a verifiable consumer request to us by either:</p>
           <ul>
-            <li>Visiting the link <Link to="/remove_data">Do Not Sell My Information</Link>.</li>
+            <li>Visiting the link <Link to="/remove_data" onClick={handleLinkClick}>Do Not Sell My Information</Link>.</li>
             <li>Calling us at [US Toll-free Number].</li>
           </ul>
           <p>Only you, or a person registered with the California Secretary of State that you authorize to act on your behalf, may make a verifiable consumer request related to your personal information. You may also make a verifiable consumer request on behalf of your minor child.</p>
@@ -252,7 +261,7 @@ const PrivacyPolicy = () => {
 
           <h4>Personal information sales opt-out and opt-in rights</h4>
           <p>If you are 16 years of age or older, you have the right to direct us to not sell your personal information at any time (the "right to opt-out"). We do not sell the personal information of consumers we actually know are less than 16 years of age, unless we receive affirmative authorization (the "right to opt-in") from either the consumer who is between 13 and 16 years of age, or the parent or guardian of a consumer less than 13 years of age. Consumers who opt-in to personal information sales may opt-out of future sales at any time.</p>
-          <p>To exercise the right to opt-out, you (or your authorized representative) may submit a request to us by visiting the following Internet Web page link <Link to="/do-not-sell">Do Not Sell My Information</Link>.</p>
+          <p>To exercise the right to opt-out, you (or your authorized representative) may submit a request to us by visiting the following Internet Web page link <Link to="/remove_data" onClick={handleLinkClick}>Do Not Sell My Information</Link>.</p>
 
           <h4>Non-discrimination</h4>
           <p>We will not discriminate against you for exercising any of your CCPA rights. Unless permitted by the CCPA, we will not:</p>

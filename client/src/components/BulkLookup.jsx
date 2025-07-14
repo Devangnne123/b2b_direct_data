@@ -243,6 +243,8 @@ const getGroupStatus = (group) => {
     if (credits < creditCost) {
       return toast.error("Not enough credits");
     }
+    // Example of potential backend limit
+
 
     setLoading(true);
     const formData = new FormData();

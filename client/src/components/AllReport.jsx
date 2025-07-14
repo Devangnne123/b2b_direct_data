@@ -21,7 +21,9 @@ import {
   Button,
   Snackbar,
   Alert,
-  Tooltip
+  Tooltip,
+  IconButton,
+  Collapse
 } from '@mui/material';
 import { format } from 'date-fns';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -37,7 +39,9 @@ import {
   ChevronRight,
   Hash,
 } from 'lucide-react';
+import { ExpandMore, ExpandLess } from '@mui/icons-material';
 import Sidebar from './Sidebar';
+import * as XLSX from 'xlsx';
 
 const AllHistory = () => {
   const [data, setData] = useState([]);
@@ -58,13 +62,19 @@ const AllHistory = () => {
     severity: 'success'
   });
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
+  const [expandedRows, setExpandedRows] = useState({});
+   const [roleId, setroleId] = useState("Guest");
 
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
+    const roleId = user?.roleId;
+    setroleId(roleId);
     if (user?.email) {
       setSavedEmail(user.email);
+
     }
   }, []);
 
@@ -72,11 +82,10 @@ const AllHistory = () => {
     try {
       setLoading(true);
       
-      const [linksRes, verificationRes, creditRes, superadminRes, companyVerificationRes] = await Promise.all([
+      const [linksRes, verificationRes, creditRes, companyVerificationRes] = await Promise.all([
         axios.get('http://13.203.218.236:8000/api/links/report'),
         axios.get('http://13.203.218.236:8000/api/verifications/report'),
         axios.get('http://13.203.218.236:8000/api/credit-transactions'),
-        axios.get('http://13.203.218.236:8000/api/superadmin-transactions'),
         axios.get('http://13.203.218.236:8000/api/company-verifications/report')
       ]);
 
@@ -107,21 +116,11 @@ const AllHistory = () => {
 
       const creditData = transformData(creditRes.data.data, 'credit').map(item => ({
         ...item,
-        process: item.transactionType === 'Credit Assigned' ? 'Credit Assigned' : 'Credit Transaction',
+        process: item.transactionType === 'Credit' ? 'Credit Received' : 'Credit Sent',
         amount: item.amount,
         date: item.createdAt,
         finalStatus: 'Completed',
         email: item.userEmail,
-        transactionType: item.transactionType
-      }));
-
-      const superadminData = transformData(superadminRes.data.data, 'superadmin').map(item => ({
-        ...item,
-        process: 'SuperAdmin Transaction',
-        amount: item.amount,
-        date: item.date,
-        finalStatus: 'Completed',
-        email: item.recipientEmail,
         transactionType: item.transactionType
       }));
 
@@ -139,7 +138,6 @@ const AllHistory = () => {
         ...linksData,
         ...verificationData,
         ...creditData,
-        ...superadminData,
         ...companyVerificationData
       ].map(item => ({
         ...item,
@@ -240,6 +238,52 @@ const AllHistory = () => {
     }
   };
 
+  const exportToExcel = () => {
+    setDownloading(true);
+    
+    try {
+      const exportData = filteredData.map(item => ({
+        '#': indexOfFirstRow + filteredData.indexOf(item) + 1,
+        'Email': item.email || '-----',
+        'Date': format(new Date(item.date), 'PPpp'),
+        'Process': item.process,
+        'From': item.senderEmail || '-----',
+        'To': item.email || '-----',
+        'Amount': `${item.transactionType?.toLowerCase() === 'debit' ? '-' : ''}${Number(item.amount || 0).toFixed(2)}`,
+        'Transaction Type': item.transactionType,
+        'Balance': item.remainingCredits || '0',
+        'Unique ID': item.uniqueId || '-----',
+        'Filename': item.fileName || '-----',
+        'Total Link': item.totallink || '-----',
+        'Match Count': item.matchCount || '-----',
+        'Created By': item.email ? (creatorMap[item.email] || 'Admin') : '-----',
+        'Final Status': item.finalStatus || '-----'
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Transaction History");
+      
+      const fileName = `TransactionHistory_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      setSnackbar({
+        open: true,
+        message: 'Excel file downloaded successfully!',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to export to Excel',
+        severity: 'error'
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     setSnackbar({
@@ -247,6 +291,13 @@ const AllHistory = () => {
       message: 'Copied to clipboard!',
       severity: 'success'
     });
+  };
+
+  const toggleRowExpand = (id) => {
+    setExpandedRows(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
   };
 
   useEffect(() => {
@@ -294,15 +345,47 @@ const AllHistory = () => {
     const transactionMatch = 
       transactionFilter === 'all' || 
       (transactionFilter === 'debit' && item.transactionType?.toLowerCase() === 'debit') ||
-      (transactionFilter === 'credit' && item.transactionType?.toLowerCase() === 'credit') ||
-      (transactionFilter === 'credit_assigned' && item.transactionType?.toLowerCase().includes('credit assigned'));
-    
+      (transactionFilter === 'credit' && item.transactionType?.toLowerCase() === 'credit');
+    if (roleId === 3){
     return (
+      
+      ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
+      (createdBy.toLowerCase().includes(searchLower)))&&
+      (item.email && item.email.toLowerCase().includes(emailSearchLower)) &&
+      transactionMatch
+    );
+  } else if (roleId === 2){
+    return (
+      
+      ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
+      (createdBy.toLowerCase()===savedEmail.toLowerCase())) &&
+      (item.email && item.email.toLowerCase()===savedEmail.toLowerCase()) && 
+      
+      transactionMatch
+    );
+
+
+  }
+  else if (roleId === 1){
+
+    return (
+      
+      ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
+      (createdBy.toLowerCase()===savedEmail.toLowerCase())) &&
+      (item.email && item.email.toLowerCase()===savedEmail.toLowerCase()) && 
+      
+      transactionMatch
+    );
+  }
+   if (roleId === 123){
+    return (
+      
       ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
       (createdBy.toLowerCase().includes(searchLower))) &&
       (item.email && item.email.toLowerCase().includes(emailSearchLower)) &&
       transactionMatch
     );
+  }
   });
 
   const indexOfLastRow = currentPage * rowsPerPage;
@@ -369,6 +452,23 @@ const AllHistory = () => {
                       >
                         {saving ? 'Saving...' : 'Save Completed Reports'}
                       </button>
+                      <button 
+                        className="download-btn"
+                        onClick={exportToExcel}
+                        disabled={loading || filteredData.length === 0 || downloading}
+                      >
+                        {downloading ? (
+                          <>
+                            <CircularProgress size={20} style={{ marginRight: '8px' }} />
+                            Exporting...
+                          </>
+                        ) : (
+                          <>
+                            <Download size={16} style={{ marginRight: '8px' }} />
+                            Export to Excel
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
 
@@ -385,7 +485,6 @@ const AllHistory = () => {
                         <MenuItem value="verification">Company Verification</MenuItem>
                         <MenuItem value="company-verification">Company Verification Report</MenuItem>
                         <MenuItem value="credit">Credit Transactions</MenuItem>
-                        <MenuItem value="superadmin">SuperAdmin Transactions</MenuItem>
                       </Select>
                     </FormControl>
 
@@ -399,7 +498,6 @@ const AllHistory = () => {
                         <MenuItem value="all">All</MenuItem>
                         <MenuItem value="debit">Debit</MenuItem>
                         <MenuItem value="credit">Credit</MenuItem>
-                        <MenuItem value="credit_assigned">Credit Assigned</MenuItem>
                       </Select>
                     </FormControl>
 
@@ -429,45 +527,12 @@ const AllHistory = () => {
                           <TableCell>#</TableCell>
                           <TableCell>
                             <TableSortLabel
-                              active={orderBy === 'process'}
-                              direction={orderBy === 'process' ? order : 'asc'}
-                              onClick={() => handleSort('process')}
+                              active={orderBy === 'email'}
+                              direction={orderBy === 'email' ? order : 'asc'}
+                              onClick={() => handleSort('email')}
                             >
-                              <div className="header-cell">
-                                <Database size={16} />
-                                <span>Process</span>
-                              </div>
+                              Email
                             </TableSortLabel>
-                          </TableCell>
-                          <TableCell>
-                            <TableSortLabel
-                              active={orderBy === 'uniqueId'}
-                              direction={orderBy === 'uniqueId' ? order : 'asc'}
-                              onClick={() => handleSort('uniqueId')}
-                            >
-                              <div className="header-cell">
-                                <Hash size={16} />
-                                <span>Unique ID</span>
-                              </div>
-                            </TableSortLabel>
-                          </TableCell>
-                          <TableCell>
-                            <div className="header-cell">
-                              <LinkIcon size={16} />
-                              <span>Total Link</span>
-                            </div>
-                          </TableCell>
-                          <TableCell align="right">
-                            <div className="header-cell">
-                              <Users size={16} />
-                              <span>Match Count</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="header-cell">
-                              <FileSpreadsheet size={16} />
-                              <span>Filename</span>
-                            </div>
                           </TableCell>
                           <TableCell>
                             <TableSortLabel
@@ -483,95 +548,178 @@ const AllHistory = () => {
                           </TableCell>
                           <TableCell>
                             <TableSortLabel
+                              active={orderBy === 'process'}
+                              direction={orderBy === 'process' ? order : 'asc'}
+                              onClick={() => handleSort('process')}
+                            >
+                              <div className="header-cell">
+                                <Database size={16} />
+                                <span>Process</span>
+                              </div>
+                            </TableSortLabel>
+                          </TableCell>
+                          <TableCell>From</TableCell>
+                          <TableCell>
+                            <TableSortLabel
                               active={orderBy === 'email'}
                               direction={orderBy === 'email' ? order : 'asc'}
                               onClick={() => handleSort('email')}
                             >
-                              Email
+                              To
                             </TableSortLabel>
                           </TableCell>
-                          <TableCell>Created By</TableCell>
-                          <TableCell>Sender Email</TableCell>
-                          <TableCell>Transaction Type</TableCell>
                           <TableCell align="right">Amount</TableCell>
+                          <TableCell>Transaction Type</TableCell>
                           <TableCell>
-                            <TableSortLabel
-                              active={orderBy === 'finalStatus'}
-                              direction={orderBy === 'finalStatus' ? order : 'asc'}
-                              onClick={() => handleSort('finalStatus')}
-                            >
-                              <div className="header-cell">
-                                <Star size={16} />
-                                <span>Final Status</span>
-                              </div>
-                            </TableSortLabel>
+                            <div className="header-cell">
+                              <LinkIcon size={16} />
+                              <span>Balance</span>
+                            </div>
                           </TableCell>
+                          <TableCell>Actions</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {currentData.map((item, index) => (
-                          <TableRow key={index} className="table-row">
-                            <TableCell>{indexOfFirstRow + index + 1}</TableCell>
-                            <TableCell>{item.process}</TableCell>
-                            <TableCell>
-                              <Tooltip title={item.uniqueId || '-----'}>
-                                <span>{item.uniqueId ? `${item.uniqueId.substring(0, 8)}...` : '-----'}</span>
-                              </Tooltip>
-                            </TableCell>
-                            <TableCell>
-                              {item.totallink ? (
-                                <a href={item.totallink} target="_blank" rel="noopener noreferrer" className="link-cell">
-                                  {item.totallink.length > 20 
-                                    ? `${item.totallink.substring(0, 20)}...` 
-                                    : item.totallink}
-                                </a>
-                              ) : '-----'}
-                            </TableCell>
-                            <TableCell align="right">{item.matchCount || item.pendingCount || '-----'}</TableCell>
-                            <TableCell>
-                              {item.fileName ? 
-                                (item.fileName.length > 15 
-                                  ? `${item.fileName.substring(0, 15)}...` 
-                                  : item.fileName)
-                                : '-----'}
-                            </TableCell>
-                            <TableCell>{format(new Date(item.date), 'PPpp')}</TableCell>
-                            <TableCell>
-                              {item.email ? (
-                                <Tooltip title={item.email}>
-                                  <span>{item.email.length > 15 ? `${item.email.substring(0, 15)}...` : item.email}</span>
-                                </Tooltip>
-                              ) : '-----'}
-                            </TableCell>
-                            <TableCell>{item.email ? (creatorMap[item.email] || 'Admin') : '-----'}</TableCell>
-                            <TableCell>
-                              {item.senderEmail ? (
-                                <Tooltip title={item.senderEmail}>
-                                  <span>{item.senderEmail.length > 15 ? `${item.senderEmail.substring(0, 15)}...` : item.senderEmail}</span>
-                                </Tooltip>
-                              ) : '-----'}
-                            </TableCell>
-                            <TableCell>
-                              <span className={`status-badge ${
-                                item.transactionType?.toLowerCase() === 'credit' ? 'credit' : 'debit'
-                              }`}>
-                                {item.transactionType}
-                              </span>
-                            </TableCell>
-                            <TableCell align="right" className="amount-cell">
-                              {item.transactionType?.toLowerCase() === 'debit' ? '-' : ''}
-                              {Number(item.amount || 0).toFixed(2)}
-                            </TableCell>
-                            <TableCell>
-                              <span className={`status-badge ${
-                                item.finalStatus?.toLowerCase() === 'completed' ? 'completed' : 
-                                item.finalStatus?.toLowerCase() === 'pending' ? 'pending' : 'error'
-                              }`}>
-                                {item.finalStatus}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {currentData.map((item, index) => {
+                          const rowId = item.uniqueId || index;
+                          const isExpanded = expandedRows[rowId];
+                          return (
+                            <React.Fragment key={rowId}>
+                              <TableRow className="table-row">
+                                <TableCell>{indexOfFirstRow + index + 1}</TableCell>
+                                <TableCell>
+                                  {item.email ? (
+                                    <Tooltip title={item.email}>
+                                      <span>{item.email.length > 15 ? `${item.email.substring(0, 8)}...` : item.email}</span>
+                                    </Tooltip>
+                                  ) : '-----'}
+                                </TableCell>
+                                <TableCell>{format(new Date(item.date), 'PPpp')}</TableCell>
+                                <TableCell>
+                                  {item.process}
+                                </TableCell>
+                                <TableCell>
+                                  {item.senderEmail ? (
+                                    <Tooltip title={item.senderEmail}>
+                                      <span>{item.senderEmail.length > 15 ? `${item.senderEmail.substring(0, 8)}...` : item.senderEmail}</span>
+                                    </Tooltip>
+                                  ) : '-----'}
+                                </TableCell>
+                                <TableCell>
+                                  {item.email ? (
+                                    <Tooltip title={item.email}>
+                                      <span>{item.email.length > 15 ? `${item.email.substring(0, 8)}...` : item.email}</span>
+                                    </Tooltip>
+                                  ) : '-----'}
+                                </TableCell>
+                                <TableCell align="right" className="amount-cell">
+                                  {item.transactionType?.toLowerCase() === 'debit' ? '-' : ''}
+                                  {Number(item.amount || 0).toFixed(2)}
+                                </TableCell>
+                                <TableCell>
+                                  <span className={`status-badge ${
+                                    item.transactionType?.toLowerCase() === 'credit' ? 'credit' : 'debit'
+                                  }`}>
+                                    {item.transactionType}
+                                  </span>
+                                </TableCell>
+                                <TableCell align="right">{item.remainingCredits || '0'}</TableCell>
+                                <TableCell>
+                                  <Tooltip title={isExpanded ? "Hide details" : "Show details"}>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => toggleRowExpand(rowId)}
+                                    >
+                                      {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                                    </IconButton>
+                                  </Tooltip>
+                                </TableCell>
+                              </TableRow>
+                              
+                              <TableRow>
+                                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={10}>
+                                  <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                                    <Box sx={{ margin: 1 }}>
+                                      <Typography variant="h6" gutterBottom component="div">
+                                        Transaction Details
+                                      </Typography>
+                                      <div className="detail-grid">
+                                        <div className="detail-item">
+                                          <Typography variant="subtitle2" className="detail-label">
+                                            Unique ID
+                                          </Typography>
+                                          <Typography variant="body2" className="detail-value">
+                                            {item.uniqueId || 'N/A'}
+                                          </Typography>
+                                        </div>
+                                        <div className="detail-item">
+                                          <Typography variant="subtitle2" className="detail-label">
+                                            Filename
+                                          </Typography>
+                                          <Typography variant="body2" className="detail-value">
+                                            {item.fileName || 'N/A'}
+                                          </Typography>
+                                        </div>
+                                        <div className="detail-item">
+                                          <Typography variant="subtitle2" className="detail-label">
+                                            Total Link
+                                          </Typography>
+                                          <Typography variant="body2" className="detail-value">
+                                            {item.totallink ? (
+                                              <a href={item.totallink} target="_blank" rel="noopener noreferrer">
+                                                {item.totallink}
+                                              </a>
+                                            ) : 'N/A'}
+                                          </Typography>
+                                        </div>
+                                        <div className="detail-item">
+                                          <Typography variant="subtitle2" className="detail-label">
+                                            Match Count
+                                          </Typography>
+                                          <Typography variant="body2" className="detail-value">
+                                            {item.matchCount || 'N/A'}
+                                          </Typography>
+                                        </div>
+                                        <div className="detail-item">
+                                          <Typography variant="subtitle2" className="detail-label">
+                                            Created By
+                                          </Typography>
+                                          <Typography variant="body2" className="detail-value">
+                                            {item.email ? (creatorMap[item.email] || 'Admin') : 'N/A'}
+                                          </Typography>
+                                        </div>
+                                        <div className="detail-item">
+                                          <Typography variant="subtitle2" className="detail-label">
+                                            Final Status
+                                          </Typography>
+                                          <Typography variant="body2" className="detail-value">
+                                            {item.finalStatus || 'N/A'}
+                                          </Typography>
+                                        </div>
+                                        {Object.entries(item)
+                                          .filter(([key]) => !['uniqueId', 'fileName', 'totallink', 'matchCount', 'email', 'finalStatus', 'process', 'transactionType', 'amount', 'remainingCredits', 'senderEmail', 'date', 'type', 'formattedDate'].includes(key))
+                                          .map(([key, value]) => (
+                                            <div key={key} className="detail-item">
+                                              <Typography variant="subtitle2" className="detail-label">
+                                                {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                                              </Typography>
+                                              <Typography variant="body2" className="detail-value">
+                                                {value === null || value === undefined 
+                                                  ? 'N/A' 
+                                                  : typeof value === 'object' 
+                                                    ? JSON.stringify(value, null, 2) 
+                                                    : String(value)}
+                                              </Typography>
+                                            </div>
+                                          ))}
+                                      </div>
+                                    </Box>
+                                  </Collapse>
+                                </TableCell>
+                              </TableRow>
+                            </React.Fragment>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </TableContainer>
@@ -679,15 +827,12 @@ const AllHistory = () => {
           color: #718096;
         }
         
-        .refresh-btn, .save-btn {
+        .refresh-btn {
           padding: 8px 16px;
           border-radius: 4px;
           font-weight: 500;
           cursor: pointer;
           transition: all 0.2s;
-        }
-        
-        .refresh-btn {
           background-color: white;
           border: 1px solid #cbd5e0;
           color: #4a5568;
@@ -698,6 +843,11 @@ const AllHistory = () => {
         }
         
         .save-btn {
+          padding: 8px 16px;
+          border-radius: 4px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
           background-color: #4299e1;
           border: 1px solid #4299e1;
           color: white;
@@ -708,6 +858,29 @@ const AllHistory = () => {
         }
         
         .save-btn:disabled {
+          background-color: #a0aec0;
+          border-color: #a0aec0;
+          cursor: not-allowed;
+        }
+        
+        .download-btn {
+          padding: 8px 16px;
+          border-radius: 4px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          background-color: #38a169;
+          border: 1px solid #38a169;
+          color: white;
+          display: flex;
+          align-items: center;
+        }
+        
+        .download-btn:hover {
+          background-color: #2f855a;
+        }
+        
+        .download-btn:disabled {
           background-color: #a0aec0;
           border-color: #a0aec0;
           cursor: not-allowed;
@@ -840,6 +1013,46 @@ const AllHistory = () => {
         
         .snackbar.info {
           background-color: #4299e1;
+        }
+        
+        .detail-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+          gap: 16px;
+          padding: 16px;
+          background-color: #f9f9f9;
+          border-radius: 8px;
+        }
+        
+        .detail-item {
+          padding: 12px;
+          background-color: white;
+          border-radius: 4px;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .detail-label {
+          font-weight: 600;
+          color: #4a5568;
+          margin-bottom: 4px;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        
+        .detail-value {
+          word-break: break-word;
+          font-size: 0.875rem;
+          color: #2d3748;
+        }
+        
+        .detail-value a {
+          color: #3182ce;
+          text-decoration: none;
+        }
+        
+        .detail-value a:hover {
+          text-decoration: underline;
         }
       `}</style>
     </div>

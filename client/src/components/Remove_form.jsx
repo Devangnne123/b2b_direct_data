@@ -1,7 +1,17 @@
 import { useState, useEffect } from "react";
+import { Link } from 'react-router-dom';
 import "../css/Api.css";
 
 export default function removeData() {
+
+  const handleLinkClick = () => {
+    // Scroll to top of the page
+    window.scrollTo({
+      top: 0,
+      behavior:"smooth"
+    });
+  };
+
   const calculateTimeLeft = () => {
     const launchDate = new Date("2025-04-01").getTime();
     const now = new Date().getTime();
@@ -171,53 +181,53 @@ export default function removeData() {
   };
 
   const handleSubmit = async (e) => {
-  if (e && typeof e.preventDefault === 'function') {
-    e.preventDefault();
-  }
-  
-  setIsLoading(true);
-  setMessage("");
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
+    
+    setIsLoading(true);
+    setMessage("");
 
-  if (!isOtpVerified) {
-    setMessage("OTP verified successfully!");
-    setIsLoading(false);
-    return;
-  }
+    if (!isOtpVerified) {
+      setMessage("OTP verified successfully!");
+      setIsLoading(false);
+      return;
+    }
 
-  if (formData.phone && !validatePhone(formData.phone)) {
-    setMessage("Please enter a valid 10-digit phone number");
-    setIsLoading(false);
-    return;
-  }
+    if (formData.phone && !validatePhone(formData.phone)) {
+      setMessage("Please enter a valid 10-digit phone number");
+      setIsLoading(false);
+      return;
+    }
 
-  try {
-    // Send the form data
-    const response = await fetch("http://13.203.218.236:8000/api/subscribe", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      // Only show popup if not an existing subscriber
-      if (!data.existingSubscriber) {
-        setShowPopup(true);
-      }
-      
-      // Send confirmation email
-      await fetch("http://13.203.218.236:8000/api/send-confirmation", {
+    try {
+      // Send the form data
+      const response = await fetch("http://13.203.218.236:8000/api/subscribe", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          email: formData.email,
-          subject: "Data Removal Request – In Progress",
-          message: `Dear ${formData.fullName || 'Customer'},
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Only show popup if not an existing subscriber
+        if (!data.existingSubscriber) {
+          setShowPopup(true);
+        }
+        
+        // Send confirmation email
+        await fetch("http://13.203.218.236:8000/api/send-confirmation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            subject: "Data Removal Request – In Progress",
+            message: `Dear ${formData.fullName || 'Customer'},
 
 We are processing your request to remove your data from our database. 
 ${data.existingSubscriber ? 'You were already in our removal queue.' : 'You will receive a confirmation once the process is complete.'}
@@ -226,21 +236,21 @@ Thank you for your patience.
 
 Best regards,
 B2B Direct Data`
-        }),
-      });
+          }),
+        });
 
-      setMessage(data.existingSubscriber 
-        ? "You're already in our removal queue." 
-        : 'We are processing your request');
-    } else {
-      setMessage(data.message || "Something went wrong. Please try again.");
+        setMessage(data.existingSubscriber 
+          ? "You're already in our removal queue." 
+          : 'We are processing your request');
+      } else {
+        setMessage(data.message || "Something went wrong. Please try again.");
+      }
+    } catch (error) {
+      setMessage("Network error. Please try again later.");
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    setMessage("Network error. Please try again later.");
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
     <div className="container_api">
@@ -248,13 +258,37 @@ B2B Direct Data`
         <div className="card-content">
           {/* Left side - Privacy Information */}
           <div className="privacy-section">
-            <h1>Request to Remove Your Information from B2B Direct Data</h1>
-            <h3>How our process works:</h3>
-            <ol className="process-steps">
-              <li>Provide details to help us locate your information</li>
-              <li>Submit your profile removal request</li>
-              <li>Receive confirmation once your request is being processed</li>
-            </ol>
+            <h1>Do Not Sell My Personal Information</h1>
+            <p><strong>Last Updated: June 2024</strong></p>
+            <p>
+              Under the California Consumer Privacy Act (CCPA), you have the right to opt out of the sale of your personal information.
+            </p>
+            <p>
+              B2B Direct Data may collect professional or business-related information from publicly available sources. Some of this data may be shared with third parties for marketing or analytics purposes, which may be considered a "sale" under CCPA.
+            </p>
+            
+            <h3>To Opt Out:</h3>
+            <p>
+              Please fill out the form or email us directly at privacy@b2bdirectdata.com with the subject line "Do Not Sell My Info".
+            </p>
+            <p>We will process your request within 15 business days.</p>
+            
+            <h3>Your Rights:</h3>
+            <ul>
+              <li>Know what personal data we collect</li>
+              <li>Request deletion of your data</li>
+              <li>Request we do not sell your data</li>
+            </ul>
+            
+            <p>
+              By submitting this request, you confirm that:
+            </p>
+            <ul>
+              <li>You are a California resident</li>
+              <li>You are the person, or are authorized to act on behalf of the person, making this request</li>
+            </ul>
+            
+            <p>For more information, refer to our <Link to="/privacy_policy" onClick={handleLinkClick}>[Privacy Policy].</Link></p>
           </div>
 
           {/* Right side - Form */}

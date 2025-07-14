@@ -60,6 +60,9 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
             }
             else if(parseInt(user.roleId) === 3){
               navigate("/all-user");
+            }
+              else if(parseInt(user.roleId) === 123){
+              navigate("/all_history");
             } else {
               navigate("/bulk-lookup");
             }

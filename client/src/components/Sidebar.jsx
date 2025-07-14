@@ -13,6 +13,7 @@ import {
 } from "react-icons/fa";
 import "../css/Sidebar.css";
 
+
 function Sidebar() {
   const [expandedItem, setExpandedItem] = useState(null);
   const [userEmail, setUserEmail] = useState("Loading...");
@@ -76,7 +77,8 @@ function Sidebar() {
     {
       name: "Statistics",
       icon: <FaChartBar />,
-      options: [{ name: "Credit Reports", path: "/user-credit-report" }],
+      options: [{ name: "Credit Reports", path: "/user-credit-report" },{ name: "All report", path: "/all_history" }]
+      
     },
   ];
 
@@ -100,7 +102,24 @@ function Sidebar() {
     {
       name: "Statistics",
       icon: <FaChartBar />,
-      options: [{ name: "Credit Reports", path: "/user-credit-report" }],
+      options: [{ name: "Credit Reports", path: "/user-credit-report" },{ name: "All report", path: "/all_history" }],
+      
+    },
+    {
+      name: "Settings",
+      icon: <IoMdSettings />,
+      options: [{ name: "Sign out", path: "/" }],
+    },
+  ];
+
+
+  const report = [
+    
+    {
+      name: "Statistics",
+      icon: <FaChartBar />,
+      options: [{ name: "All report", path: "/all_history" }],
+      
     },
     {
       name: "Settings",
@@ -113,7 +132,7 @@ function Sidebar() {
     { name: "All Admin", path: "/all-admin", icon: <FaChartBar /> },
     { name: "All User", path: "/all-user", icon: <FaChartBar /> },
     { name: "Credit Report", path: "/admin-credit-report", icon: <FaChartBar /> },
-     { name: "all Report", path: "/all_history", icon: <FaChartBar /> },
+     { name: "All Report", path: "/all_history", icon: <FaChartBar /> },
    
     { name: "Sign out", path: "/", icon: <FaChartBar /> },
   ];
@@ -121,6 +140,7 @@ function Sidebar() {
   const menuItems =
     roleId === 1 ? adminMenuItems :
     roleId === 2 ? userMenuItems :
+    roleId === 123 ? report :
     roleId === 3 ? superAdminItems : [];
 
   const handleMenuClick = (menuItem) => {

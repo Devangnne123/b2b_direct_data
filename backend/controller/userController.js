@@ -85,6 +85,28 @@ exports.getUsersByCreator = async (req, res) => {
   }
 };
 
+exports.getUsersByadmin = async (req, res) => {
+  const { userEmail } = req.params; // Get userEmail from request parameters
+
+  if (!userEmail) {
+    return res.status(400).json({ message: "User email is required." });
+  }
+
+  try {
+    const users = await User.findAll({
+      where: { roleId: 1 }, // Fetch only users created by this email
+      attributes: ["id", "userEmail", "roleId", "credits", "createdAt"], // Select only necessary fields
+    });
+
+    res.status(200).json({ success: true, data: users });
+  } catch (err) {
+    console.error("Error while fetching users:", err);
+    res.status(500).json({ message: "Something went wrong.", error: err.message });
+  }
+};
+
+
+
 // Update Credits
 exports.updateCredits = async (req, res) => {
   const { userEmail, credits } = req.body;

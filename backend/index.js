@@ -65,6 +65,10 @@ app.post('/upload-excel', upload.single('file'), async (req, res) => {
       fs.unlinkSync(filePath);
       return res.status(400).json({ message: 'No LinkedIn links found.' });
     }
+    // Example of potential backend limit
+if (links.length > 1000) {
+  return res.status(400).json({ message: "Max 10 links allowed" });
+}
 
     const uniqueId = uuidv4();
     let matchCount = 0;
@@ -868,6 +872,10 @@ app.post('/upload-excel-verification', upload.single('file'), async (req, res) =
       fs.unlinkSync(filePath);
       return res.status(400).json({ message: 'No LinkedIn links found.' });
     }
+    if (links.length > 10000) {
+  return res.status(400).json({ message: "Max 10 links allowed" });
+}
+
 
     const uniqueId = uuidv4();
     let pendingCount = 0; // Initialize pending count
@@ -1558,6 +1566,10 @@ app.post('/upload-excel-verification-com', upload.single('file'), async (req, re
       fs.unlinkSync(filePath);
       return res.status(400).json({ message: 'No LinkedIn links found.' });
     }
+
+       if (links.length > 10000) {
+  return res.status(400).json({ message: "Max 10 links allowed" });
+}
 
     const uniqueId = uuidv4();
     let pendingCount = 0;
@@ -2746,7 +2758,7 @@ app.post('/api/send-completion-email-com', async (req, res) => {
 
     // Now send the email
     await transporter.sendMail({
-      from: '"B2B Verification System" <your-email@example.com>',
+      from: '"B2B Verification System" <b2bdirectdata@gmail.com>',
       to: email,
       subject: `Company Details Completed - ${uniqueId}`,
       html: `
@@ -3257,7 +3269,7 @@ app.post('/api/send-verification-confirmation/link', async (req, res) => {
 
 
 // Email confirmation endpoint
-app.post('/api/send-verification-confirmation/compamy', async (req, res) => {
+app.post('/api/send-verification-confirmation/company', async (req, res) => {
   const { email, uniqueId, totalLinks, pendingCount, creditCost, initiatedBy } = req.body;
 
   try {
@@ -3314,9 +3326,10 @@ app.get('/api/links/report', async (req, res) => {
         [sequelize.fn('MIN', sequelize.col('fileName')), 'fileName'],
         [sequelize.fn('MIN', sequelize.col('date')), 'date'],
         [sequelize.fn('MIN', sequelize.col('email')), 'email'],
+        [sequelize.fn('MIN', sequelize.col('remainingCredits')), 'remainingCredits'],
         [sequelize.fn('MIN', sequelize.col('creditDeducted')), 'creditDeducted'],
         [sequelize.fn('SUM', sequelize.literal("CASE WHEN status != 'pending' THEN 1 ELSE 0 END")), 'completedCount'],
-        [sequelize.fn('COUNT', sequelize.col('id')), 'totalCount']
+        
       ],
       group: ['uniqueId'],
       order: [['date', 'DESC']]
@@ -3355,10 +3368,11 @@ app.get('/api/links/report', async (req, res) => {
           fileName: link.get('fileName'),
           date: link.get('date'),
           email: link.get('email'),
+          remainingCredits : link.get('remainingCredits'),
           creditDeducted: link.get('creditDeducted') || 0,
           status: isCompleted ? 'completed' : 'pending',
           completedCount: link.get('completedCount'),
-          totalCount: link.get('totalCount')
+          
         };
       })
     };
@@ -3383,19 +3397,16 @@ app.get('/api/company-verifications/report', async (req, res) => {
       attributes: [
         'uniqueId',
         [sequelize.fn('MIN', sequelize.col('email')), 'email'],
+        [sequelize.fn('MIN', sequelize.col('remainingCredits')), 'remainingCredits'],
         [sequelize.fn('MIN', sequelize.col('fileName')), 'fileName'],
         [sequelize.fn('MIN', sequelize.col('date')), 'date'],
         [sequelize.fn('MIN', sequelize.col('totallink')), 'totallink'],
         [sequelize.fn('MAX', sequelize.col('pendingCount')), 'pendingCount'],
         [sequelize.fn('MIN', sequelize.col('status')), 'status'],
         [sequelize.fn('MIN', sequelize.col('final_status')), 'final_status'],
-        [sequelize.fn('MIN', sequelize.col('company_name')), 'company_name'],
-        [sequelize.fn('MIN', sequelize.col('company_url')), 'company_url'],
-        [sequelize.fn('MIN', sequelize.col('company_industry')), 'company_industry'],
-        [sequelize.fn('MIN', sequelize.col('company_size')), 'company_size'],
-        [sequelize.fn('MIN', sequelize.col('employee_count')), 'employee_count'],
+       
         [sequelize.fn('MIN', sequelize.col('creditsUsed')), 'creditsUsed'],
-        [sequelize.fn('COUNT', sequelize.col('id')), 'totalRecords']
+      
       ],
       group: ['uniqueId'],
       order: [[sequelize.fn('MIN', sequelize.col('date')), 'DESC']]
@@ -3406,19 +3417,16 @@ app.get('/api/company-verifications/report', async (req, res) => {
       data: verifications.map(item => ({
         uniqueId: item.uniqueId,
         email: item.get('email'),
+        remainingCredits : item.get('remainingCredits'),
         fileName: item.get('fileName'),
         date: item.get('date'),
         totallink: item.get('totallink'),
         pendingCount: item.get('pendingCount'),
-        status: item.get('status'),
+        
         final_status: item.get('final_status'),
-        company_name: item.get('company_name'),
-        company_url: item.get('company_url'),
-        company_industry: item.get('company_industry'),
-        company_size: item.get('company_size'),
-        employee_count: item.get('employee_count'),
+        
         creditsUsed: item.get('creditsUsed') || 0,
-        totalRecords: item.get('totalRecords')
+        
       }))
     };
 
@@ -3441,6 +3449,7 @@ app.get('/api/verifications/report', async (req, res) => {
       attributes: [
         'uniqueId',
         [sequelize.fn('MIN', sequelize.col('email')), 'email'],
+        [sequelize.fn('MIN', sequelize.col('remainingCredits')), 'remainingCredits'],
         [sequelize.fn('MIN', sequelize.col('fileName')), 'fileName'],
         [sequelize.fn('MIN', sequelize.col('date')), 'date'],
         [sequelize.fn('MIN', sequelize.col('totallink')), 'totallink'],
@@ -3460,11 +3469,12 @@ app.get('/api/verifications/report', async (req, res) => {
       data: verifications.map(item => ({
         uniqueId: item.uniqueId,
         email: item.get('email'),
+        remainingCredits : item.get('remainingCredits'),
         fileName: item.get('fileName'),
         date: item.get('date'),
         totallink: item.get('totallink'),
         pendingCount: item.get('pendingCount'),
-        status: item.get('status'),
+       
         final_status: item.get('final_status'),
        
         creditsUsed: item.get('creditsUsed') || 0,

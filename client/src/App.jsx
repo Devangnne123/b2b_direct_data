@@ -47,6 +47,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import RequestResetForm from "./components/RequestResetForm";
 import Remove_form from "./components/Remove_form";
 import AllHistory from "./components/AllReport";
+import Alladmin_S from "./components/Alladmin_S";
 
 
 function App() {
@@ -112,7 +113,8 @@ function App() {
         <Route path="/aboutus" element={<AboutUs />} />
         <Route path="/contactus" element={<ContactUs />}/>
         <Route path="/add-user" element={<AddUser />} />
-        <Route path="/all-admin" element={<AllAdmin />} />
+        <Route path="/alladmin" element={<AllAdmin />} />
+        <Route path="/all-admin" element={<Alladmin_S />} />
         <Route path="/user-list" element={<UserList />} />
         <Route path="/admin-credit-report" element={<AdminCreditReport />} />
         <Route path="/user-credit-report" element={<UserCreditReport />} />

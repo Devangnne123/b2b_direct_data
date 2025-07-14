@@ -294,12 +294,13 @@
 .card-content {
   display: flex;
   flex-direction: row;
-  gap: 5rem;
+  gap: 3rem;
 }
 
 .privacy-section {
  display: flex;
   padding: 1.5rem;
+  
   background-color: #f8f9fa;
   border-radius: 8px;
   flex-direction: column;

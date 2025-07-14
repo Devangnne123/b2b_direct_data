@@ -33,7 +33,7 @@ export default function Api() {
       <div className="card">
         <h1 className="title">API Coming Soon 🚀</h1>
         <p className="description">
-          Get ready! Our API will be launching soon with powerful features.
+          Contact Our Sales Representative For Details.
         </p>
         {/* <div className="countdown">
           <span>{timeLeft.days}d</span>
