@@ -34,7 +34,7 @@ const TempLinkMobile = sequelize.define('TempLinkMobile', {
     allowNull: true,
   },
 }, {
-  tableName: 'temp_link_mobile',
+  tableName: 'web_direct_number_temp',
   timestamps: false,
 });
 

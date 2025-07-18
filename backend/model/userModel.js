@@ -162,7 +162,7 @@ creditCostPerLink_V: {
     {
       unique: true,
       fields: ['clientId'],
-      name: 'users_client_id_unique'
+      name: 'users_client_id_unique1'
     },
     {
       fields: ['userEmail'],
@@ -186,7 +186,7 @@ creditCostPerLink_V: {
     const indexes = await queryInterface.showIndex('Users');
 
     const requiredIndexes = [
-      'users_client_id_unique',
+      'users_client_id_unique1',
       'users_email_index',
       'users_created_by_index',
       'users_main_client_index'

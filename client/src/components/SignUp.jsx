@@ -18,6 +18,10 @@ const SignUp = ({ closeModal, setShowModal }) => {
   const canvasRef = useRef(null);
   const navigate = useNavigate();
 
+
+  const user = JSON.parse(sessionStorage.getItem("user"));
+
+ 
   // Generate a random CAPTCHA text
   const generateCaptchaText = () => {
     const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -106,6 +110,7 @@ const SignUp = ({ closeModal, setShowModal }) => {
       return;
     }
 
+
     // CAPTCHA validation
     if (captchaInput !== captchaText) {
       setCaptchaError("CAPTCHA does not match.");
@@ -125,10 +130,12 @@ const SignUp = ({ closeModal, setShowModal }) => {
     };
 
     try {
-      const response = await fetch("http://13.203.218.236:8000/users/user", {
+      const response = await fetch("http://13.203.218.236:8000/users/signup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json"},
         body: JSON.stringify(userData),
+        
+       
       });
 
       const data = await response.json();
@@ -137,6 +144,10 @@ const SignUp = ({ closeModal, setShowModal }) => {
         sessionStorage.setItem("userEmail", email);
         setSuccessMessage("Signup successful! Redirecting...");
         
+      if (!response.ok) {
+    throw new Error('API request failed');
+  }
+
         // Clear form and errors
         setEmail("");
         setPassword("");

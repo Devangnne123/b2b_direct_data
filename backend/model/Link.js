@@ -83,7 +83,7 @@ status: {
 
 
 }, {
-  tableName: 'links',
+  tableName: 'web_direct_number_main',
   timestamps: false,
 });
 

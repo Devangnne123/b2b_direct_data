@@ -156,7 +156,7 @@ emailSentAt: {
     
   
 }, {
-  tableName: 'verification_uploads_com',
+  tableName: 'web_company_details_main',
   timestamps: false
 
 

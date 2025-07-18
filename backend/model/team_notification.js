@@ -43,7 +43,7 @@ const TeamEmail = sequelize.define('team_email', {
   },
 
 }, {
-  tableName: 'team_emails',
+  tableName: 'web_team_emails',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',

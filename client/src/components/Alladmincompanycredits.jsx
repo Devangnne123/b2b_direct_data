@@ -46,9 +46,9 @@ const UserCreditReport = () => {
       const [userTxnsRes, adminTxnsRes, uploadsRes] = await Promise.all([
         axios.get(`http://13.203.218.236:8000/transactions/credit-transactions/${userEmail}`),
         axios.get(`http://13.203.218.236:8000/super-admin/get-credit-transactions`),
-        axios.get(`http://13.203.218.236:8000/get-links`, {
-          headers: { "user-email": userEmail }
-        })
+        axios.get("http://13.203.218.236:8000/bulklookup/get-links", {
+                headers: { "user-email": savedEmail, "Authorization": `Bearer ${token}`  },
+              }),
       ]);
 
       // Process user transactions (include transactions for created users)

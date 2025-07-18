@@ -99,7 +99,7 @@ const VerificationTemp_com = sequelize.define('verification_temp_com', {
   }
 
 }, {
-  tableName: 'verification_temps_com',
+  tableName: 'web_company_details_temp',
   timestamps: false, // Enable createdAt and updatedAt
   
 });

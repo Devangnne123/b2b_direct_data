@@ -17,8 +17,10 @@ const CheckoutPage = () => {
   const [isHovering, setIsHovering] = useState(false);
    const [userCredits, setUserCredits] = useState(0); // Added userCredits state
 
+  const token = sessionStorage.getItem('token');
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
+    
     if (user?.email) {
       setSavedEmail(user.email);
       fetchUserCredits(user.email); 
@@ -34,7 +36,9 @@ const CheckoutPage = () => {
    // Function to fetch user credits
   const fetchUserCredits = async (email) => {
     try {
-      const response = await fetch(`http://13.203.218.236:8000/api/user/${email}`);
+      const response = await fetch(`http://13.203.218.236:8000/api/user/${email}`, {
+        headers: {  "Authorization": `Bearer ${token}`  },
+      });
       const data = await response.json();
       if (response.ok) {
         setUserCredits(data.credits);

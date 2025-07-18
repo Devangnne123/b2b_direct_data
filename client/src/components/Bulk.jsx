@@ -87,7 +87,7 @@ function App() {
       const creditToDeduct = matchCount * creditCost;
 
       const creditRes = await axios.post(
-        "http://13.203.218.236:8000/api/upload-file",
+        "http://13.203.218.236:8000/bulklookup/upload-file",
         {
           userEmail: savedEmail,
           creditCost: creditToDeduct,

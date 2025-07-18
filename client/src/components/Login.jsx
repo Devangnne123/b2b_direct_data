@@ -47,9 +47,11 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
   
       if (response.ok) {
         const user = result.user;
+         const token = result.token;
   
         if (user) {
           sessionStorage.setItem("user", JSON.stringify(user));
+          sessionStorage.setItem("token", token);
           sessionStorage.setItem("roleId", user.roleId);
           
           setSuccessMessage("Login successful! Redirecting...");
@@ -91,7 +93,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
       setErrorMessage("");
       setSuccessMessage("");
       
-      const response = await fetch("http://13.203.218.236:8000/send-otp", {
+      const response = await fetch("http://13.203.218.236:8000/users/send-otp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -132,7 +134,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
       setIsSubmitting(true);
       setErrorMessage("");
       
-      const response = await fetch("http://13.203.218.236:8000/reset-password", {
+      const response = await fetch("http://13.203.218.236:8000/users/reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,8 +1,7 @@
 const { DataTypes } = require("sequelize");
 const { sequelize } = require('../config/db');// Import Sequelize connection
 
-const CreditTransaction = sequelize.define(
-  "CreditTransaction",
+const CreditTransaction = sequelize.define("CreditTransaction",
   {
 
      uniqueId: {
@@ -37,8 +36,11 @@ const CreditTransaction = sequelize.define(
     },
   },
   {
-    timestamps: true, // createdAt and updatedAt included
+  
+  tableName: 'web_credt_transaction_report',
+  timestamps: true
   }
+
 );
 
 module.exports = CreditTransaction;

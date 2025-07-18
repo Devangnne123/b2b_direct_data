@@ -22,7 +22,7 @@ const MasterUrl = sequelize.define("masterurl", {
     allowNull: true,
   }
 }, {
-  tableName: 'masterurls',
+  tableName: 'web_masterurls',
   timestamps: false,  // Disable createdAt, updatedAt fields
 });
 

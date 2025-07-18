@@ -98,7 +98,7 @@ const VerificationTemp = sequelize.define('verification_temp', {
     allowNull: true
   }
 }, {
-  tableName: 'verification_temps',
+  tableName: 'web_contact_verfication_temp',
   timestamps: false, // Enable createdAt and updatedAt
   
 });

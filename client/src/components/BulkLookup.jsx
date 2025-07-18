@@ -30,6 +30,7 @@ import VerificationUploadReport from "./VerificationUploadReport";
 import CreditTransactions from "./CreditTransactions";
 import SuperAdminTransactions from "./SuperAdminTransactions";
 import AllHistory from "./AllReport";
+import Documatation from "./Documatation.jsx";
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -117,15 +118,19 @@ function BulkLookup() {
     }
   }, []);
 
+  const token = sessionStorage.getItem('token');
+
 const silentRefresh = useCallback(async () => {
   try {
     if (!savedEmail || savedEmail === "Guest") return;
     
     const [linksRes, creditsRes] = await Promise.all([
-      axios.get("http://13.203.218.236:8000/get-links", {
-        headers: { "user-email": savedEmail },
+      axios.get("http://13.203.218.236:8000/bulklookup/get-links", {
+        headers: { "user-email": savedEmail, "Authorization": `Bearer ${token}`  },
       }),
-      axios.get(`http://13.203.218.236:8000/api/user/${savedEmail}`)
+      axios.get(`http://13.203.218.236:8000/api/user/${savedEmail}`, {
+        headers: { "Authorization": `Bearer ${token}`  },
+      })
     ]);
 
     const now = Date.now();
@@ -171,7 +176,9 @@ const silentRefresh = useCallback(async () => {
 
   const fetchCreditCost = async (email) => {
     try {
-      const response = await axios.post("http://13.203.218.236:8000/users/getAllAdmin");
+      const response = await axios.post("http://13.203.218.236:8000/users/getAllAdmin",{
+         headers:{"Authorization": `Bearer ${token}`,'X-API-Key': process.env.REACT_APP_API_KEY }
+      });
       if (response.data && response.data.users) {
         const adminUser = response.data.users.find(
           (user) => user.userEmail === email  
@@ -254,7 +261,7 @@ const getGroupStatus = (group) => {
     const res = await axios.post(
       "http://13.203.218.236:8000/upload-excel",
       formData,
-      { headers: { "user-email": savedEmail } }
+      { headers: { "user-email": savedEmail,"Authorization": `Bearer ${token}`  } }
     );
 
     const totalLinks = res.data.totallink || res.data.totalLinks || 0;
@@ -319,7 +326,9 @@ const getGroupStatus = (group) => {
       {
         uniqueId: pendingUpload.uniqueId,
         email: savedEmail
+
       }
+       ,{ headers: { "Authorization": `Bearer ${token}`  } }
     );
 
     // Then deduct credits
@@ -329,7 +338,7 @@ const getGroupStatus = (group) => {
         userEmail: savedEmail,
         creditCost: pendingUpload.creditToDeduct,
         uniqueId: pendingUpload.uniqueId,
-      }
+      },{ headers: { "Authorization": `Bearer ${token}`  } }
     );
 
     setCredits(creditRes.data.updatedCredits);
@@ -343,6 +352,8 @@ const getGroupStatus = (group) => {
         totalLinks: pendingUpload.totallink || 0,
         matchCount: pendingUpload.matchCount || 0,
         creditsDeducted: pendingUpload.creditToDeduct
+      },{
+        headers:{"Authorization": `Bearer ${token}`}
       });
     } catch (emailError) {
       console.error("Failed to send email notification:", emailError);
@@ -382,7 +393,9 @@ const getGroupStatus = (group) => {
     setLoading(true);
     try {
       await axios.delete(
-        `http://13.203.218.236:8000/cancel-upload/${pendingUpload.uniqueId}`
+        `http://13.203.218.236:8000/cancel-upload/${pendingUpload.uniqueId}`,{
+        headers:{"Authorization": `Bearer ${token}`}
+      }
       );
       toast.info("Upload canceled - all data removed");
       
@@ -882,6 +895,7 @@ const getGroupStatus = (group) => {
              
              
               <ToastContainer position="top-center" autoClose={5000} />
+            
             
             </div>
           </div>

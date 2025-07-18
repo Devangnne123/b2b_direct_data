@@ -26,7 +26,7 @@ const CreditPurchase = () => {
 
   const fetchUserCredits = async (email) => {
     try {
-      const response = await axios.get(
+      const response = await axios.post(
         `http://13.203.218.236:8000/api/users/credits?email=${email}`,
         { timeout: 5000 }
       );

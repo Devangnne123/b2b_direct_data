@@ -60,7 +60,7 @@ type: {
       }
     ]
   },{
-  tableName: 'CompletedReport',
+  tableName: 'web_all_completed_report',
   timestamps: false,
 });
 

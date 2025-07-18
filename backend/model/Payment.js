@@ -67,7 +67,7 @@ const Payment = sequelize.define('Payment', {
     defaultValue: DataTypes.NOW
   }
 }, {
-  tableName: 'payments',
+  tableName: 'web_paypal_payments_report',
   timestamps: false,
   hooks: {
     beforeUpdate: (payment) => {

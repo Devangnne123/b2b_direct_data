@@ -16,6 +16,7 @@ import "../css/Creditreport.css";
 const UserCreditReport = () => {
   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [savedEmail, setSavedEmail] = useState("Guest");
   const [adminCredits, setAdminCredits] = useState([]);
   const [fileUploads, setFileUploads] = useState([]);
   const [verificationUploads, setVerificationUploads] = useState([]);
@@ -34,6 +35,10 @@ const UserCreditReport = () => {
   });
   
   const userEmail = JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
+  const token = sessionStorage.getItem('token');
+ 
+     
+  
 
   useEffect(() => {
     fetchUsers();
@@ -106,9 +111,9 @@ const UserCreditReport = () => {
             return { data: { data: [] } };
           }),
         
-        axios.get(`http://13.203.218.236:8000/get-links`, {
-          headers: { "user-email": userEmail }
-        }).catch(error => {
+        axios.get("http://13.203.218.236:8000/bulklookup/get-links", {
+        headers: { "user-email": userEmail, "Authorization": `Bearer ${token}`  },
+      }).catch(error => {
           console.error("Failed to fetch file uploads:", error);
           return { data: [] };
         }),

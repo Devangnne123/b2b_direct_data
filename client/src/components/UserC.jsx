@@ -25,7 +25,7 @@ const UserCreditReport = () => {
     key: "date",
     direction: "desc",
   });
-  
+    const token = sessionStorage.getItem('token');
   const userEmail = JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
 
   useEffect(() => {
@@ -39,7 +39,9 @@ const UserCreditReport = () => {
     setError(null);
     try {
       const [creditsRes, linksRes, companiesRes] = await Promise.all([
-        axios.post(`http://13.203.218.236:8000/api/user/${userEmail}`),
+        axios.get(`http://13.203.218.236:8000/api/user/${userEmail}`, {
+        headers: {  "Authorization": `Bearer ${token}`  },
+      }),
         axios.post("http://13.203.218.236:8000/get-verification-links", {
           headers: { "user-email": userEmail }
         }),

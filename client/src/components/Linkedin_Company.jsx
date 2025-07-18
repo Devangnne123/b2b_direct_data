@@ -22,6 +22,8 @@ import Sidebar from "../components/Sidebar";
 import "../css/BulkLookup.css";
 import "../css/UserS.css";
 
+
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -73,7 +75,7 @@ function BulkLookup() {
    const [creditCost, setCreditCost] = useState(null);
 
 
-
+  const token = sessionStorage.getItem('token');
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
     if (user?.email) {
@@ -172,7 +174,9 @@ function BulkLookup() {
 
   const fetchCredits = async (email) => {
     try {
-      const res = await axios.post(`http://13.203.218.236:8000/api/user/${email}`);
+      const res = await axios.post(`http://13.203.218.236:8000/api/user/${email}`, {
+        headers: { "Authorization": `Bearer ${token}`  },
+      });
       setCredits(res.data.credits);
     } catch (err) {
       toast.error("Failed to fetch credits");
@@ -193,8 +197,8 @@ function BulkLookup() {
   const fetchUserLinks = async (email) => {
     setLoading(true);
     try {
-      const res = await axios.post("http://13.203.218.236:8000/get-links", {
-        headers: { "user-email": email },
+      const res = await axios.get("http://13.203.218.236:8000/bulklookup/get-links", {
+        headers: { "user-email": savedEmail, "Authorization": `Bearer ${token}`  },
       });
       setUploadedData(res.data || []);
       setFilteredData(res.data || []);
@@ -264,7 +268,7 @@ function BulkLookup() {
     setLoading(true);
     try {
       const creditRes = await axios.post(
-        "http://13.203.218.236:8000/api/upload-file",
+        "http://13.203.218.236:8000/bulklookup/upload-file",
         {
           userEmail: savedEmail,
           creditCost: pendingUpload.creditToDeduct,

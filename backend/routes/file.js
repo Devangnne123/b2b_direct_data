@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const User = require('../model/userModel');
 const Link = require('../model/Link');
+const auth = require("../middleware/authMiddleware")
 
 // File upload route that fetches and updates credits
-router.post('/upload-file', async (req, res) => {
+router.post('/upload-file',auth, async (req, res) => {
   const { userEmail, creditCost, uniqueId } = req.body;
 
   try {

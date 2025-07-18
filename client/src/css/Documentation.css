@@ -1,0 +1,216 @@
+/* .documentation-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #333;
+}
+
+h1 {
+  color: #2c3e50;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.section {
+  margin-bottom: 3rem;
+  background: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.section h2 {
+  color: #3498db;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.subsection {
+  margin-bottom: 1.5rem;
+}
+
+.subsection h3 {
+  color: #2c3e50;
+  margin-bottom: 0.8rem;
+}
+
+ul {
+  padding-left: 1.5rem;
+}
+
+ul ul {
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+li {
+  margin-bottom: 0.5rem;
+}
+
+.code-block {
+  background: #282c34;
+  color: #abb2bf;
+  padding: 1rem;
+  border-radius: 5px;
+  overflow-x: auto;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 1rem 0;
+}
+
+.conclusion {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #e8f4f8;
+  border-left: 4px solid #3498db;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .documentation-container {
+    padding: 1rem;
+  }
+  
+  .section {
+    padding: 1rem;
+  }
+}
+
+
+
+
+/* Add these to your existing Documentation.css */
+
+.table-container {
+  overflow-x: auto;
+  margin: 1rem 0;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.schema-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.schema-table th, .schema-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+
+.schema-table th {
+  background-color: #3498db;
+  color: white;
+  font-weight: 600;
+}
+
+.schema-table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.schema-table tr:hover {
+  background-color: #e6f7ff;
+}
+
+@media (max-width: 768px) {
+  .schema-table {
+    font-size: 0.8rem;
+  }
+  
+  .schema-table th, .schema-table td {
+    padding: 0.5rem;
+  }
+}
+
+
+/* Add to Documentation.css */
+
+/* Process Flow Styling */
+/* .process-flow {
+  padding-left: 1.5rem;
+}
+
+.process-flow li {
+  margin-bottom: 1rem;
+}
+
+.process-flow li > ul {
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+/* Status Badges */
+/* .status-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-badge.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.processing {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-badge.completed {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-badge.failed {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-badge.not-available {
+  background-color: #e2e3e5;
+  color: #383d41;
+} */
+
+/* Status Table */
+/* .status-table {
+  width: 100%;
+}
+
+.status-table th, .status-table td {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+}
+
+/* Credit Logic Styling */
+/* .credit-logic {
+  padding-left: 1.5rem;
+}
+
+.credit-logic li {
+  margin-bottom: 1rem;
+}
+
+.credit-logic li > ul {
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+} */
+
+/* Responsive Adjustments */
+/* @media (max-width: 768px) {
+  .process-flow, .credit-logic {
+    padding-left: 1rem;
+  }
+  
+  .status-table th, .status-table td {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+}  */ 

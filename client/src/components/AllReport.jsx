@@ -98,7 +98,7 @@ const AllHistory = () => {
 
       const linksData = transformData(linksRes.data.data, 'links').map(item => ({
         ...item,
-        process: 'Link Report',
+        process: 'Direct Number Enrichment',
         transactionType: 'Debit',
         amount: item.creditDeducted || 0,
         date: item.date,
@@ -107,7 +107,7 @@ const AllHistory = () => {
 
       const verificationData = transformData(verificationRes.data.data, 'verification').map(item => ({
         ...item,
-        process: 'Company Verification',
+        process: 'Contact Verification',
         transactionType: 'Debit',
         amount: item.creditsUsed || 0,
         date: item.date,
@@ -126,7 +126,7 @@ const AllHistory = () => {
 
       const companyVerificationData = transformData(companyVerificationRes.data.data, 'company-verification').map(item => ({
         ...item,
-        process: 'Company Verification Report',
+        process: 'Company Details',
         transactionType: 'Debit',
         amount: item.creditsUsed || 0,
         date: item.date,

@@ -152,7 +152,7 @@ emailSentAt: {
     allowNull: true
   }
 }, {
-  tableName: 'verification_uploads',
+  tableName: 'web_contact_verfication_main',
   timestamps: false
 });
 

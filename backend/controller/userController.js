@@ -1,7 +1,9 @@
 const User = require("../model/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { sendOtpEmail } = require('../routes/mailer');
 require("dotenv").config();
+
 
 // Add User
 exports.addUser = async (req, res) => {
@@ -181,6 +183,128 @@ exports.loginUser = async (req, res) => {
     res.status(500).json({ message: "Server error.", error: error.message });
   }
 };
+
+
+
+
+  exports.sendOtp = async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      // Validate email format
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: "Please provide a valid email address." });
+      }
+
+      const user = await User.findOne({ where: { userEmail: email } });
+      if (!user) {
+        // Don't reveal whether user exists for security
+        return res.status(200).json({ message: "If this email exists, we've sent an OTP to it." });
+      }
+
+      // Check if user is blocked from OTP requests
+      if (user.otpBlockedUntil && user.otpBlockedUntil > new Date()) {
+        return res.status(429).json({ 
+          message: `Too many attempts. Try again after ${user.otpBlockedUntil.toLocaleTimeString()}`
+        });
+      }
+
+      // Generate a 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
+
+      // Update user with OTP and expiry
+      await user.update({ 
+        resetPasswordOtp: otp,
+        resetPasswordOtpExpiry: otpExpiry,
+        otpAttempts: 0 // Reset attempts when new OTP is sent
+      });
+
+      // Send OTP via email
+      const emailSent = await sendOtpEmail(email, otp);
+      
+      if (!emailSent) {
+        return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
+      }
+
+      res.status(200).json({ 
+        message: "OTP sent to your email address.",
+        // Don't send OTP in response in production
+        otp: process.env.NODE_ENV === 'development' ? otp : null 
+      });
+    } catch (error) {
+      console.error("OTP send error:", error);
+      res.status(500).json({ 
+        message: "An error occurred while processing your request.",
+        error: process.env.NODE_ENV === 'development' ? error.message : null
+      });
+    }
+  },
+
+
+
+  // Reset password with OTP
+  exports.resetPasswordOtp = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters long." });
+    }
+
+    const user = await User.findOne({ where: { userEmail: email } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Check if OTP matches and is not expired
+    if (user.resetPasswordOtp !== otp || new Date() > user.resetPasswordOtpExpiry) {
+      // Increment failed attempts
+      const attempts = (user.otpAttempts || 0) + 1;
+      let otpBlockedUntil = null;
+      
+      // Block after 3 failed attempts for 15 minutes
+      if (attempts >= 3) {
+        otpBlockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+      }
+      
+      await user.update({ 
+        otpAttempts: attempts,
+        otpBlockedUntil
+      });
+      
+      return res.status(400).json({ 
+        message: attempts >= 3 
+          ? "Too many incorrect attempts. Try again later." 
+          : "Invalid or expired OTP." 
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user password and clear OTP fields
+    await user.update({ 
+      userPassword: hashedPassword,
+      resetPasswordOtp: null,
+      resetPasswordOtpExpiry: null,
+      otpAttempts: 0,
+      otpBlockedUntil: null
+    });
+
+    res.status(200).json({ message: "Password reset successfully." });
+  } catch (error) {
+    console.error("Password reset error:", error);
+    res.status(500).json({ message: "Server error.", error: error.message });
+  }
+};
+
+
+
 
 // Get All Admins
 exports.getAllAdmin = async (req, res) => {

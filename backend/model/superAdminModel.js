@@ -30,7 +30,10 @@ const SuperAdminTransaction = sequelize.define("SuperAdminTransaction", {
   date: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
-  },
+  }
+},{
+  tableName: 'web_superadmin_transaction_report',
+  timestamps: true
 });
 
 module.exports = SuperAdminTransaction;

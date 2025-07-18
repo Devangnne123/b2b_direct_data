@@ -17,6 +17,8 @@ const Checkout = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+
+    const token = sessionStorage.getItem('token');
   // Check for payment status in URL params
   useEffect(() => {
     const success = searchParams.get('success');
@@ -43,7 +45,9 @@ const Checkout = () => {
     if (user && user.email) {
       setEmail(user.email);
 
-      axios.get(`http://13.203.218.236:8000/api/user/${user.email}`)
+      axios.get(`http://13.203.218.236:8000/api/user/${user.email}`, {
+        headers: {  "Authorization": `Bearer ${token}`  },
+      })
         .then((res) => {
           setUserCredits(res.data.credits);
         })

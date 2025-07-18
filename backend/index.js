@@ -42,10 +42,19 @@ const buildpath = path.join(_dirname,"../client/dist")
 app.use(express.static(buildpath));
 app.use(cors({ origin: '*' }));
 app.use(express.urlencoded({ extended: false })); // middleware
- 
+
+const apiKeyAuth = require("./middleware/apiKeyAuth");
+const auth = require("./middleware/authMiddleware")
+
+
+
+
+
+////bulklookup////////
+
 const upload = multer({ dest: 'uploads/' });
 
-app.post('/upload-excel', upload.single('file'), async (req, res) => {
+app.post('/upload-excel', auth , upload.single('file'), async (req, res) => {
   try {
     const email = req.headers['user-email'];
     if (!email) return res.status(400).json({ error: "Email required" });
@@ -146,7 +155,7 @@ if (links.length > 1000) {
   }
 });
 
-app.post('/confirm-upload', async (req, res) => {
+app.post('/confirm-upload',auth, async (req, res) => {
   try {
     const { uniqueId, email } = req.body;
     
@@ -186,33 +195,31 @@ app.post('/confirm-upload', async (req, res) => {
 
 
 
+// const authMiddleware = require("../backend/middleware/authMiddleware")
 
   
-  // backend/server.js
-  app.get('/get-links', async (req, res) => {
-    try {
-      const email = req.headers['user-email'];
-      if (!email) return res.status(400).json({ error: 'Email required in headers' });
+//   // backend/server.js
+//   app.post('/get-links', authMiddleware, async (req, res) => {
+//     try {
+//       const email = req.headers['user-email'];
+//       if (!email) return res.status(400).json({ error: 'Email required in headers' });
   
-      const userLinks = await Link.findAll({
-        where: { email },
-        order: [['date', 'DESC']], // most recent first
-      });
+//       const userLinks = await Link.findAll({
+//         where: { email },
+//         order: [['date', 'DESC']], // most recent first
+//       });
   
-      res.json(userLinks);
-    } catch (err) {
-      console.error('Error fetching links:', err);
-      res.status(500).json({ error: 'Failed to fetch links' });
-    }
-  });
-  
-  
+//       res.json(userLinks);
+//     } catch (err) {
+//       console.error('Error fetching links:', err);
+//       res.status(500).json({ error: 'Failed to fetch links' });
+//     }
+//   });
   
   
-
 
   // Add this to your server routes
-app.delete('/cancel-upload/:uniqueId', async (req, res) => {
+app.delete('/cancel-upload/:uniqueId',auth, async (req, res) => {
   try {
     const { uniqueId } = req.params;
     
@@ -399,6 +406,59 @@ app.use('/api/links', linkRoutes);
 //     });
 //   }
 // });
+
+
+// In your server routes file (e.g., routes.js or app.js)
+const nodemailer = require('nodemailer');
+
+// Configure your email transporter (add this at the top of your file)
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: "b2bdirectdata@gmail.com", // Your Gmail address
+    pass: "npgjrjuebmlmepgy"  // Your Gmail password or app password
+  }
+});
+
+// Add this route
+app.post('/send-upload-notification',auth, async (req, res) => {
+  try {
+    const { email, fileName, totalLinks, matchCount, creditsDeducted } = req.body;
+
+    const mailOptions = {
+      from: "b2bdirectdata@gmail.com",
+      to: email,
+      subject: 'Your Bulk LinkedIn Lookup Upload Status',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Bulk LinkedIn Lookup - Upload Processed</h2>
+          <p>Your file has been successfully processed by our system.</p>
+          
+          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <h3 style="margin-top: 0; color: #1f2937;">Upload Details</h3>
+            <p><strong>File Name:</strong> ${fileName}</p>
+            <p><strong>Total Links Processed:</strong> ${totalLinks}</p>
+            <p><strong>Matches Found:</strong> ${matchCount}</p>
+            <p><strong>Credits Deducted:</strong> ${creditsDeducted}</p>
+          </div>
+          
+          <p>You can download your results from the Bulk Lookup section of your dashboard.</p>
+          <p>If you have any questions, please reply to this email.</p>
+          
+          <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+            This is an automated message. Please do not reply directly to this email.
+          </p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: 'Email sent successfully' });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});
 
 
 
@@ -620,8 +680,7 @@ sequelize.sync({ alter: true }).then(() => {
   app.listen(8000, () => console.log('Backend running on 8000'));
 });  
 
-const mobileEnrichmentRoutes = require('./routes/mobileEnrichmentRoutes')
-app.use('/mobileEnrichments', mobileEnrichmentRoutes)
+
 
 const userRoutes = require('./routes/userRoutes')
 app.use('/users', userRoutes)
@@ -629,76 +688,23 @@ app.use('/users', userRoutes)
 // const creditRoutes = require('./routes/creditRoutes')
 // app.use('/api', creditRoutes)
 
-const bulkUploadRoutes = require('./routes/bulkUploadRoutes')
-app.use('/bulkUpload', bulkUploadRoutes)
 
+
+const bulklookups = require('./routes/bulklookup')
+app.use('/bulklookup', bulklookups)
 
 const creditTransactionRoutes = require("./routes/creditTransactionRoutes");  // Import new routes
 app.use("/transactions", creditTransactionRoutes);  
 
-const excelRoutes = require('./routes/excelRoutes')
-app.use('/excel', excelRoutes);
+
 
 const superAdminRoutes = require('./routes/superAdminRoutes')
 app.use('/super-admin', superAdminRoutes);
 
-const uploadedLinksRoutes = require("./routes/uploadedLinksRoutes");
-app.use("/uploadedLinks", uploadedLinksRoutes);
 
 
 
 
-// In your server routes file (e.g., routes.js or app.js)
-const nodemailer = require('nodemailer');
-
-// Configure your email transporter (add this at the top of your file)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: "b2bdirectdata@gmail.com", // Your Gmail address
-    pass: "npgjrjuebmlmepgy"  // Your Gmail password or app password
-  }
-});
-
-// Add this route
-app.post('/send-upload-notification', async (req, res) => {
-  try {
-    const { email, fileName, totalLinks, matchCount, creditsDeducted } = req.body;
-
-    const mailOptions = {
-      from: "b2bdirectdata@gmail.com",
-      to: email,
-      subject: 'Your Bulk LinkedIn Lookup Upload Status',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Bulk LinkedIn Lookup - Upload Processed</h2>
-          <p>Your file has been successfully processed by our system.</p>
-          
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-            <h3 style="margin-top: 0; color: #1f2937;">Upload Details</h3>
-            <p><strong>File Name:</strong> ${fileName}</p>
-            <p><strong>Total Links Processed:</strong> ${totalLinks}</p>
-            <p><strong>Matches Found:</strong> ${matchCount}</p>
-            <p><strong>Credits Deducted:</strong> ${creditsDeducted}</p>
-          </div>
-          
-          <p>You can download your results from the Bulk Lookup section of your dashboard.</p>
-          <p>If you have any questions, please reply to this email.</p>
-          
-          <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
-            This is an automated message. Please do not reply directly to this email.
-          </p>
-        </div>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
-    res.status(200).json({ message: 'Email sent successfully' });
-  } catch (error) {
-    console.error('Error sending email:', error);
-    res.status(500).json({ error: 'Failed to send email' });
-  }
-});
 
 
 
@@ -849,11 +855,11 @@ app.post('/api/verify-payment', async (req, res) => {
 
 
 
-// 2 step
+////////////contenct verfication///////////
 
 const VerificationUpload = require('./model/verification_upload'); // Correct model name
 
-app.post('/upload-excel-verification', upload.single('file'), async (req, res) => {
+app.post('/upload-excel-verification',auth, upload.single('file'), async (req, res) => {
   try {
     const email = req.headers['user-email'];
     if (!email) return res.status(400).json({ error: "Email required" });
@@ -1028,51 +1034,13 @@ app.post('/process-matching/:uniqueId', async (req, res) => {
 
 
 
-// Add this route for deducting credits
-// In your backend route file (e.g., routes/api.js)
-const CreditHistory = require('./model/CreditHistory');
-app.post('/api/deduct-credits', async (req, res) => {
-  try {
-    const { userEmail, credits, uniqueId } = req.body;
-
-    if (!userEmail || !credits || credits <= 0) {
-      return res.status(400).json({ error: 'Invalid credit deduction request' });
-    }
-
-    const user = await User.findOne({ where: { userEmail } });
-
-
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    if (user.credits < 0) {
-      return res.status(400).json({ error: 'Insufficient credits' });
-    }
-
-    // Deduct credits
-    user.credits -= credits;
-    await user.save();
-
-    // Optional: Save in CreditHistory table for audit
-    await CreditHistory.create({
-      email: userEmail,
-      creditsUsed: credits,
-      
-      uniqueId
-    });
-
-    res.json({ updatedCredits: user.credits });
-
-  } catch (err) {
-    console.error('Credit deduction error:', err);
-    res.status(500).json({ error: 'Failed to deduct credits' });
-  }
-});
 
 
 
 
 
-app.get('/get-verification-links', async (req, res) => {
+
+app.get('/get-verification-links',auth, async (req, res) => {
   try {
     const userEmail = req.headers['user-email'];
     
@@ -1140,7 +1108,7 @@ app.get('/get-verification-links', async (req, res) => {
 
 
 
-app.post('/api/deduct-credits_v', async (req, res) => {
+app.post('/api/deduct-credits_v',auth, async (req, res) => {
   try {
     const { userEmail, credits, uniqueId } = req.body;
 
@@ -1179,7 +1147,7 @@ app.post('/api/deduct-credits_v', async (req, res) => {
 
 
 // Add this to your backend routes (e.g., in your Express server)
-app.delete('/api/delete-verification-uploads/:uniqueId', async (req, res) => {
+app.delete('/api/delete-verification-uploads/:uniqueId',auth, async (req, res) => {
   try {
     const { uniqueId } = req.params;
     
@@ -1206,15 +1174,9 @@ app.delete('/api/delete-verification-uploads/:uniqueId', async (req, res) => {
 });
 
 
-
-
-
-
-
-
 // Add this to your backend routes
 // In your backend route handler
-app.get('/api/verification-uploads/:uniqueId', async (req, res) => {
+app.get('/api/verification-uploads/:uniqueId', auth, async (req, res) => {
   try {
     const { uniqueId } = req.params;
     
@@ -1258,6 +1220,90 @@ app.get('/api/verification-uploads/:uniqueId', async (req, res) => {
 });
 
 
+
+// Route to get all team emails from database
+app.get('/get/team-emails',auth, async (req, res) => {
+  try {
+    // Fetch all team emails from database
+    const teamEmails = await TeamEmail.findAll({
+      attributes: ['id', 'email', 'name'],
+      order: [['created_at', 'DESC']],
+      where: {
+        // Optional: add any filters you need
+        // For example, only active emails:
+        // is_active: true
+      }
+    });
+
+    // Format the response
+    const response = {
+      success: true,
+      data: teamEmails.map(email => ({
+        id: email.id,
+        email: email.email,
+        name: email.name
+      })),
+      count: teamEmails.length,
+      message: 'Team emails retrieved successfully'
+    };
+
+    console.log(`Fetched ${response.count} team emails`);
+    res.json(response);
+
+  } catch (error) {
+    console.error('Error fetching team emails:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch team emails',
+      error: error.message,
+    
+    });
+  }
+});
+
+
+
+// Email confirmation endpoint
+app.post('/api/send-verification-confirmation/link',auth, async (req, res) => {
+  const { email, uniqueId, totalLinks, pendingCount, creditCost, initiatedBy } = req.body;
+
+  try {
+    // Validate recipient email
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid recipient email address'
+      });
+    }
+
+    const mailOptions = {
+      from: `"B2B Full Details" <b2bdirectdata@gmail.com>`,
+      to: email,
+      subject: `Please Start Full Details`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Link Uploaded. Please Start Full Details</h2>
+          
+          <p><strong>Total Links:</strong> ${totalLinks}</p>
+          
+          <p>Team,<br/>B2B Direct Data</p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Email sent to ${email}`, info.messageId);
+    res.json({ success: true, messageId: info.messageId });
+  } catch (error) {
+    console.error(`Error sending to ${email}:`, error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message,
+      details: 'Failed to send confirmation email'
+    });
+  }
+});
 
 
 
@@ -1499,43 +1545,43 @@ function setupScheduledSync() {
 setupScheduledSync();
 
 
+// Add this route for deducting credits
+// In your backend route file (e.g., routes/api.js)
 
-
-
-
-
-
-
-app.post('/api/contact', async (req, res) => {
-  const { name, email, message } = req.body;
-
-  // Create a transporter
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: "b2bdirectdata@gmail.com", // Your Gmail address
-    pass: "npgjrjuebmlmepgy"  // Your Gmail password or app password
-    }
-  });
-
-  // Email options
-  const mailOptions = {
-    from: email,
-    to: 'b2bdirectdata@gmail.com',
-    subject: `New Contact Form Submission from ${name}`,
-    text: message,
-    html: `<p>You have a new contact form submission</p>
-           <p><strong>Name: </strong> ${name}</p>
-           <p><strong>Email: </strong> ${email}</p>
-           <p><strong>Message: </strong> ${message}</p>`
-  };
-
+app.post('/api/deduct-credits', async (req, res) => {
   try {
-    await transporter.sendMail(mailOptions);
-    res.status(200).json({ message: 'Email sent successfully' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error sending email' });
+    const { userEmail, credits, uniqueId } = req.body;
+
+    if (!userEmail || !credits || credits <= 0) {
+      return res.status(400).json({ error: 'Invalid credit deduction request' });
+    }
+
+    const user = await User.findOne({ where: { userEmail } });
+
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (user.credits < 0) {
+      return res.status(400).json({ error: 'Insufficient credits' });
+    }
+
+    // Deduct credits
+    user.credits -= credits;
+    await user.save();
+
+    // Optional: Save in CreditHistory table for audit
+    await CreditHistory.create({
+      email: userEmail,
+      creditsUsed: credits,
+      
+      uniqueId
+    });
+
+    res.json({ updatedCredits: user.credits });
+
+  } catch (err) {
+    console.error('Credit deduction error:', err);
+    res.status(500).json({ error: 'Failed to deduct credits' });
   }
 });
 
@@ -1544,10 +1590,13 @@ app.post('/api/contact', async (req, res) => {
 
 
 
+
+/////////////////////verfication company////////////
+
 const VerificationUpload_com = require('./model/VerificationUpload_com');
 
 
-app.post('/upload-excel-verification-com', upload.single('file'), async (req, res) => {
+app.post('/upload-excel-verification-com',auth, upload.single('file'), async (req, res) => {
   try {
     const email = req.headers['user-email'];
     if (!email) return res.status(400).json({ error: "Email required" });
@@ -1723,7 +1772,7 @@ app.post('/process-matching-com/:uniqueId', async (req, res) => {
 
 
 
-app.get('/get-verification-links-com', async (req, res) => {
+app.get('/get-verification-links-com',auth, async (req, res) => {
   try {
     const userEmail = req.headers['user-email'];
     
@@ -1789,7 +1838,7 @@ app.get('/get-verification-links-com', async (req, res) => {
 
 
 
-app.get('/api/verification-uploads-com/:uniqueId', async (req, res) => {
+app.get('/api/verification-uploads-com/:uniqueId',auth, async (req, res) => {
   try {
     const { uniqueId } = req.params;
     
@@ -1836,7 +1885,7 @@ app.get('/api/verification-uploads-com/:uniqueId', async (req, res) => {
 
 
 
-app.post('/api/deduct-credits_v-com', async (req, res) => {
+app.post('/api/deduct-credits_v-com',auth, async (req, res) => {
   try {
     const { userEmail, credits, uniqueId } = req.body;
 
@@ -1877,7 +1926,7 @@ app.post('/api/deduct-credits_v-com', async (req, res) => {
 
 
 // Add this to your backend routes (e.g., in your Express server)
-app.delete('/api/delete-verification-uploads-com/:uniqueId', async (req, res) => {
+app.delete('/api/delete-verification-uploads-com/:uniqueId',auth, async (req, res) => {
   try {
     const { uniqueId } = req.params;
     
@@ -2127,7 +2176,7 @@ function setupScheduledSyncCom() {
       for (const { uniqueId } of uniqueIds) {
         try {
           const response = await axios.post(
-            `http://13.203.218.236:8000/sync-temp-to-main-com/${uniqueId}`
+            `http://13.203.218.236:8000/sync-temp-to-main-com/${uniqueId},`
           );
           console.log(`Sync completed for ${uniqueId}:`, response.data);
         } catch (err) {
@@ -2444,7 +2493,7 @@ app.get('/api/test-db', async (req, res) => {
 
 
 
-const PaymentTransaction = require('./model/PaymentTransaction');
+
 
 app.post('/api/payments/update-credits', async (req, res) => {
   try {
@@ -2483,128 +2532,128 @@ app.post('/api/payments/update-credits', async (req, res) => {
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
-const { sendOtpEmail } = require('../backend/routes/mailer');
-const rateLimit = require('express-rate-limit');
+// const { sendOtpEmail } = require('../backend/routes/mailer');
+// const rateLimit = require('express-rate-limit');
 
-// Rate limiting for OTP requests
-const otpLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 3, // limit each IP to 3 OTP requests per windowMs
-  message: 'Too many OTP requests from this IP, please try again later'
-});
+// // Rate limiting for OTP requests
+// const otpLimiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 3, // limit each IP to 3 OTP requests per windowMs
+//   message: 'Too many OTP requests from this IP, please try again later'
+// });
 
 
 
-// Send OTP for password reset
-app.post('/send-otp', otpLimiter, async (req, res) => {
-  try {
-    const { email } = req.body;
+// // Send OTP for password reset
+// app.post('/send-otp', otpLimiter, async (req, res) => {
+//   try {
+//     const { email } = req.body;
 
-    // Validate email format
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ message: "Please provide a valid email address." });
-    }
+//     // Validate email format
+//     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+//       return res.status(400).json({ message: "Please provide a valid email address." });
+//     }
 
-    const user = await User.findOne({ where: { userEmail: email } });
-    if (!user) {
-      return res.status(404).json({ message: "If this email exists, we've sent an OTP to it." });
-    }
+//     const user = await User.findOne({ where: { userEmail: email } });
+//     if (!user) {
+//       return res.status(404).json({ message: "If this email exists, we've sent an OTP to it." });
+//     }
 
-    // Check if user is blocked from OTP requests
-    if (user.otpBlockedUntil && user.otpBlockedUntil > new Date()) {
-      return res.status(429).json({ 
-        message: `Too many attempts. Try again after ${user.otpBlockedUntil.toLocaleTimeString()}`
-      });
-    }
+//     // Check if user is blocked from OTP requests
+//     if (user.otpBlockedUntil && user.otpBlockedUntil > new Date()) {
+//       return res.status(429).json({ 
+//         message: `Too many attempts. Try again after ${user.otpBlockedUntil.toLocaleTimeString()}`
+//       });
+//     }
 
-    // Generate a 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
+//     // Generate a 6-digit OTP
+//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//     const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
 
-    // Update user with OTP and expiry
-    await user.update({ 
-      resetPasswordOtp: otp,
-      resetPasswordOtpExpiry: otpExpiry,
-      otpAttempts: 0 // Reset attempts when new OTP is sent
-    });
+//     // Update user with OTP and expiry
+//     await user.update({ 
+//       resetPasswordOtp: otp,
+//       resetPasswordOtpExpiry: otpExpiry,
+//       otpAttempts: 0 // Reset attempts when new OTP is sent
+//     });
 
-    // Send OTP via email
-    const emailSent = await sendOtpEmail(email, otp);
+//     // Send OTP via email
+//     const emailSent = await sendOtpEmail(email, otp);
     
-    if (!emailSent) {
-      return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
-    }
+//     if (!emailSent) {
+//       return res.status(500).json({ message: "Failed to send OTP email. Please try again." });
+//     }
 
-    res.status(200).json({ 
-      message: "OTP sent to your email address.",
-      // Don't send OTP in response in production
-      otp: process.env.NODE_ENV === 'development' ? otp : null 
-    });
-  } catch (error) {
-    console.error("OTP send error:", error);
-    res.status(500).json({ message: "Server error.", error: error.message });
-  }
-});
+//     res.status(200).json({ 
+//       message: "OTP sent to your email address.",
+//       // Don't send OTP in response in production
+//       otp: process.env.NODE_ENV === 'development' ? otp : null 
+//     });
+//   } catch (error) {
+//     console.error("OTP send error:", error);
+//     res.status(500).json({ message: "Server error.", error: error.message });
+//   }
+// });
 
-// Reset password with OTP
-app.post('/reset-password', async (req, res) => {
-  try {
-    const { email, otp, newPassword } = req.body;
+// // Reset password with OTP
+// app.post('/reset-password', async (req, res) => {
+//   try {
+//     const { email, otp, newPassword } = req.body;
 
-    if (!email || !otp || !newPassword) {
-      return res.status(400).json({ message: "All fields are required." });
-    }
+//     if (!email || !otp || !newPassword) {
+//       return res.status(400).json({ message: "All fields are required." });
+//     }
 
-    if (newPassword.length < 8) {
-      return res.status(400).json({ message: "Password must be at least 8 characters long." });
-    }
+//     if (newPassword.length < 8) {
+//       return res.status(400).json({ message: "Password must be at least 8 characters long." });
+//     }
 
-    const user = await User.findOne({ where: { userEmail: email } });
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
-    }
+//     const user = await User.findOne({ where: { userEmail: email } });
+//     if (!user) {
+//       return res.status(404).json({ message: "User not found." });
+//     }
 
-    // Check if OTP matches and is not expired
-    if (user.resetPasswordOtp !== otp || new Date() > user.resetPasswordOtpExpiry) {
-      // Increment failed attempts
-      const attempts = (user.otpAttempts || 0) + 1;
-      let otpBlockedUntil = null;
+//     // Check if OTP matches and is not expired
+//     if (user.resetPasswordOtp !== otp || new Date() > user.resetPasswordOtpExpiry) {
+//       // Increment failed attempts
+//       const attempts = (user.otpAttempts || 0) + 1;
+//       let otpBlockedUntil = null;
       
-      // Block after 3 failed attempts for 15 minutes
-      if (attempts >= 3) {
-        otpBlockedUntil = new Date(Date.now() + 15 * 60 * 1000);
-      }
+//       // Block after 3 failed attempts for 15 minutes
+//       if (attempts >= 3) {
+//         otpBlockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+//       }
       
-      await user.update({ 
-        otpAttempts: attempts,
-        otpBlockedUntil
-      });
+//       await user.update({ 
+//         otpAttempts: attempts,
+//         otpBlockedUntil
+//       });
       
-      return res.status(400).json({ 
-        message: attempts >= 3 
-          ? "Too many incorrect attempts. Try again later." 
-          : "Invalid or expired OTP." 
-      });
-    }
+//       return res.status(400).json({ 
+//         message: attempts >= 3 
+//           ? "Too many incorrect attempts. Try again later." 
+//           : "Invalid or expired OTP." 
+//       });
+//     }
 
-    // Hash the new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+//     // Hash the new password
+//     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update user password and clear OTP fields
-    await user.update({ 
-      userPassword: hashedPassword,
-      resetPasswordOtp: null,
-      resetPasswordOtpExpiry: null,
-      otpAttempts: 0,
-      otpBlockedUntil: null
-    });
+//     // Update user password and clear OTP fields
+//     await user.update({ 
+//       userPassword: hashedPassword,
+//       resetPasswordOtp: null,
+//       resetPasswordOtpExpiry: null,
+//       otpAttempts: 0,
+//       otpBlockedUntil: null
+//     });
 
-    res.status(200).json({ message: "Password reset successfully." });
-  } catch (error) {
-    console.error("Password reset error:", error);
-    res.status(500).json({ message: "Server error.", error: error.message });
-  }
-});
+//     res.status(200).json({ message: "Password reset successfully." });
+//   } catch (error) {
+//     console.error("Password reset error:", error);
+//     res.status(500).json({ message: "Server error.", error: error.message });
+//   }
+// });
 
 
 
@@ -2641,7 +2690,7 @@ app.post('/reset-password', async (req, res) => {
 //   }
 // });
 
-app.post('/api/send-completion-email', async (req, res) => {
+app.post('/api/send-completion-email',auth, async (req, res) => {
   try {
     const { email, uniqueId, totalRecords, completedRecords } = req.body;
 
@@ -2731,7 +2780,7 @@ app.post('/api/send-completion-email', async (req, res) => {
 // });
 
 
-app.post('/api/send-completion-email-com', async (req, res) => {
+app.post('/api/send-completion-email-com',auth, async (req, res) => {
   try {
     const { email, uniqueId, totalRecords, completedRecords } = req.body;
 
@@ -2894,71 +2943,12 @@ app.post('/change-password', async (req, res) => {
 
 const { DataTypes } = require('sequelize');
 const TeamEmail = require('./model/team_notification');
+const Subscriber =require("./model/removeData")
+const OtpVerification =require('./model/otp_verfication')
 
 
-// Models
-const Subscriber = sequelize.define('subscriber', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-    validate: {
-      isEmail: true,
-    },
-  },
-  full_name: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  phone: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  status: {
-    type: DataTypes.ENUM('pending', 'verified', 'rejected'),
-    defaultValue: 'pending',
-  },
-  remark: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-}, {
-  tableName: 'subscribers',
-  timestamps: true,
-});
 
 
-const OtpVerification = sequelize.define('otp_verification', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  otp: {
-    type: DataTypes.STRING(6),
-    allowNull: false,
-  },
-  expires_at: {
-    type: DataTypes.DATE,
-    allowNull: false,
-  },
-  verified: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-}, {
-  tableName: 'otp_verifications',
-  timestamps: true,
-});
 
 
 app.post('/api/send-otp', async (req, res) => {
@@ -3178,46 +3168,10 @@ app.post('/api/send-confirmation', async (req, res) => {
 
 
 
-// Route to get all team emails from database
-app.get('/get/team-emails', async (req, res) => {
-  try {
-    // Fetch all team emails from database
-    const teamEmails = await TeamEmail.findAll({
-      attributes: ['id', 'email', 'name'],
-      order: [['created_at', 'DESC']],
-      where: {
-        // Optional: add any filters you need
-        // For example, only active emails:
-        // is_active: true
-      }
-    });
 
-    // Format the response
-    const response = {
-      success: true,
-      data: teamEmails.map(email => ({
-        id: email.id,
-        email: email.email,
-        name: email.name
-      })),
-      count: teamEmails.length,
-      message: 'Team emails retrieved successfully'
-    };
 
-    console.log(`Fetched ${response.count} team emails`);
-    res.json(response);
 
-  } catch (error) {
-    console.error('Error fetching team emails:', error);
-    
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch team emails',
-      error: error.message,
-    
-    });
-  }
-});
+
 
 
 
@@ -3227,49 +3181,7 @@ app.get('/get/team-emails', async (req, res) => {
 
 
 // Email confirmation endpoint
-app.post('/api/send-verification-confirmation/link', async (req, res) => {
-  const { email, uniqueId, totalLinks, pendingCount, creditCost, initiatedBy } = req.body;
-
-  try {
-    // Validate recipient email
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Invalid recipient email address'
-      });
-    }
-
-    const mailOptions = {
-      from: `"B2B Full Details" <b2bdirectdata@gmail.com>`,
-      to: email,
-      subject: `Please Start Full Details`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Link Uploaded. Please Start Full Details</h2>
-          
-          <p><strong>Total Links:</strong> ${totalLinks}</p>
-          
-          <p>Team,<br/>B2B Direct Data</p>
-        </div>
-      `
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Email sent to ${email}`, info.messageId);
-    res.json({ success: true, messageId: info.messageId });
-  } catch (error) {
-    console.error(`Error sending to ${email}:`, error);
-    res.status(500).json({ 
-      success: false,
-      error: error.message,
-      details: 'Failed to send confirmation email'
-    });
-  }
-});
-
-
-// Email confirmation endpoint
-app.post('/api/send-verification-confirmation/company', async (req, res) => {
+app.post('/api/send-verification-confirmation/company', auth, async (req, res) => {
   const { email, uniqueId, totalLinks, pendingCount, creditCost, initiatedBy } = req.body;
 
   try {
@@ -3646,5 +3558,44 @@ app.post('/api/save-completed-reports', async (req, res) => {
   } catch (error) {
     console.error('Error saving completed reports:', error);
     res.status(500).json({ error: 'Failed to save completed reports' });
+  }
+});
+
+
+
+
+
+
+
+app.post('/api/contact', async (req, res) => {
+  const { name, email, message } = req.body;
+
+  // Create a transporter
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: "b2bdirectdata@gmail.com", // Your Gmail address
+    pass: "npgjrjuebmlmepgy"  // Your Gmail password or app password
+    }
+  });
+
+  // Email options
+  const mailOptions = {
+    from: email,
+    to: 'b2bdirectdata@gmail.com',
+    subject: `New Contact Form Submission from ${name}`,
+    text: message,
+    html: `<p>You have a new contact form submission</p>
+           <p><strong>Name: </strong> ${name}</p>
+           <p><strong>Email: </strong> ${email}</p>
+           <p><strong>Message: </strong> ${message}</p>`
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: 'Email sent successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error sending email' });
   }
 });
