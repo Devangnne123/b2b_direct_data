@@ -48,6 +48,8 @@ import RequestResetForm from "./components/RequestResetForm";
 import Remove_form from "./components/Remove_form";
 import AllHistory from "./components/AllReport";
 import Alladmin_S from "./components/Alladmin_S";
+import All_pending_history from "./components/All_pending_history"
+
 
 
 function App() {
@@ -58,7 +60,7 @@ function App() {
     "/bulk-lookup",
     "/statistic",
     "/add-user",
-    "/checkout",
+    // "/checkout",
    "/buy",
    "/verfication_com",
    "/verfication_links",
@@ -74,7 +76,8 @@ function App() {
     "/admin-credit-report",
     "/user-credit-report",
     "/change_your_password",
-    "/all_history"
+    "/all_history",
+    "/all_completed_report"
     
   ]; // Paths without Header/Footer
 
@@ -92,7 +95,7 @@ function App() {
         {/* <Route path="/bulk" element={<Bulk />} /> */}
         <Route path="/statistic" element={<Statistic />} />
         <Route path="/Temp" element={<TempLinkMobileForm />} />
-<Route path="/checkout" element={<CheckoutPage/>} />
+{/* <Route path="/checkout" element={<CheckoutPage/>} /> */}
           
            <Route path="/change_your_password" element={<RequestResetForm />} />
           <Route path="/payment-status" element={<PaymentStatus />} />
@@ -105,6 +108,7 @@ function App() {
         <Route path="/Linkedin_Contect" element={<Linkedin_Contect />} />
         <Route path="/Linkedin_Company" element={<Linkedin_Company />} />
          <Route path="/all_history" element={<AllHistory />} />
+         <Route path="/all_completed_report" element={<All_pending_history />} />
 
          <Route path="/" element={<Login />} />
         <Route path="/" element={<SignUp />} />

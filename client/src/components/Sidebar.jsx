@@ -58,11 +58,11 @@ function Sidebar() {
       icon: <FaUserPlus />,
       options: [{ name: "Upload Company link", path: "/verfication_com" }],
     },
-   {
-  name: "Top-Up Credits",
-  icon: <FaUserPlus />,
-  options: roleId === 1 ? [{ name: "Checkout", path: "/checkout" }] : [],
-}
+//    {
+//   name: "Top-Up Credits",
+//   icon: <FaUserPlus />,
+//   options: roleId === 1 ? [{ name: "Checkout", path: "/checkout" }] : [],
+// }
 ,
     {
       name: "Settings",
@@ -118,9 +118,10 @@ function Sidebar() {
     {
       name: "Statistics",
       icon: <FaChartBar />,
-      options: [{ name: "All report", path: "/all_history" }],
+      options: [{ name: "All report", path: "/all_history" },{ name: "All Status Report", path: "/all_completed_report" }],
       
     },
+    
     {
       name: "Settings",
       icon: <IoMdSettings />,
@@ -133,6 +134,7 @@ function Sidebar() {
     { name: "All User", path: "/all-user", icon: <FaChartBar /> },
     { name: "Credit Report", path: "/admin-credit-report", icon: <FaChartBar /> },
      { name: "All Report", path: "/all_history", icon: <FaChartBar /> },
+     { name: "All Status Report", path: "/all_completed_report", icon: <FaChartBar /> },
    
     { name: "Sign out", path: "/", icon: <FaChartBar /> },
   ];

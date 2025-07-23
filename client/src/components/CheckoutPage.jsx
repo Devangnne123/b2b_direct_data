@@ -4,7 +4,7 @@ import PaymentList from './PaymentList';
 import { Loader2, CheckCircle, AlertCircle, CreditCard, ArrowRight, Gem, Zap, BadgeCheck, Shield, Lock } from 'lucide-react';
 import { FaCoins, FaPaypal } from 'react-icons/fa';
 import Sidebar from "../components/Sidebar";
-
+import Razorpay from "../components/Razorpay";
 const CheckoutPage = () => {
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [error, setError] = useState(null);
@@ -284,6 +284,7 @@ const handleSuccess = async (details) => {
                       )}
                     </div>
                     <PaymentList />
+                    <Razorpay/>
                   </div>
                 </div>
               </div>

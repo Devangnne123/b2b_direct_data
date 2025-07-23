@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import {
+import { 
   Table,
   TableBody,
   TableCell,
@@ -39,151 +39,170 @@ import {
   Hash,
   Copy as ContentCopyIcon,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Mail,
+  Clock,
+  AlertCircle,
+  Check,
+  X,
+  Phone,
+  RefreshCw,
+  Search
 } from 'lucide-react';
-import Sidebar from './Sidebar';
 import * as XLSX from 'xlsx';
+import Sidebar from './Sidebar';
 
-const AllHistory = () => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);  
-  const [savedEmail, setSavedEmail] = useState("Guest");
+const VerificationUploadsReport = () => {
+  const [reports, setReports] = useState({
+    verification: null,
+    company: null,
+    directnumber: null
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [reportType, setReportType] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [emailFilter, setEmailFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [emailSearchTerm, setEmailSearchTerm] = useState('');
   const [order, setOrder] = useState('desc');
   const [orderBy, setOrderBy] = useState('date');
-  const [reportType, setReportType] = useState('all');
-  const [transactionFilter, setTransactionFilter] = useState('all');
-  const [combinedData, setCombinedData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage] = useState(10);
+  const [expandedRows, setExpandedRows] = useState({});
+  const [downloading, setDownloading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [creatorMap, setCreatorMap] = useState({});
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'success'
   });
   const [saving, setSaving] = useState(false);
-  const [downloading, setDownloading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage] = useState(10);
-  const [expandedRows, setExpandedRows] = useState({});
-  const [roleId, setroleId] = useState("Guest");
+  const [savedEmail, setSavedEmail] = useState("Guest");
+  const [roleId, setRoleId] = useState("Guest");
 
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
     const roleId = user?.roleId;
-    setroleId(roleId);
+    setRoleId(roleId);
     if (user?.email) {
       setSavedEmail(user.email);
     }
+    fetchAllReports();
   }, []);
 
-  const fetchAllData = async () => {
+  const fetchAllReports = async () => {
     try {
       setLoading(true);
       
-      const [linksRes, verificationRes, creditRes, companyVerificationRes] = await Promise.all([
-        axios.get('http://13.203.218.236:8000/api/links/report',),
-        axios.get('http://13.203.218.236:8000/api/verifications/report'),
-        axios.get('http://13.203.218.236:8000/api/credit-transactions'),
-        axios.get('http://13.203.218.236:8000/api/company-verifications/report')
+      const [verificationRes, companyRes, directnumberRes] = await Promise.all([
+        axios.get('http://13.203.218.236:8000/VerificationUpload/report'),
+        axios.get('http://13.203.218.236:8000/company/report'),
+        axios.get('http://13.203.218.236:8000/Direct-number/report')
       ]);
 
-      const transformData = (data, type) => {
-        return data?.map(item => ({
-          ...item,
-          type: type
-        })) || [];
-      };
-
-      const linksData = transformData(linksRes.data.data, 'links').map(item => ({
-        ...item,
-        process: 'Direct Number Enrichment',
-        transactionType: 'Debit',
-        amount: item.creditDeducted || 0,
-        date: item.date,
-        finalStatus: item.status
-      }));
-
-      const verificationData = transformData(verificationRes.data.data, 'verification').map(item => ({
-        ...item,
-        process: 'Contact Verification',
-        transactionType: 'Debit',
-        amount: item.creditsUsed || 0,
-        date: item.date,
-        finalStatus: item.final_status || 'N/A'
-      }));
-
-      const creditData = transformData(creditRes.data.data, 'credit').map(item => ({
-        ...item,
-        process: item.transactionType === 'Credit' ? 'Credit Received' : 'Credit Sent',
-        amount: item.amount,
-        date: item.createdAt,
-        finalStatus: 'Completed',
-        email: item.userEmail,
-        transactionType: item.transactionType
-      }));
-
-      const companyVerificationData = transformData(companyVerificationRes.data.data, 'company-verification').map(item => ({
-        ...item,
-        process: 'Company Details',
-        transactionType: 'Debit',
-        amount: item.creditsUsed || 0,
-        date: item.date,
-        finalStatus: item.final_status || 'N/A',
-        tableName: companyVerificationRes.data.tableName || 'Company Verification Report'
-      }));
-
-      const allCombined = [
-        ...linksData,
-        ...verificationData,
-        ...creditData,
-        ...companyVerificationData
-      ].map(item => ({
-        ...item,
-        formattedDate: new Date(item.date),
-        createdBy: null
-      }));
-
-      setCombinedData(allCombined);
-      setData(allCombined);
+      setReports({
+        verification: verificationRes.data,
+        company: companyRes.data,
+        directnumber: directnumberRes.data
+      });
       setLastUpdated(new Date());
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.error || err.message);
       setSnackbar({
         open: true,
-        message: 'Failed to fetch data',
+        message: err.response?.data?.error || err.message,
         severity: 'error'
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchCreators = async () => {
+  const formatDate = (dateString) => {
+    if (!dateString) return "Unknown";
+    return format(new Date(dateString), 'PPpp');
+  };
+
+  const getStatusIcon = (status) => {
+    if (!status) return <AlertCircle className="h-4 w-4 text-gray-500" />;
+    
+    switch(status.toLowerCase()) {
+      case 'completed':
+        return <Check className="h-4 w-4 text-green-500" />;
+      case 'pending':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'not available':
+        return <X className="h-4 w-4 text-red-500" />;
+      default:
+        return <AlertCircle className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getProcessName = (type) => {
+    switch(type) {
+      case 'verification':
+        return 'Contact Verification';
+      case 'company':
+        return 'Company Verification';
+      case 'directnumber':
+        return 'Direct Number Verification';
+      default:
+        return type;
+    }
+  };
+
+  const handleSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  const handleManualRefresh = () => {
+    fetchAllReports();
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  const exportToExcel = () => {
+    setDownloading(true);
+    
     try {
-      const uniqueEmails = [...new Set(combinedData.map(item => item.email).filter(Boolean))];
+      const exportData = filteredData.map(item => ({
+        'ID': item.uniqueId,
+        'Email': item.email || '-----',
+        'Date': format(new Date(item.date), 'PPpp'),
+        'Process': item.process || getProcessName(item.type),
+        'Filename': item.fileName || '-----',
+        'Total Links': item.totallink || '-----',
+        'Pending Count': item.pendingCount || '-----',
+        'Status': item.status || item.final_status,
+        'Credits Used': item.creditsUsed || 0,
+        'Remaining Credits': item.remainingCredits || 0
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Verification Reports");
       
-      const creators = await Promise.all(
-        uniqueEmails.map(async (email) => {
-          try {
-            const response = await axios.get(`http://13.203.218.236:8000/user/creator/${email}`);
-            return response.data;
-          } catch (error) {
-            console.error(`Error fetching creator for ${email}:`, error);
-            return { userEmail: email, createdBy: null };
-          }
-        })
-      );
+      const fileName = `Verification_Reports_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.xlsx`;
+      XLSX.writeFile(wb, fileName);
       
-      const newCreatorMap = creators.reduce((acc, curr) => {
-        acc[curr.userEmail] = curr.createdBy;
-        return acc;
-      }, {});
-      
-      setCreatorMap(newCreatorMap);
+      setSnackbar({
+        open: true,
+        message: 'Excel file downloaded successfully!',
+        severity: 'success'
+      });
     } catch (error) {
-      console.error('Error fetching creators:', error);
+      console.error('Error exporting to Excel:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to export to Excel',
+        severity: 'error'
+      });
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -191,20 +210,20 @@ const AllHistory = () => {
     try {
       setSaving(true);
       const completedReports = combinedData
-        .filter(item => item.finalStatus?.toLowerCase() === 'completed')
+        .filter(item => {
+          const status = item.type === 'directnumber' ? item.status : item.final_status;
+          return status?.toLowerCase() === 'completed';
+        })
         .map(item => ({
           ...item,
-          process: item.process,
+          process: getProcessName(item.type),
           uniqueId: item.uniqueId,
           totallink: item.totallink,
-          matchCount: item.matchCount,
+          pendingCount: item.pendingCount,
           fileName: item.fileName,
           date: item.date,
           email: item.email,
-          createdBy: creatorMap[item.email] || 'Admin',
-          transactionType: item.transactionType,
-          amount: item.amount,
-          finalStatus: item.finalStatus,
+          finalStatus: item.status || item.final_status,
           type: item.type
         }));
 
@@ -238,61 +257,6 @@ const AllHistory = () => {
     }
   };
 
-  const exportToExcel = () => {
-    setDownloading(true);
-    
-    try {
-      const exportData = filteredData.map(item => ({
-        '#': indexOfFirstRow + filteredData.indexOf(item) + 1,
-        'Email': item.email || '-----',
-        'Date': format(new Date(item.date), 'PPpp'),
-        'Process': item.process,
-        'From': item.senderEmail || '-----',
-        'To': item.email || '-----',
-        'Amount': `${item.transactionType?.toLowerCase() === 'debit' ? '-' : ''}${Number(item.amount || 0).toFixed(2)}`,
-        'Transaction Type': item.transactionType,
-        'Balance': item.remainingCredits || '0',
-        'Unique ID': item.uniqueId || '-----',
-        'Filename': item.fileName || '-----',
-        'Total Link': item.totallink || '-----',
-        'Match Count': item.matchCount || '-----',
-        'Created By': item.email ? (creatorMap[item.email] || 'Admin') : '-----',
-        'Final Status': item.finalStatus || '-----'
-      }));
-
-      const ws = XLSX.utils.json_to_sheet(exportData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Transaction History");
-      
-      const fileName = `TransactionHistory_${format(new Date(), 'yyyy-MM-dd_HH-mm-ss')}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-      
-      setSnackbar({
-        open: true,
-        message: 'Excel file downloaded successfully!',
-        severity: 'success'
-      });
-    } catch (error) {
-      console.error('Error exporting to Excel:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to export to Excel',
-        severity: 'error'
-      });
-    } finally {
-      setDownloading(false);
-    }
-  };
-
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    setSnackbar({
-      open: true,
-      message: 'Copied to clipboard!',
-      severity: 'success'
-    });
-  };
-
   const toggleRowExpand = (id) => {
     setExpandedRows(prev => ({
       ...prev,
@@ -300,93 +264,79 @@ const AllHistory = () => {
     }));
   };
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
+  // Combine all data when 'all' is selected
+  const combinedData = reportType === 'all' ? [
+    ...(reports.verification?.data || []).map(item => ({ ...item, type: 'verification' })),
+    ...(reports.company?.data || []).map(item => ({ ...item, type: 'company' })),
+    ...(reports.directnumber?.data || []).map(item => ({ ...item, type: 'directnumber' }))
+  ] : (reports[reportType]?.data || []).map(item => ({ ...item, type: reportType }));
 
-  useEffect(() => {
-    if (combinedData.length > 0) {
-      fetchCreators();
-    }
-  }, [combinedData]);
-
-  const handleSort = (property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
-  };
-
-  const handleReportTypeChange = (event) => {
-    const type = event.target.value;
-    setReportType(type);
-    setData(type === 'all' ? combinedData : combinedData.filter(item => item.type === type));
-    setCurrentPage(1);
-  };
-
-  const handleManualRefresh = () => {
-    fetchAllData();
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
-  };
-
-  const sortedData = [...data].sort((a, b) => {
+  const sortedData = [...combinedData].sort((a, b) => {
     if (a[orderBy] < b[orderBy]) return order === 'asc' ? -1 : 1;
     if (a[orderBy] > b[orderBy]) return order === 'asc' ? 1 : -1;
     return 0;
   });
 
   const filteredData = sortedData.filter(item => {
+    const status = item.type === 'directnumber' ? item.status : item.final_status;
+    const statusLower = status?.toLowerCase() || '';
+    const emailLower = item.email?.toLowerCase() || '';
     const searchLower = searchTerm.toLowerCase();
-    const emailSearchLower = emailSearchTerm.toLowerCase();
-    const createdBy = creatorMap[item.email] || 'Admin';
     
-    const transactionMatch = 
-      transactionFilter === 'all' || 
-      (transactionFilter === 'debit' && item.transactionType?.toLowerCase() === 'debit') ||
-      (transactionFilter === 'credit' && item.transactionType?.toLowerCase() === 'credit');
-    if (roleId === 3){
-    return (
-      
-      ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
-      (createdBy.toLowerCase().includes(searchLower)))&&
-      (item.email && item.email.toLowerCase().includes(emailSearchLower)) &&
-      transactionMatch
-    );
-  } else if (roleId === 2){
-    return (
-      
-      ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
-      (createdBy.toLowerCase()===savedEmail.toLowerCase())) &&
-      (item.email && item.email.toLowerCase()===savedEmail.toLowerCase()) && 
-      
-      transactionMatch
-    );
+    const statusMatch = 
+      statusFilter === 'all' || 
+      (statusFilter === 'completed' && statusLower === 'completed') ||
+      (statusFilter === 'pending' && statusLower === 'pending') ||
+      (statusFilter === 'not available' && statusLower === 'not available');
 
-
-  }
-  else if (roleId === 1){
-
-    return (
-      
-      ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
-      (createdBy.toLowerCase()===savedEmail.toLowerCase())) &&
-      (item.email && item.email.toLowerCase()===savedEmail.toLowerCase()) && 
-      
-      transactionMatch
-    );
-  }
-   if (roleId === 123){
-    return (
-      
-      ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
-      (createdBy.toLowerCase().includes(searchLower))) &&
-      (item.email && item.email.toLowerCase().includes(emailSearchLower)) &&
-      transactionMatch
-    );
-  }
+    if (roleId === 3) {
+      return (
+        ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
+        (item.fileName && item.fileName.toLowerCase().includes(searchLower))) &&
+        (emailLower.includes(emailFilter.toLowerCase())) &&
+        statusMatch
+      );
+    } else if (roleId === 2 || roleId === 1) {
+      return (
+        ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
+        (item.fileName && item.fileName.toLowerCase().includes(searchLower))) &&
+        (item.email && item.email.toLowerCase() === savedEmail.toLowerCase()) && 
+        statusMatch
+      );
+    } else if (roleId === 123) {
+      return (
+        ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
+        (item.fileName && item.fileName.toLowerCase().includes(searchLower))) &&
+        (emailLower.includes(emailFilter.toLowerCase())) &&
+        statusMatch
+      );
+    }
+    return false;
   });
+
+  // Calculate counts for all data
+  const getCounts = () => {
+    if (reportType === 'all') {
+      return {
+        total: combinedData.length,
+        completed: combinedData.filter(item => {
+          const status = item.type === 'directnumber' ? item.status : item.final_status;
+          return status?.toLowerCase() === 'completed';
+        }).length,
+        pending: combinedData.filter(item => {
+          const status = item.type === 'directnumber' ? item.status : item.final_status;
+          return status?.toLowerCase() === 'pending';
+        }).length,
+        other: combinedData.filter(item => {
+          const status = item.type === 'directnumber' ? item.status : item.final_status;
+          return !['completed', 'pending'].includes(status?.toLowerCase());
+        }).length
+      };
+    }
+    return reports[reportType]?.counts || { total: 0, completed: 0, pending: 0, other: 0 };
+  };
+
+  const counts = getCounts();
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
@@ -408,16 +358,19 @@ const AllHistory = () => {
     }
   };
 
-  const getTransactionColor = (type) => {
-    if (!type) return 'default';
-    return type.toLowerCase().includes('credit') ? 'success' : 'error';
-  };
-
-  if (loading && data.length === 0) {
+  if (loading && !reports.verification && !reports.company && !reports.directnumber) {
     return (
-      <Box display="flex" justifyContent="center" mt={4}>
+      <Box display="flex" justifyContent="center" alignItems="center" height="80vh">
         <CircularProgress />
       </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ margin: 2 }}>
+        <strong>Error:</strong> {error}
+      </Alert>
     );
   }
 
@@ -431,7 +384,9 @@ const AllHistory = () => {
               <div className="left">
                 <div className="history-table">
                   <div className="section-header">
-                    <h3 className="section-title">All History</h3>
+                    <h3 className="section-title">
+                      {reportType === 'all' ? 'All Verification Reports' : (reports[reportType]?.tableName || `${getProcessName(reportType)} Report`)}
+                    </h3>
                     <div className="controls">
                       {lastUpdated && (
                         <span className="last-updated">
@@ -445,13 +400,13 @@ const AllHistory = () => {
                       >
                         {loading ? <CircularProgress size={20} /> : 'Refresh Now'}
                       </button>
-                      <button 
+                      {/* <button 
                         className="save-btn"
                         onClick={saveCompletedReports}
                         disabled={loading || combinedData.length === 0 || saving}
                       >
                         {saving ? 'Saving...' : 'Save Completed Reports'}
-                      </button>
+                      </button> */}
                       <button 
                         className="download-btn"
                         onClick={exportToExcel}
@@ -477,54 +432,111 @@ const AllHistory = () => {
                       <InputLabel>Report Type</InputLabel>
                       <Select
                         value={reportType}
-                        onChange={handleReportTypeChange}
+                        onChange={(e) => {
+                          setReportType(e.target.value);
+                          setCurrentPage(1);
+                        }}
                         label="Report Type"
                       >
                         <MenuItem value="all">All</MenuItem>
-                        <MenuItem value="links">Link Report</MenuItem>
-                        <MenuItem value="verification">Company Verification</MenuItem>
-                        <MenuItem value="company-verification">Company Verification Report</MenuItem>
-                        <MenuItem value="credit">Credit Transactions</MenuItem>
+                        <MenuItem value="verification">Contact Verification</MenuItem>
+                        <MenuItem value="company">Company Verification</MenuItem>
+                        <MenuItem value="directnumber">Direct Number</MenuItem>
                       </Select>
                     </FormControl>
 
-                    <FormControl variant="outlined" className="transaction-filter-select">
-                      <InputLabel>Transaction Type</InputLabel>
+                    <FormControl variant="outlined" className="status-filter-select">
+                      <InputLabel>Status</InputLabel>
                       <Select
-                        value={transactionFilter}
-                        onChange={(e) => setTransactionFilter(e.target.value)}
-                        label="Transaction Type"
+                        value={statusFilter}
+                        onChange={(e) => {
+                          setStatusFilter(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        label="Status"
                       >
-                        <MenuItem value="all">All</MenuItem>
-                        <MenuItem value="debit">Debit</MenuItem>
-                        <MenuItem value="credit">Credit</MenuItem>
+                        <MenuItem value="all">All Statuses</MenuItem>
+                        <MenuItem value="completed">Completed</MenuItem>
+                        <MenuItem value="pending">Pending</MenuItem>
+                        <MenuItem value="not available">Not Available</MenuItem>
                       </Select>
                     </FormControl>
 
                     <TextField
-                      label="Search by Unique ID or Created By"
+                      label="Search by ID or Filename"
                       variant="outlined"
                       fullWidth
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1);
+                      }}
                       className="search-field"
                     />
 
                     <TextField
-                      label="Search by Email"
+                      label="Filter by Email"
                       variant="outlined"
                       fullWidth
-                      value={emailSearchTerm}
-                      onChange={(e) => setEmailSearchTerm(e.target.value)}
+                      value={emailFilter}
+                      onChange={(e) => {
+                        setEmailFilter(e.target.value);
+                        setCurrentPage(1);
+                      }}
                       className="search-field"
                     />
                   </div>
+
+                  {/* Status Summary Cards */}
+                  {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-500">Total Records</h3>
+                        <Database className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <p className="mt-2 text-2xl font-semibold">{counts.total}</p>
+                    </div>
+                    
+                    <div className="bg-white p-4 rounded-lg shadow border border-green-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-500">Completed</h3>
+                        <Check className="h-5 w-5 text-green-500" />
+                      </div>
+                      <p className="mt-2 text-2xl font-semibold text-green-600">{counts.completed}</p>
+                    </div>
+                    
+                    <div className="bg-white p-4 rounded-lg shadow border border-yellow-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-500">Pending</h3>
+                        <Clock className="h-5 w-5 text-yellow-500" />
+                      </div>
+                      <p className="mt-2 text-2xl font-semibold text-yellow-600">{counts.pending}</p>
+                    </div>
+                    
+                    <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-500">Other Status</h3>
+                        <AlertCircle className="h-5 w-5 text-gray-500" />
+                      </div>
+                      <p className="mt-2 text-2xl font-semibold text-gray-600">{counts.other}</p>
+                    </div>
+                  </div> */}
 
                   <TableContainer component={Paper} className="table-container">
                     <Table>
                       <TableHead>
                         <TableRow>
                           <TableCell>#</TableCell>
+                          <TableCell>
+                            <TableSortLabel
+                              active={orderBy === 'uniqueId'}
+                              direction={orderBy === 'uniqueId' ? order : 'asc'}
+                              onClick={() => handleSort('uniqueId')}
+                            >
+                              ID
+                            </TableSortLabel>
+                          </TableCell>
+                          <TableCell>Process</TableCell>
                           <TableCell>
                             <TableSortLabel
                               active={orderBy === 'email'}
@@ -534,59 +546,37 @@ const AllHistory = () => {
                               Email
                             </TableSortLabel>
                           </TableCell>
+                          <TableCell>Filename</TableCell>
                           <TableCell>
                             <TableSortLabel
-                              active={orderBy === 'formattedDate'}
-                              direction={orderBy === 'formattedDate' ? order : 'desc'}
-                              onClick={() => handleSort('formattedDate')}
+                              active={orderBy === 'date'}
+                              direction={orderBy === 'date' ? order : 'desc'}
+                              onClick={() => handleSort('date')}
                             >
-                              <div className="header-cell">
-                                <Calendar size={16} />
-                                <span>Date</span>
-                              </div>
+                              Date
                             </TableSortLabel>
                           </TableCell>
-                          <TableCell>
-                            <TableSortLabel
-                              active={orderBy === 'process'}
-                              direction={orderBy === 'process' ? order : 'asc'}
-                              onClick={() => handleSort('process')}
-                            >
-                              <div className="header-cell">
-                                <Database size={16} />
-                                <span>Process</span>
-                              </div>
-                            </TableSortLabel>
-                          </TableCell>
-                          <TableCell>From</TableCell>
-                          <TableCell>
-                            <TableSortLabel
-                              active={orderBy === 'email'}
-                              direction={orderBy === 'email' ? order : 'asc'}
-                              onClick={() => handleSort('email')}
-                            >
-                              To
-                            </TableSortLabel>
-                          </TableCell>
-                          <TableCell align="right">Amount</TableCell>
-                          <TableCell>Transaction Type</TableCell>
-                          <TableCell>
-                            <div className="header-cell">
-                              <LinkIcon size={16} />
-                              <span>Balance</span>
-                            </div>
-                          </TableCell>
+                          <TableCell>Total Links</TableCell>
+                          <TableCell>Pending</TableCell>
+                          <TableCell>Status</TableCell>
+                          <TableCell>Credits Used</TableCell>
+                          <TableCell>Remaining Credits</TableCell>
                           <TableCell>Actions</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {currentData.map((item, index) => {
-                          const rowId = item.uniqueId || index;
+                          const rowId = `${item.uniqueId}-${index}`;
                           const isExpanded = expandedRows[rowId];
+                          const status = item.type === 'directnumber' ? item.status : item.final_status;
+                          const processName = getProcessName(item.type);
+                          
                           return (
                             <React.Fragment key={rowId}>
                               <TableRow className="table-row">
                                 <TableCell>{indexOfFirstRow + index + 1}</TableCell>
+                                <TableCell>{item.uniqueId}</TableCell>
+                                <TableCell>{processName}</TableCell>
                                 <TableCell>
                                   {item.email ? (
                                     <Tooltip title={item.email}>
@@ -594,36 +584,26 @@ const AllHistory = () => {
                                     </Tooltip>
                                   ) : '-----'}
                                 </TableCell>
-                                <TableCell>{format(new Date(item.date), 'PPpp')}</TableCell>
                                 <TableCell>
-                                  {item.process}
-                                </TableCell>
-                                <TableCell>
-                                  {item.senderEmail ? (
-                                    <Tooltip title={item.senderEmail}>
-                                      <span>{item.senderEmail.length > 15 ? `${item.senderEmail.substring(0, 8)}...` : item.senderEmail}</span>
+                                  {item.fileName ? (
+                                    <Tooltip title={item.fileName}>
+                                      <span>{item.fileName.length > 15 ? `${item.fileName.substring(0, 8)}...` : item.fileName}</span>
                                     </Tooltip>
                                   ) : '-----'}
                                 </TableCell>
+                                <TableCell>{formatDate(item.date)}</TableCell>
+                                <TableCell>{item.totallink || '-----'}</TableCell>
+                                <TableCell>{item.pendingCount || '-----'}</TableCell>
                                 <TableCell>
-                                  {item.email ? (
-                                    <Tooltip title={item.email}>
-                                      <span>{item.email.length > 15 ? `${item.email.substring(0, 8)}...` : item.email}</span>
-                                    </Tooltip>
-                                  ) : '-----'}
+                                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    {getStatusIcon(status)}
+                                    <Typography variant="body2" sx={{ ml: 1, textTransform: 'capitalize' }}>
+                                      {status?.toLowerCase() || '-----'}
+                                    </Typography>
+                                  </Box>
                                 </TableCell>
-                                <TableCell align="right" className="amount-cell">
-                                  {item.transactionType?.toLowerCase() === 'debit' ? '-' : ''}
-                                  {Number(item.amount || 0).toFixed(2)}
-                                </TableCell>
-                                <TableCell>
-                                  <span className={`status-badge ${
-                                    item.transactionType?.toLowerCase() === 'credit' ? 'credit' : 'debit'
-                                  }`}>
-                                    {item.transactionType}
-                                  </span>
-                                </TableCell>
-                                <TableCell align="right">{item.remainingCredits || '0'}</TableCell>
+                                <TableCell>{item.creditsUsed || '0'}</TableCell>
+                                <TableCell>{item.remainingCredits || '0'}</TableCell>
                                 <TableCell>
                                   <Tooltip title={isExpanded ? "Hide details" : "Show details"}>
                                     <IconButton
@@ -637,67 +617,15 @@ const AllHistory = () => {
                               </TableRow>
                               
                               <TableRow>
-                                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={10}>
+                                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={12}>
                                   <Collapse in={isExpanded} timeout="auto" unmountOnExit>
                                     <Box sx={{ margin: 1 }}>
                                       <Typography variant="h6" gutterBottom component="div">
-                                        Transaction Details
+                                        Detailed Information
                                       </Typography>
                                       <div className="detail-grid">
-                                        <div className="detail-item">
-                                          <Typography variant="subtitle2" className="detail-label">
-                                            Unique ID
-                                          </Typography>
-                                          <Typography variant="body2" className="detail-value">
-                                            {item.uniqueId || 'N/A'}
-                                          </Typography>
-                                        </div>
-                                        <div className="detail-item">
-                                          <Typography variant="subtitle2" className="detail-label">
-                                            Filename
-                                          </Typography>
-                                          <Typography variant="body2" className="detail-value">
-                                            {item.fileName || 'N/A'}
-                                          </Typography>
-                                        </div>
-                                        <div className="detail-item">
-                                          <Typography variant="subtitle2" className="detail-label">
-                                            Total Link
-                                          </Typography>
-                                          <Typography variant="body2" className="detail-value">
-                                            {item.totallink ? (
-                                              <a href={item.totallink} target="_blank" rel="noopener noreferrer">
-                                                {item.totallink}
-                                              </a>
-                                            ) : 'N/A'}
-                                          </Typography>
-                                        </div>
-                                        <div className="detail-item">
-                                          <Typography variant="subtitle2" className="detail-label">
-                                            Match Count
-                                          </Typography>
-                                          <Typography variant="body2" className="detail-value">
-                                            {item.matchCount || 'N/A'}
-                                          </Typography>
-                                        </div>
-                                        <div className="detail-item">
-                                          <Typography variant="subtitle2" className="detail-label">
-                                            Created By
-                                          </Typography>
-                                          <Typography variant="body2" className="detail-value">
-                                            {item.email ? (creatorMap[item.email] || 'Admin') : 'N/A'}
-                                          </Typography>
-                                        </div>
-                                        <div className="detail-item">
-                                          <Typography variant="subtitle2" className="detail-label">
-                                            Final Status
-                                          </Typography>
-                                          <Typography variant="body2" className="detail-value">
-                                            {item.finalStatus || 'N/A'}
-                                          </Typography>
-                                        </div>
                                         {Object.entries(item)
-                                          .filter(([key]) => !['uniqueId', 'fileName', 'totallink', 'matchCount', 'email', 'finalStatus', 'process', 'transactionType', 'amount', 'remainingCredits', 'senderEmail', 'date', 'type', 'formattedDate'].includes(key))
+                                          .filter(([key]) => !['uniqueId', 'fileName', 'totallink', 'pendingCount', 'email', 'final_status', 'status', 'process', 'creditsUsed', 'remainingCredits', 'date', 'type'].includes(key))
                                           .map(([key, value]) => (
                                             <div key={key} className="detail-item">
                                               <Typography variant="subtitle2" className="detail-label">
@@ -894,8 +822,7 @@ const AllHistory = () => {
         }
         
         .report-type-select,
-        .transaction-filter-select,
-        .credit-assigned-filter-select {
+        .status-filter-select {
           min-width: 180px;
         }
         
@@ -947,16 +874,6 @@ const AllHistory = () => {
         }
         
         .status-badge.error {
-          background-color: #fed7d7;
-          color: #822727;
-        }
-        
-        .status-badge.credit {
-          background-color: #c6f6d5;
-          color: #22543d;
-        }
-        
-        .status-badge.debit {
           background-color: #fed7d7;
           color: #822727;
         }
@@ -1059,4 +976,4 @@ const AllHistory = () => {
   );
 };
 
-export default AllHistory;
+export default VerificationUploadsReport;

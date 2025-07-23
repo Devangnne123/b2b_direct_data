@@ -31,6 +31,9 @@ import CreditTransactions from "./CreditTransactions";
 import SuperAdminTransactions from "./SuperAdminTransactions";
 import AllHistory from "./AllReport";
 import Documatation from "./Documatation.jsx";
+import All_pending_history from "./All_pending_history";
+
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -895,7 +898,7 @@ const getGroupStatus = (group) => {
              
              
               <ToastContainer position="top-center" autoClose={5000} />
-            
+          
             
             </div>
           </div>

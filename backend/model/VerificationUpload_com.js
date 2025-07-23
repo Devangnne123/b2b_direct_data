@@ -150,11 +150,7 @@ emailSentAt: {
       type: DataTypes.STRING,
       allowNull: true
     }
-  
 
-
-    
-  
 }, {
   tableName: 'web_company_details_main',
   timestamps: false

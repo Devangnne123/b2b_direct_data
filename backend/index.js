@@ -21,7 +21,7 @@ const cors = require('cors');
 require('dotenv').config();  // Load the .env file
 
 const PORT =  8080;
-  
+app.use(bodyParser.json());
 // app.use(cors({
 //   origin: function (origin, callback) {
 //     const allowedOrigins = ['/api/', 'http://3.109.203.132:3005/'];
@@ -3562,6 +3562,55 @@ app.post('/api/save-completed-reports', async (req, res) => {
 });
 
 
+// In your routes file
+app.post('/api/save-completed-reports', async (req, res) => {
+  try {
+    const { reports } = req.body;
+    
+    // Save each report to your database
+    const savedReports = await Promise.all(
+      reports.map(async (report) => {
+        // Check if report already exists
+        const existing = await CompletedReport.findOne({ 
+          where: { 
+            uniqueId: report.uniqueId,
+            type: report.type 
+          } 
+        });
+        
+        if (existing) {
+          return existing;
+        }
+        
+        // Create new record
+        return await CompletedReport.create({
+          process: report.process,
+          uniqueId: report.uniqueId,
+          totalLinks: report.totallink,
+          matchCount: report.matchCount,
+          fileName: report.fileName,
+          date: report.date,
+          email: report.email,
+          createdBy: report.createdBy,
+          transactionType: report.transactionType,
+          amount: report.amount,
+          status: report.finalStatus,
+          type: report.type,
+          // Add any other relevant fields
+        });
+      })
+    );
+
+    res.json({
+      success: true,
+      count: savedReports.length,
+      savedReports
+    });
+  } catch (error) {
+    console.error('Error saving completed reports:', error);
+    res.status(500).json({ error: 'Failed to save completed reports' });
+  }
+});
 
 
 
@@ -3597,5 +3646,242 @@ app.post('/api/contact', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error sending email' });
+  }
+});
+
+
+
+
+const Razorpay = require('razorpay');
+
+
+
+// Initialize Razorpay
+const razorpay = new Razorpay({
+  key_id: "rzp_test_AbCdEfGhIjKlM",
+  key_secret: 'NnBbVvCcXxZzSsDdFfGgHhJjKkLl',
+});
+
+
+// Create Order Endpoint
+app.post('/create-order', async (req, res) => {
+  try {
+    console.log('Creating order with amount:', req.body.amount);
+    
+    if (!req.body.amount || isNaN(req.body.amount)) {
+      return res.status(400).json({ error: 'Valid amount is required' });
+    }
+
+    const options = {
+      amount: req.body.amount, // amount in paise
+      currency: 'INR',
+      receipt: `receipt_${Date.now()}`,
+    };
+
+    const order = await razorpay.orders.create(options);
+    console.log('Order created:', order);
+    
+    res.json({
+      id: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      status: order.status
+    });
+    
+  } catch (err) {
+    console.error('Error creating order:', err);
+    res.status(500).json({ 
+      error: 'Failed to create order',
+      details: err.error?.description || err.message 
+    });
+  }
+});
+
+// Verify Payment Endpoint
+app.post('/verify-payment', (req, res) => {
+  try {
+    const { orderCreationId, razorpayPaymentId, razorpaySignature } = req.body;
+
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'NnBbVvCcXxZzSsDdFfGgHhJjKkLl')
+      .update(`${orderCreationId}|${razorpayPaymentId}`)
+      .digest('hex');
+
+    if (expectedSignature !== razorpaySignature) {
+      return res.status(400).json({ error: 'Invalid signature' });
+    }
+
+    res.json({ status: 'success', paymentId: razorpayPaymentId });
+    
+  } catch (err) {
+    console.error('Verification error:', err);
+    res.status(500).json({ error: 'Payment verification failed' });
+  }
+});
+
+
+
+
+
+
+
+
+// GET /api/verification-uploads/report
+app.get('/VerificationUpload/report', async (req, res) => {
+  try {
+    const verifications = await VerificationUpload.findAll({
+      attributes: [
+        'uniqueId',
+        [sequelize.fn('MIN', sequelize.col('email')), 'email'],
+        [sequelize.fn('MIN', sequelize.col('remainingCredits')), 'remainingCredits'],
+        [sequelize.fn('MIN', sequelize.col('fileName')), 'fileName'],
+        [sequelize.fn('MIN', sequelize.col('date')), 'date'],
+        [sequelize.fn('MIN', sequelize.col('totallink')), 'totallink'],
+        [sequelize.fn('MAX', sequelize.col('pendingCount')), 'pendingCount'],
+        [sequelize.fn('MIN', sequelize.col('status')), 'status'],
+        [sequelize.fn('MAX', sequelize.col('final_status')), 'final_status'],
+        // Count completed statuses
+        [sequelize.fn('SUM', sequelize.literal(`CASE WHEN final_status = 'Completed' THEN 1 ELSE 0 END`)), 'completedCount'],
+        // Count pending statuses
+        [sequelize.fn('SUM', sequelize.literal(`CASE WHEN final_status = 'Pending' THEN 1 ELSE 0 END`)), 'pendingCount'],
+        [sequelize.fn('MIN', sequelize.col('creditsUsed')), 'creditsUsed'],
+      ],
+      group: ['uniqueId'],
+      order: [[sequelize.fn('MIN', sequelize.col('date')), 'DESC']]
+    });
+
+    const report = {
+      tableName: "Verification Uploads Report",
+      data: verifications.map(item => ({
+        uniqueId: item.uniqueId,
+        email: item.get('email'),
+        remainingCredits: item.get('remainingCredits'),
+        fileName: item.get('fileName'),
+        date: item.get('date'),
+        totallink: item.get('totallink'),
+        pendingCount: item.get('pendingCount'),
+        status: item.get('status'),
+        final_status: item.get('final_status'),
+        completedCount: item.get('completedCount') || 0,
+        pendingCount: item.get('pendingCount') || 0,
+        creditsUsed: item.get('creditsUsed') || 0,
+      }))
+    };
+
+    res.json(report);
+  } catch (error) {
+    console.error('Error fetching verification uploads report:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+
+
+
+
+// GET /api/verification-uploads/report
+app.get('/company/report', async (req, res) => {
+  try {
+    const verifications = await VerificationUpload_com.findAll({
+      attributes: [
+        'uniqueId',
+        [sequelize.fn('MIN', sequelize.col('email')), 'email'],
+        [sequelize.fn('MIN', sequelize.col('remainingCredits')), 'remainingCredits'],
+        [sequelize.fn('MIN', sequelize.col('fileName')), 'fileName'],
+        [sequelize.fn('MIN', sequelize.col('date')), 'date'],
+        [sequelize.fn('MIN', sequelize.col('totallink')), 'totallink'],
+        [sequelize.fn('MAX', sequelize.col('pendingCount')), 'pendingCount'],
+        [sequelize.fn('MIN', sequelize.col('status')), 'status'],
+        [sequelize.fn('MAX', sequelize.col('final_status')), 'final_status'],
+        // Count completed statuses
+        [sequelize.fn('SUM', sequelize.literal(`CASE WHEN final_status = 'Completed' THEN 1 ELSE 0 END`)), 'completedCount'],
+        // Count pending statuses
+        [sequelize.fn('SUM', sequelize.literal(`CASE WHEN final_status = 'Pending' THEN 1 ELSE 0 END`)), 'pendingCount'],
+        [sequelize.fn('MIN', sequelize.col('creditsUsed')), 'creditsUsed'],
+      ],
+      group: ['uniqueId'],
+      order: [[sequelize.fn('MIN', sequelize.col('date')), 'DESC']]
+    });
+
+    const report = {
+      tableName: "Company Details",
+      data: verifications.map(item => ({
+        uniqueId: item.uniqueId,
+        email: item.get('email'),
+        remainingCredits: item.get('remainingCredits'),
+        fileName: item.get('fileName'),
+        date: item.get('date'),
+        totallink: item.get('totallink'),
+        pendingCount: item.get('pendingCount'),
+        status: item.get('status'),
+        final_status: item.get('final_status'),
+        completedCount: item.get('completedCount') || 0,
+        pendingCount: item.get('pendingCount') || 0,
+        creditsUsed: item.get('creditsUsed') || 0,
+      }))
+    };
+
+    res.json(report);
+  } catch (error) {
+    console.error('Error fetching verification uploads report:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
+  }
+});
+
+
+// GET /api/verification-uploads/report
+app.get('/Direct-number/report', async (req, res) => {
+  try {
+    const verifications = await Link.findAll({
+      attributes: [
+        'uniqueId',
+        [sequelize.fn('MIN', sequelize.col('email')), 'email'],
+        [sequelize.fn('MIN', sequelize.col('remainingCredits')), 'remainingCredits'],
+        [sequelize.fn('MIN', sequelize.col('fileName')), 'fileName'],
+        [sequelize.fn('MIN', sequelize.col('date')), 'date'],
+        [sequelize.fn('MIN', sequelize.col('totallink')), 'totallink'],
+        [sequelize.fn('MAX', sequelize.col('matchCount')), 'matchCount'],
+        // [sequelize.fn('MIN', sequelize.col('status')), 'status'],
+        [sequelize.fn('MAX', sequelize.col('status')), 'status'],
+        // Count completed statuses
+        [sequelize.fn('SUM', sequelize.literal(`CASE WHEN status = 'completed' THEN 1 ELSE 0 END`)), 'completedCount'],
+        // Count pending statuses
+        [sequelize.fn('SUM', sequelize.literal(`CASE WHEN status = 'pending' THEN 1 ELSE 0 END`)), 'pendingCount'],
+        [sequelize.fn('MIN', sequelize.col('creditDeducted')), 'creditDeducted'],
+      ],
+      group: ['uniqueId'],
+      order: [[sequelize.fn('MIN', sequelize.col('date')), 'DESC']]
+    });
+
+    const report = {
+      tableName: "Direct number",
+      data: verifications.map(item => ({
+        uniqueId: item.uniqueId,
+        email: item.get('email'),
+        remainingCredits: item.get('remainingCredits'),
+        fileName: item.get('fileName'),
+        date: item.get('date'),
+        totallink: item.get('totallink'),
+        pendingCount: item.get('matchCount'),
+        status: item.get('status'),
+        
+        completedCount: item.get('completedCount') || 0,
+        pendingCount: item.get('pendingCount') || 0,
+        creditsUsed: item.get('creditDeducted') || 0,
+      }))
+    };
+
+    res.json(report);
+  } catch (error) {
+    console.error('Error fetching verification uploads report:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: error.message 
+    });
   }
 });
