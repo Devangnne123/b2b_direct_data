@@ -13,11 +13,11 @@ const otpLimiter = rateLimit({
 
 
 
-router.post("/newuser", userController.addNewUser);
-router.get("/created-by/:userEmail", userController.getUsersByCreator);
-router.get("/admin/:userEmail", userController.getUsersByadmin);
+router.post("/newuser",auth, userController.addNewUser);
+router.get("/created-by/:userEmail", auth, userController.getUsersByCreator);
+router.get("/admin/:userEmail",auth, userController.getUsersByadmin);
 router.patch("/update-credits", userController.updateCredits);
-router.get("/user", userController.getUser);
+router.get("/user", auth, userController.getUser);
 
 router.post("/login", userController.loginUser);
 router.post("/send-otp", otpLimiter, userController.sendOtp);

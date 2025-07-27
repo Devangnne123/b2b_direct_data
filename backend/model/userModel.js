@@ -90,6 +90,14 @@ creditCostPerLink_V: {
     min: 1
   }
 },
+creditCostPerLink_C: {
+  type: DataTypes.INTEGER,
+  defaultValue: 3,
+  allowNull: false,
+  validate: {
+    min: 1
+  }
+},
   credits: {
     type: DataTypes.INTEGER,
     defaultValue: 0,

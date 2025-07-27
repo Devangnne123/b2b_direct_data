@@ -8,7 +8,7 @@ import {
 import Index from "./components";
 import Header from "./components/header";
 import Footer from "./components/footer";
-import MobileEnrichment from "./components/MobileEnrichment";
+
 import LinkedinContactVerification from "./components/LinkedinContactVerification";
 import Login from "./components/Login";
 import SignUp from "./components/SignUp";
@@ -125,7 +125,7 @@ function App() {
         <Route path="/all-user" element={<AllUser />} />
         {/* <Route path="/all-user-statistics" element={<AllStatistics />} /> */}
         <Route path="/UserStatistics" element={<UserStatistics />} />
-        <Route path="/mobile-enrichment" element={<MobileEnrichment />} />
+       
         <Route path="/linkedin-contact-verification" element={<LinkedinContactVerification />} />
       </Routes>
       {!isExcluded && <Footer />} {/* Show Footer if path is not excluded */}

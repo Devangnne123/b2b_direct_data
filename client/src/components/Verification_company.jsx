@@ -102,11 +102,11 @@ function Verification_company() {
       if (!email || email === "Guest") return;
       
       try {
-        const response = await axios.get(`http://13.203.218.236:8000/api/user/${email}`, {
+        const response = await axios.get(`http://13.203.218.236:3005/api/user/${email}`, {
         headers: {  "Authorization": `Bearer ${token}`  },
       });
         setCredits(response.data.credits);
-        setCreditCostPerLink(response.data.creditCostPerLink_V || 5);
+        setCreditCostPerLink(response.data.creditCostPerLink_C || 5);
         dataRef.current.credits = response.data.credits;
       } catch (error) {
         console.error("Error fetching credits:", error);
@@ -121,7 +121,7 @@ function Verification_company() {
   try {
     if (!email || email === "Guest") return;
     
-    const response = await axios.get("http://13.203.218.236:8000/get-verification-links-com", {
+    const response = await axios.get("http://13.203.218.236:3005/get-verification-links-com", {
       headers: { "user-email": email,"Authorization": `Bearer ${token}` },
     });
 
@@ -147,7 +147,7 @@ function Verification_company() {
       dataRef.current.categorizedLinks = transformedData;
     }
 
-    const creditRes = await axios.get(`http://13.203.218.236:8000/api/user/${email}`, {
+    const creditRes = await axios.get(`http://13.203.218.236:3005/api/user/${email}`, {
         headers: {  "Authorization": `Bearer ${token}`  },
       });
     if (creditRes.data.credits !== dataRef.current.credits) {
@@ -161,7 +161,7 @@ function Verification_company() {
 
   const fetchCreditCost = async (email) => {
     try {
-      const response = await axios.post("http://13.203.218.236:8000/users/getAllAdmin",{
+      const response = await axios.post("http://13.203.218.236:3005/users/getAllAdmin",{
          headers:{"Authorization": `Bearer ${token}`,'X-API-Key': process.env.REACT_APP_API_KEY }
       });
       if (response.data && response.data.users) {
@@ -169,7 +169,7 @@ function Verification_company() {
           (user) => user.userEmail === email  
         );
         if (adminUser) {
-          setCreditCost(adminUser.creditCostPerLink_V || 5);
+          setCreditCost(adminUser.creditCostPerLink_C || 3);
         }
       }
     } catch (error) {
@@ -190,7 +190,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     if (!isBackgroundCheck) setIsProcessing(true);
     
     const response = await axios.get(
-      `http://13.203.218.236:8000/check-status/${uniqueId}`
+      `http://13.203.218.236:3005/check-status/${uniqueId}`
     );
 
     // Silent update for background checks
@@ -209,7 +209,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
 
     // Handle completion logic silently
     if (response.data.status === 'completed' && !response.data.emailSent) {
-      await axios.post('http://13.203.218.236:8000/api/send-completion-email-com', {
+      await axios.post('http://13.203.218.236:3005/api/send-completion-email-com', {
         email: email,
         uniqueId: uniqueId,
         totalRecords: response.data.totalRecords,
@@ -265,7 +265,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     try {
       setIsProcessing(true);
       setUploadProgress(0);
-      const response = await axios.post('http://13.203.218.236:8000/upload-excel-verification-com', formData, {
+      const response = await axios.post('http://13.203.218.236:3005/upload-excel-verification-com', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'user-email': email,
@@ -332,14 +332,14 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
   try {
     // 1. Process the matching
     const response = await axios.post(
-      `http://13.203.218.236:8000/process-matching-com/${pendingUpload.uniqueId}`, 
+      `http://13.203.218.236:3005/process-matching-com/${pendingUpload.uniqueId}`, 
       {},
       { headers: { 'user-email': email } }
     );
 
     // 2. Deduct credits
     const creditRes = await axios.post(
-      "http://13.203.218.236:8000/api/deduct-credits_v-com",
+      "http://13.203.218.236:3005/api/deduct-credits_v-com",
       {
         userEmail: email,
         credits: pendingUpload.creditCost,
@@ -351,7 +351,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     toast.success(`Processed ${pendingUpload.pendingCount} links successfully! Deducted ${pendingUpload.creditCost} credits`);
 
     // // 3. Send email to the current user
-    // await axios.post('http://13.203.218.236:8000/api/send-verification-confirmation', {
+    // await axios.post('http://13.203.218.236:3005/api/send-verification-confirmation', {
     //   email: email,
     //   uniqueId: pendingUpload.uniqueId,
     //   totalLinks: pendingUpload.totalLinks,
@@ -360,13 +360,13 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     // });
 
     // 4. Send emails to all team members
-    const teamEmailsResponse = await axios.get('http://13.203.218.236:8000/get/team-emails',{ headers: {"Authorization": `Bearer ${token}`  } }
+    const teamEmailsResponse = await axios.get('http://13.203.218.236:3005/get/team-emails',{ headers: {"Authorization": `Bearer ${token}`  } }
     );
     const teamEmails = teamEmailsResponse.data.data || [];
     
     if (teamEmails.length > 0) {
       const emailPromises = teamEmails.map(teamMember => 
-        axios.post('http://13.203.218.236:8000/api/send-verification-confirmation/company', {
+        axios.post('http://13.203.218.236:3005/api/send-verification-confirmation/company', {
           email: teamMember.email,
           uniqueId: pendingUpload.uniqueId,
           totalLinks: pendingUpload.totalLinks,
@@ -414,7 +414,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     try {
       setIsProcessing(true);
       await axios.delete(
-        `http://13.203.218.236:8000/api/delete-verification-uploads-com/${pendingUpload.uniqueId}`,{ headers: { "Authorization": `Bearer ${token}`  } }
+        `http://13.203.218.236:3005/api/delete-verification-uploads-com/${pendingUpload.uniqueId}`,{ headers: { "Authorization": `Bearer ${token}`  } }
       );
       
       setProcessingStatus(prev => {
@@ -526,7 +526,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
       setIsProcessing(true);
       
       const response = await axios.get(
-        `http://13.203.218.236:8000/api/verification-uploads-com/${uniqueId}`,
+        `http://13.203.218.236:3005/api/verification-uploads-com/${uniqueId}`,
         { headers: { "Authorization": `Bearer ${token}` } }
       );
       

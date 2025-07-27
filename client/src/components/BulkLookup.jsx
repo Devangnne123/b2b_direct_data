@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { ToastContainer, toast } from "react-toastify";
@@ -30,9 +36,8 @@ import VerificationUploadReport from "./VerificationUploadReport";
 import CreditTransactions from "./CreditTransactions";
 import SuperAdminTransactions from "./SuperAdminTransactions";
 import AllHistory from "./AllReport";
-import Documatation from "./Documatation.jsx";
-import All_pending_history from "./All_pending_history";
 
+import All_pending_history from "./All_pending_history";
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -84,11 +89,11 @@ function BulkLookup() {
   // Handle refresh/back navigation when confirmation is active
   useEffect(() => {
     if (!isConfirmationActive) return;
-    
+
     const handleBeforeUnload = (e) => {
       e.preventDefault();
-      e.returnValue = '';
-      return 'You have pending upload confirmation. Are you sure you want to leave?';
+      e.returnValue = "";
+      return "You have pending upload confirmation. Are you sure you want to leave?";
     };
 
     const handlePopState = () => {
@@ -97,12 +102,12 @@ function BulkLookup() {
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('popstate', handlePopState);
-    
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("popstate", handlePopState);
+
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("popstate", handlePopState);
     };
   }, [isConfirmationActive, pendingUpload]);
 
@@ -121,47 +126,54 @@ function BulkLookup() {
     }
   }, []);
 
-  const token = sessionStorage.getItem('token');
+  const token = sessionStorage.getItem("token");
 
-const silentRefresh = useCallback(async () => {
-  try {
-    if (!savedEmail || savedEmail === "Guest") return;
-    
-    const [linksRes, creditsRes] = await Promise.all([
-      axios.get("http://13.203.218.236:8000/bulklookup/get-links", {
-        headers: { "user-email": savedEmail, "Authorization": `Bearer ${token}`  },
-      }),
-      axios.get(`http://13.203.218.236:8000/api/user/${savedEmail}`, {
-        headers: { "Authorization": `Bearer ${token}`  },
-      })
-    ]);
+  const silentRefresh = useCallback(async () => {
+    try {
+      if (!savedEmail || savedEmail === "Guest") return;
 
-    const now = Date.now();
-    const newData = linksRes.data || [];
+      const [linksRes, creditsRes] = await Promise.all([
+        axios.get("http://13.203.218.236:3005/bulklookup/get-links", {
+          headers: {
+            "user-email": savedEmail,
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+        axios.get(`http://13.203.218.236:3005/api/user/${savedEmail}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
 
-    // Preserve processing status for items that are still within 1 minute window
-    const updatedData = newData.map(item => {
-      const itemTime = new Date(item.date || 0).getTime();
-      if (now - itemTime < 60000) { // Less than 1 minute old
-        return { ...item, status: "pending" };
+      const now = Date.now();
+      const newData = linksRes.data || [];
+
+      // Preserve processing status for items that are still within 1 minute window
+      const updatedData = newData.map((item) => {
+        const itemTime = new Date(item.date || 0).getTime();
+        if (now - itemTime < 60000) {
+          // Less than 1 minute old
+          return { ...item, status: "pending" };
+        }
+        return item;
+      });
+
+      if (
+        JSON.stringify(updatedData) !==
+        JSON.stringify(dataRef.current.uploadedData)
+      ) {
+        setUploadedData(updatedData);
+        setFilteredData(updatedData);
+        dataRef.current.uploadedData = updatedData;
       }
-      return item;
-    });
 
-    if (JSON.stringify(updatedData) !== JSON.stringify(dataRef.current.uploadedData)) {
-      setUploadedData(updatedData);
-      setFilteredData(updatedData);
-      dataRef.current.uploadedData = updatedData;
+      if (creditsRes.data.credits !== dataRef.current.credits) {
+        setCredits(creditsRes.data.credits);
+        dataRef.current.credits = creditsRes.data.credits;
+      }
+    } catch (error) {
+      console.error("Silent refresh error:", error);
     }
-
-    if (creditsRes.data.credits !== dataRef.current.credits) {
-      setCredits(creditsRes.data.credits);
-      dataRef.current.credits = creditsRes.data.credits;
-    }
-  } catch (error) {
-    console.error("Silent refresh error:", error);
-  }
-}, [savedEmail]);
+  }, [savedEmail]);
 
   useEffect(() => {
     silentRefresh();
@@ -179,12 +191,18 @@ const silentRefresh = useCallback(async () => {
 
   const fetchCreditCost = async (email) => {
     try {
-      const response = await axios.post("http://13.203.218.236:8000/users/getAllAdmin",{
-         headers:{"Authorization": `Bearer ${token}`,'X-API-Key': process.env.REACT_APP_API_KEY }
-      });
+      const response = await axios.post(
+        "http://13.203.218.236:3005/users/getAllAdmin",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-API-Key": process.env.REACT_APP_API_KEY,
+          },
+        }
+      );
       if (response.data && response.data.users) {
         const adminUser = response.data.users.find(
-          (user) => user.userEmail === email  
+          (user) => user.userEmail === email
         );
         if (adminUser) {
           setCreditCost(adminUser.creditCostPerLink || 5);
@@ -195,121 +213,134 @@ const silentRefresh = useCallback(async () => {
     }
   };
 
-const getGroupStatus = (group) => {
-  if (!group || group.length === 0) return "completed";
-  
-  const firstItem = group[0] || {};
-  const uniqueId = firstItem.uniqueId;
-  
-  // 1. Check processing status first (for recently uploaded files)
-  if (processingStatus[uniqueId]) {
-    return processingStatus[uniqueId].status;
-  }
-  
-  // 2. Check timestamp (if any item was created <1 min ago, consider pending)
-  const now = Date.now();
-  const oneMinuteAgo = now - 60000;
-  const hasRecentItems = group.some(item => {
-    const itemTime = new Date(item.date || 0).getTime();
-    return itemTime > oneMinuteAgo;
-  });
-  if (hasRecentItems) return "pending";
-  
-  // 3. Check explicit status values from database
-  const statuses = group.map(item => item.status || 'not available');
-  
-  // Rule 1: If any item is pending → whole group is pending
-  if (statuses.includes('pending')) return 'pending';
-  
-  // Rule 2: If all are "not available" → completed
-  if (statuses.every(status => status === 'not available')) return 'completed';
-  
-  // Rule 3: Mixed "completed" and "not available" → completed
-  if (statuses.some(status => status === 'completed')) return 'completed';
-  
-  // Rule 4: If items have match data (mobile, name, etc) → completed
-  const hasMatchData = group.some(item => 
-    item.mobile_number || 
-    item.mobile_number_2 || 
-    item.person_name ||
-    item.matchLink
-  );
-  if (hasMatchData) return 'completed';
-  
-  // Default case
-  return "incompleted";
-};
+  const getGroupStatus = (group) => {
+    if (!group || group.length === 0) return "completed";
+
+    const firstItem = group[0] || {};
+    const uniqueId = firstItem.uniqueId;
+
+    // 1. Check processing status first (for recently uploaded files)
+    if (processingStatus[uniqueId]) {
+      return processingStatus[uniqueId].status;
+    }
+
+    // 2. Check timestamp (if any item was created <1 min ago, consider pending)
+    const now = Date.now();
+    const oneMinuteAgo = now - 60000;
+    const hasRecentItems = group.some((item) => {
+      const itemTime = new Date(item.date || 0).getTime();
+      return itemTime > oneMinuteAgo;
+    });
+    if (hasRecentItems) return "pending";
+
+    // 3. Check explicit status values from database
+    const statuses = group.map((item) => item.status || "not available");
+
+    // Rule 1: If any item is pending → whole group is pending
+    if (statuses.includes("pending")) return "pending";
+
+    // Rule 2: If all are "not available" → completed
+    if (statuses.every((status) => status === "not available"))
+      return "completed";
+
+    // Rule 3: Mixed "completed" and "not available" → completed
+    if (statuses.some((status) => status === "completed")) return "completed";
+
+    // Rule 4: If items have match data (mobile, name, etc) → completed
+    const hasMatchData = group.some(
+      (item) =>
+        item.mobile_number ||
+        item.mobile_number_2 ||
+        item.person_name ||
+        item.matchLink
+    );
+    if (hasMatchData) return "completed";
+
+    // Default case
+    return "incompleted";
+  };
 
   const handleUpload = async () => {
     if (!file) {
       toast.error("Please choose a file to upload first");
       return;
     }
-    
+
     if (!savedEmail || savedEmail === "Guest") {
       return toast.error("Please save your email first");
     }
-    
+
     if (credits < creditCost) {
       return toast.error("Not enough credits");
     }
     // Example of potential backend limit
-
 
     setLoading(true);
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-    const res = await axios.post(
-      "http://13.203.218.236:8000/upload-excel",
-      formData,
-      { headers: { "user-email": savedEmail,"Authorization": `Bearer ${token}`  } }
-    );
+      const res = await axios.post(
+        "http://13.203.218.236:3005/upload-excel",
+        formData,
+        {
+          headers: {
+            "user-email": savedEmail,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    const totalLinks = res.data.totallink || res.data.totalLinks || 0;
-    const uploadData = {
-      file: file.name,
-      matchCount: res.data.matchCount || 0,
-      totallink: totalLinks,
-      links: res.data.link,
-      uniqueId: res.data.uniqueId,
-      creditToDeduct: res.data.matchCount * creditCost,
-      timestamp: new Date().toISOString(),
-    };
-    
-    // Save pending upload to session storage
-    sessionStorage.setItem("pendingUpload", JSON.stringify(uploadData));
-    
-    setPendingUpload(uploadData);
-    setShowConfirmation(true);
-    setIsConfirmationActive(true);
-    
-    // Set initial status as pending for 1 minute
-    setProcessingStatus(prev => ({
-      ...prev,
-      [res.data.uniqueId]: {
-        status: "pending",
-        startTime: Date.now()
-      }
-    }));
-    
-    // After 1 minute, update status based on actual data
-    setTimeout(() => {
-      setProcessingStatus(prev => {
-        const group = uploadedData.filter(item => item.uniqueId === res.data.uniqueId);
-        const actualStatus = group.some(item => item.status === "processing") ? "processing" :
-                           group.every(item => item.matchLink) ? "completed" : "incompleted";
-        
-        return {
-          ...prev,
-          [res.data.uniqueId]: {
-            ...prev[res.data.uniqueId],
-            status: actualStatus
-          }
-        };
-      });
-    }, 60000); // 1 minute
+      const totalLinks = res.data.totallink || res.data.totalLinks || 0;
+      const uploadData = {
+        file: file.name,
+        matchCount: res.data.matchCount || 0,
+        totallink: totalLinks,
+        links: res.data.link,
+        uniqueId: res.data.uniqueId,
+        creditToDeduct: res.data.matchCount * creditCost,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Save pending upload to session storage
+      sessionStorage.setItem("pendingUpload", JSON.stringify(uploadData));
+
+      setPendingUpload(uploadData);
+      setShowConfirmation(true);
+      setIsConfirmationActive(true);
+
+      // Set initial status as pending for 1 minute
+      setProcessingStatus((prev) => ({
+        ...prev,
+        [res.data.uniqueId]: {
+          status: "pending",
+          startTime: Date.now(),
+        },
+      }));
+
+      // After 1 minute, update status based on actual data
+      setTimeout(() => {
+        setProcessingStatus((prev) => {
+          const group = uploadedData.filter(
+            (item) => item.uniqueId === res.data.uniqueId
+          );
+          const actualStatus = group.some(
+            (item) => item.status === "processing"
+          )
+            ? "processing"
+            : group.every((item) => item.matchLink)
+            ? "completed"
+            : "incompleted";
+
+          return {
+            ...prev,
+            [res.data.uniqueId]: {
+              ...prev[res.data.uniqueId],
+              status: actualStatus,
+            },
+          };
+        });
+      }, 60000); // 1 minute
     } catch (err) {
       console.error(err);
       toast.error("Failed to upload file");
@@ -318,64 +349,70 @@ const getGroupStatus = (group) => {
     }
   };
 
- const confirmUpload = async () => {
-  if (!pendingUpload) return;
+  const confirmUpload = async () => {
+    if (!pendingUpload) return;
 
-  setLoading(true);
-  try {
-    // First create the TempLinkMobile records
-    const tempRes = await axios.post(
-      "http://13.203.218.236:8000/confirm-upload",
-      {
-        uniqueId: pendingUpload.uniqueId,
-        email: savedEmail
-
-      }
-       ,{ headers: { "Authorization": `Bearer ${token}`  } }
-    );
-
-    // Then deduct credits
-    const creditRes = await axios.post(
-      "http://13.203.218.236:8000/api/upload-file",
-      {
-        userEmail: savedEmail,
-        creditCost: pendingUpload.creditToDeduct,
-        uniqueId: pendingUpload.uniqueId,
-      },{ headers: { "Authorization": `Bearer ${token}`  } }
-    );
-
-    setCredits(creditRes.data.updatedCredits);
-    toast.success(`Processing complete! Deducted ${pendingUpload.creditToDeduct} credits`);
-    
-    // Send email notification
+    setLoading(true);
     try {
-      await axios.post("http://13.203.218.236:8000/send-upload-notification", {
-        email: savedEmail,
-        fileName: pendingUpload.file,
-        totalLinks: pendingUpload.totallink || 0,
-        matchCount: pendingUpload.matchCount || 0,
-        creditsDeducted: pendingUpload.creditToDeduct
-      },{
-        headers:{"Authorization": `Bearer ${token}`}
-      });
-    } catch (emailError) {
-      console.error("Failed to send email notification:", emailError);
+      // First create the TempLinkMobile records
+      const tempRes = await axios.post(
+        "http://13.203.218.236:3005/confirm-upload",
+        {
+          uniqueId: pendingUpload.uniqueId,
+          email: savedEmail,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Then deduct credits
+      const creditRes = await axios.post(
+        "http://13.203.218.236:3005/api/upload-file",
+        {
+          userEmail: savedEmail,
+          creditCost: pendingUpload.creditToDeduct,
+          uniqueId: pendingUpload.uniqueId,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setCredits(creditRes.data.updatedCredits);
+      toast.success(
+        `Processing complete! Deducted ${pendingUpload.creditToDeduct} credits`
+      );
+
+      // Send email notification
+      try {
+        await axios.post(
+          "http://13.203.218.236:3005/send-upload-notification",
+          {
+            email: savedEmail,
+            fileName: pendingUpload.file,
+            totalLinks: pendingUpload.totallink || 0,
+            matchCount: pendingUpload.matchCount || 0,
+            creditsDeducted: pendingUpload.creditToDeduct,
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+      } catch (emailError) {
+        console.error("Failed to send email notification:", emailError);
+      }
+
+      sessionStorage.removeItem("pendingUpload");
+      setPendingUpload(null);
+      setFile(null);
+      document.querySelector('input[type="file"]').value = null;
+      setIsConfirmationActive(false);
+      setShouldRefresh(true);
+    } catch (err) {
+      toast.error("Failed to confirm processing");
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setShowConfirmation(false);
     }
-    
-    sessionStorage.removeItem("pendingUpload");
-    setPendingUpload(null);
-    setFile(null);
-    document.querySelector('input[type="file"]').value = null;
-    setIsConfirmationActive(false);
-    setShouldRefresh(true);
-  } catch (err) {
-    toast.error("Failed to confirm processing");
-    console.error(err);
-  } finally {
-    setLoading(false);
-    setShowConfirmation(false);
-  }
-};
+  };
 
   useEffect(() => {
     if (!shouldRefresh) return;
@@ -396,17 +433,18 @@ const getGroupStatus = (group) => {
     setLoading(true);
     try {
       await axios.delete(
-        `http://13.203.218.236:8000/cancel-upload/${pendingUpload.uniqueId}`,{
-        headers:{"Authorization": `Bearer ${token}`}
-      }
+        `http://13.203.218.236:3005/cancel-upload/${pendingUpload.uniqueId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       toast.info("Upload canceled - all data removed");
-      
+
       // Remove pending upload from session storage
       sessionStorage.removeItem("pendingUpload");
-      
-      setProcessingStatus(prev => {
-        const newStatus = {...prev};
+
+      setProcessingStatus((prev) => {
+        const newStatus = { ...prev };
         delete newStatus[pendingUpload.uniqueId];
         return newStatus;
       });
@@ -423,7 +461,12 @@ const getGroupStatus = (group) => {
     }
   };
 
-  function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits }) {
+  function PendingUploadAlert({
+    onConfirm,
+    onCancel,
+    pendingUpload,
+    currentCredits,
+  }) {
     const totalLinks = pendingUpload.totallink || 0;
     const matchCount = pendingUpload.matchCount || 0;
     const notFoundCount = totalLinks - matchCount;
@@ -437,33 +480,46 @@ const getGroupStatus = (group) => {
           <div className="horizontal-table">
             <div className="horizontal-table-item">
               <span className="horizontal-table-label">File</span>
-              <span className="horizontal-table-value">📄 {pendingUpload.file}</span>
+              <span className="horizontal-table-value">
+                📄 {pendingUpload.file}
+              </span>
             </div>
-            
+
             <div className="horizontal-table-item">
               <span className="horizontal-table-label">Total Links</span>
               <span className="horizontal-table-value">🔗 {totalLinks}</span>
             </div>
-            
+
             <div className="horizontal-table-item">
               <span className="horizontal-table-label">Matches Found</span>
-              <span className="horizontal-table-value text-success">✅ {matchCount}</span>
+              <span className="horizontal-table-value text-success">
+                ✅ {matchCount}
+              </span>
             </div>
-            
+
             <div className="horizontal-table-item">
               <span className="horizontal-table-label">Not Found</span>
-              <span className="horizontal-table-value text-danger">❌ {notFoundCount}</span>
+              <span className="horizontal-table-value text-danger">
+                ❌ {notFoundCount}
+              </span>
             </div>
-            
+
             <div className="horizontal-table-item">
               <span className="horizontal-table-label">Credits to Deduct</span>
-              <span className="horizontal-table-value">💳 {creditsToDeduct}</span>
+              <span className="horizontal-table-value">
+                💳 {creditsToDeduct}
+              </span>
             </div>
-            
+
             <div className="horizontal-table-item">
               <span className="horizontal-table-label">Remaining Credits</span>
               <span className="horizontal-table-value">
-                🧮 <span className={remainingCredits < 0 ? "text-danger" : "text-success"}>
+                🧮{" "}
+                <span
+                  className={
+                    remainingCredits < 0 ? "text-danger" : "text-success"
+                  }
+                >
                   {remainingCredits}
                 </span>
               </span>
@@ -630,13 +686,11 @@ const getGroupStatus = (group) => {
   };
 
   return (
-   <ErrorBoundary>
+    <ErrorBoundary>
       <div className="main">
         {/* Blocking overlay when confirmation is active */}
-        {isConfirmationActive && (
-          <div className="blocking-overlay"></div>
-        )}
-        
+        {isConfirmationActive && <div className="blocking-overlay"></div>}
+
         <div className="main-con">
           <Sidebar userEmail={savedEmail} />
           <div className="right-side">
@@ -692,7 +746,9 @@ const getGroupStatus = (group) => {
                           <button
                             onClick={handleUpload}
                             className={`upload-btn ${
-                              showConfirmation || !file || isConfirmationActive ? "disabled" : ""
+                              showConfirmation || !file || isConfirmationActive
+                                ? "disabled"
+                                : ""
                             }`}
                             disabled={
                               !file ||
@@ -804,15 +860,23 @@ const getGroupStatus = (group) => {
                                             </td>
                                             <td>{first.totallink || 0}</td>
                                             <td>{first.matchCount || 0}</td>
-<td>
-  <div className={`status-badge ${
-    status === "pending" ? "pending" : 
-    status === "completed" ? "completed" : "incompleted"
-  }`}>
-    {status === "pending" ? "Pending" : 
-    status === "completed" ? "Completed" : "Incomplete"}
-  </div>
-</td>
+                                            <td>
+                                              <div
+                                                className={`status-badge ${
+                                                  status === "pending"
+                                                    ? "pending"
+                                                    : status === "completed"
+                                                    ? "completed"
+                                                    : "incompleted"
+                                                }`}
+                                              >
+                                                {status === "pending"
+                                                  ? "Pending"
+                                                  : status === "completed"
+                                                  ? "Completed"
+                                                  : "Incomplete"}
+                                              </div>
+                                            </td>
                                             <td>{formatDate(first.date)}</td>
                                             <td>
                                               <div className="flex items-center gap-1">
@@ -895,18 +959,13 @@ const getGroupStatus = (group) => {
                   </div>
                 </div>
               </section>
-             
-             
+
               <ToastContainer position="top-center" autoClose={5000} />
-          
-            
             </div>
           </div>
         </div>
       </div>
-      
     </ErrorBoundary>
-    
   );
 }
 

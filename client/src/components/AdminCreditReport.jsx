@@ -17,11 +17,13 @@ const AdminCreditReport = () => {
   
   const userEmail = JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
 
+       const token = sessionStorage.getItem('token');
+
   const fetchTransactions = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("http://13.203.218.236:8000/super-admin/get-credit-transactions");
+      const response = await fetch("http://13.203.218.236:3005/super-admin/get-credit-transactions",{ headers: { "Authorization": `Bearer ${token}`  } });
       const data = await response.json();
 
       if (data.success) {

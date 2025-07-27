@@ -6,6 +6,9 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  Check,
+  Link as LinkIcon,
+  Link2,
 } from "lucide-react";
 import { Hash, Mail, ArrowLeftRight, Settings2 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
@@ -19,9 +22,12 @@ const UserList = () => {
   const [userCredits, setUserCredits] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
+  const [creditCostUpdates, setCreditCostUpdates] = useState({});
+   const [updating, setUpdating] = useState({});
 
   const userEmail =
     JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
+      const token = sessionStorage.getItem('token');
 
   useEffect(() => {
     fetchUsers();
@@ -31,12 +37,23 @@ const UserList = () => {
   const fetchUsers = async () => {
     try {
       const response = await fetch(
-        `http://13.203.218.236:8000/users/admin/${userEmail}`
+        `http://13.203.218.236:3005/users/admin/${userEmail}`,{ headers: { "Authorization": `Bearer ${token}`  } }
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
       const { data } = await response.json();
       setUsers(data);
+      
+      // Initialize credit cost updates with current values
+      const initialUpdates = {};
+      data.forEach(user => {
+        initialUpdates[user.userEmail] = {
+          creditCostPerLink: user.creditCostPerLink,
+          creditCostPerLink_V: user.creditCostPerLink_V,
+          creditCostPerLink_C: user.creditCostPerLink_C
+        };
+      });
+      setCreditCostUpdates(initialUpdates);
     } catch (error) {
       setError(error.message || "Failed to fetch user data.");
     } finally {
@@ -47,7 +64,7 @@ const UserList = () => {
   const fetchUserCredits = async () => {
     try {
       const response = await fetch(
-        `http://13.203.218.236:8000/users/credits/${encodeURIComponent(userEmail)}`
+         `http://13.203.218.236:3005/users/credits/${encodeURIComponent(userEmail)}`, { headers: { "Authorization": `Bearer ${token}`  } }
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
@@ -64,6 +81,66 @@ const UserList = () => {
       [email]: value,
     }));
   };
+
+  const handleCreditCostChange = (email, field, value) => {
+    setCreditCostUpdates((prev) => ({
+      ...prev,
+      [email]: {
+        ...prev[email],
+        [field]: parseInt(value) 
+      }
+    }));
+  };
+  
+  const updateSingleCreditCost = async (email, field) => {
+    const value = creditCostUpdates[email]?.[field];
+    if (!value || value <= 0) {
+      alert("Please enter a valid value");
+      return;
+    }
+
+ 
+
+   try {
+      setUpdating(prev => ({ ...prev, [`${email}-${field}`]: true }));
+
+      const response = await fetch(
+        `http://13.203.218.236:3005/users/update-single-credit-cost`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({
+            userEmail: email,
+            field,
+            value,
+            updatedBy: userEmail
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Update failed.");
+      }
+
+      // Update local state immediately
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.userEmail === email 
+            ? { ...user, [field]: value } 
+            : user
+        )
+      );
+
+      alert("Credit cost updated successfully!");
+    } catch (error) {
+      console.error("Error updating credit cost:", error);
+      alert(error.message || "Failed to update credit cost. Please try again.");
+    } finally {
+      setUpdating(prev => ({ ...prev, [`${email}-${field}`]: false }));
+    }
+  };
+
 
   const handleCreditTransfer = async (email, existingCredits, isAdding) => {
     const transferCredits = parseInt(creditUpdates[email], 10) || 0;
@@ -85,10 +162,10 @@ const UserList = () => {
 
     try {
       const response = await fetch(
-        "http://13.203.218.236:8000/transactions/update-credits",
+        "http://13.203.218.236:3005/transactions/update-credits",
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json","Authorization": `Bearer ${token}` },
           body: JSON.stringify({
             userEmail: email,
             senderEmail: userEmail,
@@ -137,7 +214,7 @@ const UserList = () => {
                   <p className="title-head">User Management</p>
                   <li className="credits-main1">
                     <h5 className="credits">
-                    <img
+                      <img
                         src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
                         alt="external-credits-university-flaticons-flat-flat-icons"
                       />
@@ -145,12 +222,6 @@ const UserList = () => {
                     </h5>
                   </li>
                 </li>
-                <li>
-                  {/* <p className="title-des2">
-                    Manage users and credit transfers
-                  </p> */}
-                </li>
-                {/* <h1 className="title-head">User List</h1> */}
               </div>
             </nav>
 
@@ -192,6 +263,18 @@ const UserList = () => {
                                           <CreditCard className="h-4 w-4" />
                                         </div>
                                       </th>
+                                      <th title="Link Cost (Normal)">
+                                        <div className="flex items-center justify-center gap-1">
+                                          <LinkIcon className="h-4 w-4" />
+                                          <span>Normal</span>
+                                        </div>
+                                      </th>
+                                      <th title="Link Cost (Verified)">
+                                        <div className="flex items-center justify-center gap-1">
+                                          <Link2 className="h-4 w-4" />
+                                          <span>Verified</span>
+                                        </div>
+                                      </th>
                                       <th title="Transfer Amount">
                                         <div className="flex items-center justify-center gap-1">
                                           <ArrowLeftRight className="h-4 w-4" />
@@ -216,6 +299,102 @@ const UserList = () => {
                                             {user.userEmail}
                                           </td>
                                           <td>{user.credits}</td>
+                                           <td>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="1"
+            className="credit-input"
+            value={
+              creditCostUpdates[user.userEmail]?.creditCostPerLink ?? 
+              user.creditCostPerLink ?? 
+              5
+            }
+            onChange={(e) =>
+              handleCreditCostChange(
+                user.userEmail,
+                'creditCostPerLink',
+                e.target.value
+              )
+            }
+          />
+          <button
+            className="action-btn save-btn p-1"
+            onClick={() => updateSingleCreditCost(user.userEmail, 'creditCostPerLink')}
+            disabled={updating[`${user.userEmail}-creditCostPerLink`]}
+          >
+            {updating[`${user.userEmail}-creditCostPerLink`] ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </td>
+      <td>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="1"
+            className="credit-input"
+            value={
+              creditCostUpdates[user.userEmail]?.creditCostPerLink_V ?? 
+              user.creditCostPerLink_V ?? 
+              3
+            }
+            onChange={(e) =>
+              handleCreditCostChange(
+                user.userEmail,
+                'creditCostPerLink_V',
+                e.target.value
+              )
+            }
+          />
+          <button
+            className="action-btn save-btn p-1"
+            onClick={() => updateSingleCreditCost(user.userEmail, 'creditCostPerLink_V')}
+            disabled={updating[`${user.userEmail}-creditCostPerLink_V`]}
+          >
+            {updating[`${user.userEmail}-creditCostPerLink_V`] ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </td>
+      <td>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="1"
+            className="credit-input"
+            value={
+              creditCostUpdates[user.userEmail]?.creditCostPerLink_C ?? 
+              user.creditCostPerLink_C ?? 
+              3
+            }
+            onChange={(e) =>
+              handleCreditCostChange(
+                user.userEmail,
+                'creditCostPerLink_C',
+                e.target.value
+              )
+            }
+          />
+          <button
+            className="action-btn save-btn p-1"
+            onClick={() => updateSingleCreditCost(user.userEmail, 'creditCostPerLink_C')}
+            disabled={updating[`${user.userEmail}-creditCostPerLink_C`]}
+          >
+            {updating[`${user.userEmail}-creditCostPerLink_C`] ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </td>
                                           <td>
                                             <input
                                               type="number"
@@ -259,13 +438,14 @@ const UserList = () => {
                                               >
                                                 <Minus className="h-4 w-4" />
                                               </button>
+                                              
                                             </div>
                                           </td>
                                         </tr>
                                       ))
                                     ) : (
                                       <tr>
-                                        <td colSpan="5" className="no-data">
+                                        <td colSpan="7" className="no-data">
                                           No users found.
                                         </td>
                                       </tr>
@@ -341,6 +521,63 @@ const UserList = () => {
                                     </div>
 
                                     <div className="card-body_credit">
+                                      <div className="cost-section">
+                                        <div className="cost-input-group">
+                                          <label>
+                                            <LinkIcon className="h-4 w-4" />
+                                            Normal Link Cost
+                                          </label>
+                                          <input
+                                            type="number"
+                                            min="1"
+                                            className="mobile-credit-input"
+                                            value={
+                                              creditCostUpdates[user.userEmail]?.creditCostPerLink || 
+                                              user.creditCostPerLink || 
+                                              5
+                                            }
+                                            onChange={(e) =>
+                                              handleCreditCostChange(
+                                                user.userEmail,
+                                                'creditCostPerLink',
+                                                e.target.value
+                                              )
+                                            }
+                                          />
+                                        </div>
+                                        <div className="cost-input-group">
+                                          <label>
+                                            <Link2 className="h-4 w-4" />
+                                            Verified Link Cost
+                                          </label>
+                                          <input
+                                            type="number"
+                                            min="1"
+                                            className="mobile-credit-input"
+                                            value={
+                                              creditCostUpdates[user.userEmail]?.creditCostPerLink_V || 
+                                              user.creditCostPerLink_V || 
+                                              3
+                                            }
+                                            onChange={(e) =>
+                                              handleCreditCostChange(
+                                                user.userEmail,
+                                                'creditCostPerLink_V',
+                                                e.target.value
+                                              )
+                                            }
+                                          />
+                                        </div>
+                                        <button
+                                          className="mobile-save-btn"
+                                          onClick={() =>
+                                            updateCreditCosts(user.userEmail)
+                                          }
+                                        >
+                                          Save Costs
+                                        </button>
+                                      </div>
+
                                       <div className="transfer-section">
                                         <input
                                           type="number"

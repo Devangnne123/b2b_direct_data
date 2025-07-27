@@ -23,6 +23,8 @@ const UserList = () => {
   const userEmail =
     JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
 
+       const token = sessionStorage.getItem('token');
+
   useEffect(() => {
     fetchUsers();
     fetchUserCredits();
@@ -31,7 +33,8 @@ const UserList = () => {
   const fetchUsers = async () => {
     try {
       const response = await fetch(
-        `http://13.203.218.236:8000/users/created-by/${userEmail}`
+        `http://13.203.218.236:3005/users/created-by/${userEmail}`, 
+        { headers: { "Authorization": `Bearer ${token}`  } }
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
@@ -47,7 +50,7 @@ const UserList = () => {
   const fetchUserCredits = async () => {
     try {
       const response = await fetch(
-        `http://13.203.218.236:8000/users/credits/${encodeURIComponent(userEmail)}`
+        `http://13.203.218.236:3005/users/credits/${encodeURIComponent(userEmail)}`, { headers: { "Authorization": `Bearer ${token}`  } }
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
@@ -85,10 +88,10 @@ const UserList = () => {
 
     try {
       const response = await fetch(
-        "http://13.203.218.236:8000/transactions/update-credits",
+        "http://13.203.218.236:3005/transactions/update-credits",
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
           body: JSON.stringify({
             userEmail: email,
             senderEmail: userEmail,

@@ -96,8 +96,8 @@ exports.getUsersByadmin = async (req, res) => {
 
   try {
     const users = await User.findAll({
-      where: { roleId: 1 }, // Fetch only users created by this email
-      attributes: ["id", "userEmail", "roleId", "credits", "createdAt"], // Select only necessary fields
+      where: { roleId: 1 }, // Fetch only users created by this email"
+      attributes: ["id", "userEmail", "roleId", "credits","creditCostPerLink","creditCostPerLink_V","creditCostPerLink_C", "createdAt"], // Select only necessary fields
     });
 
     res.status(200).json({ success: true, data: users });

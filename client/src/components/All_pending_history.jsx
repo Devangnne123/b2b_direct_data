@@ -90,14 +90,16 @@ const VerificationUploadsReport = () => {
     fetchAllReports();
   }, []);
 
+   const token = sessionStorage.getItem('token');
+
   const fetchAllReports = async () => {
     try {
       setLoading(true);
       
       const [verificationRes, companyRes, directnumberRes] = await Promise.all([
-        axios.get('http://13.203.218.236:8000/VerificationUpload/report'),
-        axios.get('http://13.203.218.236:8000/company/report'),
-        axios.get('http://13.203.218.236:8000/Direct-number/report')
+        axios.get('http://13.203.218.236:3005/VerificationUpload/report',{ headers: { "Authorization": `Bearer ${token}`  } }),
+        axios.get('http://13.203.218.236:3005/company/report',{ headers: { "Authorization": `Bearer ${token}`  } }),
+        axios.get('http://13.203.218.236:3005/Direct-number/report',{ headers: { "Authorization": `Bearer ${token}`  } })
       ]);
 
       setReports({
@@ -236,9 +238,9 @@ const VerificationUploadsReport = () => {
         return;
       }
 
-      const response = await axios.post('http://13.203.218.236:8000/api/save-completed-reports', {
+      const response = await axios.post('http://13.203.218.236:3005/api/save-completed-reports', {
         reports: completedReports
-      });
+      },{ headers: { "Authorization": `Bearer ${token}`  } });
 
       setSnackbar({
         open: true,

@@ -19,6 +19,8 @@ const AddUser = () => {
   const userEmail =
     JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
 
+    const token = sessionStorage.getItem('token');
+
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
     if (!user) {
@@ -53,9 +55,9 @@ const AddUser = () => {
     };
 
     try {
-      const response = await fetch("http://13.203.218.236:8000/users/newuser", {
+      const response = await fetch("http://13.203.218.236:3005/users/newuser", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json","Authorization": `Bearer ${token}` },
         body: JSON.stringify(userData),
       });
 

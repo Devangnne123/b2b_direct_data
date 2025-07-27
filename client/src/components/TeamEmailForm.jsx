@@ -25,7 +25,7 @@ const TeamEmailForm = () => {
     setSuccess(false);
 
     try {
-      const response = await axios.post('http://13.203.218.236:8000/api/team-emails', formData);
+      const response = await axios.post('http://13.203.218.236:3005/api/team-emails', formData);
       setSuccess(true);
       setFormData({ email: '', name: '' }); // Reset form
       console.log('Team email added:', response.data);

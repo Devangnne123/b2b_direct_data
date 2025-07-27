@@ -39,13 +39,13 @@ const UserCreditReport = () => {
     setError(null);
     try {
       const [creditsRes, linksRes, companiesRes] = await Promise.all([
-        axios.get(`http://13.203.218.236:8000/api/user/${userEmail}`, {
+        axios.get(`http://13.203.218.236:3005/api/user/${userEmail}`, {
         headers: {  "Authorization": `Bearer ${token}`  },
       }),
-        axios.post("http://13.203.218.236:8000/get-verification-links", {
+        axios.post("http://13.203.218.236:3005/get-verification-links", {
           headers: { "user-email": userEmail }
         }),
-        axios.post("http://13.203.218.236:8000/get-verification-links-com", {
+        axios.post("http://13.203.218.236:3005/get-verification-links-com", {
           headers: { "user-email": userEmail }
         })
       ]);

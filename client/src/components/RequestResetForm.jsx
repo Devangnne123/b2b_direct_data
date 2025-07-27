@@ -20,6 +20,8 @@ function ChangePassword() {
 
   const userEmail = JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
 
+   const token = sessionStorage.getItem('token');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -38,10 +40,11 @@ function ChangePassword() {
       setErrorMessage("");
       setSuccessMessage("");
       
-      const response = await fetch("http://13.203.218.236:8000/change-password", {
+      const response = await fetch("http://13.203.218.236:3005/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({
           email: userEmail,

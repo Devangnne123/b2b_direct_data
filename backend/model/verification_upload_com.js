@@ -1,29 +1,82 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/db');
-const { v4: uuidv4 } = require('uuid'); // For generating UUIDs
+const { v4: uuidv4 } = require('uuid');
 
-const VerificationTemp_com = sequelize.define('verification_temp_com', {
+const VerificationUpload_com = sequelize.define('verification_upload_com', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
   uniqueId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: () => uuidv4()
+  },
+  email: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  clean_linkedin_link: {
-    type: DataTypes.STRING,
-    allowNull: false,
+  link: {
+    type: DataTypes.TEXT,
+    allowNull: false
   },
-   status: {
+  totallink: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  pendingCount: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  clean_link: {
+    type: DataTypes.TEXT
+  },
+  link_id: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: () => uuidv4(),
+    unique: true
+  },
+  date: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  },
+  remark: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  emailSent: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
+  },
+  emailSentAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  final_status: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'pending'
+  },
+  remainingCredits: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  fileName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  creditsUsed: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  status: {
     type: DataTypes.STRING,
     allowNull: true,
     defaultValue: 'Pending',
-  },
- link_id: {
-     type: DataTypes.STRING,
-     allowNull: true, 
-   },
-
-  remark: {
-    type: DataTypes.STRING,
-    allowNull: false
   },
   company_name: {
     type: DataTypes.STRING,
@@ -33,11 +86,11 @@ const VerificationTemp_com = sequelize.define('verification_temp_com', {
     type: DataTypes.STRING,
     allowNull: true
   },
- company_headquater: {
+  company_headquater: {
     type: DataTypes.STRING,
     allowNull: true
   },
- company_industry: {
+  company_industry: {
     type: DataTypes.STRING,
     allowNull: true
   },
@@ -89,19 +142,21 @@ const VerificationTemp_com = sequelize.define('verification_temp_com', {
     type: DataTypes.STRING,
     allowNull: true
   },
-  final_remaks: {
+  final_remarks: {  // Corrected spelling here
     type: DataTypes.TEXT,
     allowNull: true
   },
   company_id: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  last_sync: {
+    type: DataTypes.DATE,
+    allowNull: true
   }
-
 }, {
-  tableName: 'web_company_details_temp',
-  timestamps: false, // Enable createdAt and updatedAt
-  
+  tableName: 'verification_uploads_com',
+  timestamps: false
 });
 
-module.exports = VerificationTemp_com;
+module.exports = VerificationUpload_com;

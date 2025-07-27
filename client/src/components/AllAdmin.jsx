@@ -35,11 +35,11 @@ const AllAdmin = () => {
     setError("");
 
     try {
-      const response = await fetch("http://13.203.218.236:8000/users/getAllAdmin", {
+      const response = await fetch("http://13.203.218.236:3005/users/getAllAdmin", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem('token')}`
+          "Authorization": `Bearer ${token}`
         },
         body: JSON.stringify({})
       });
@@ -95,11 +95,11 @@ const AllAdmin = () => {
     const senderEmail = JSON.parse(sessionStorage.getItem("user"))?.email || "Super Admin";
 
     try {
-      const response = await fetch("http://13.203.218.236:8000/users/update-credits", {
+      const response = await fetch("http://13.203.218.236:3005/users/update-credits", {
         method: "PATCH",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem('token')}`
+            "Authorization": `Bearer ${token}` 
         },
         body: JSON.stringify({ userEmail, credits: updatedCredits }),
       });
@@ -110,12 +110,12 @@ const AllAdmin = () => {
       }
 
       const transactionResponse = await fetch(
-        "http://13.203.218.236:8000/super-admin/assign-credits",
+        "http://13.203.218.236:3005/super-admin/assign-credits",
         {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem('token')}`
+           "Authorization": `Bearer ${token}`
           },
           body: JSON.stringify({
             senderEmail,
@@ -147,7 +147,7 @@ const AllAdmin = () => {
 
     try {
       const response = await fetch(
-        "http://13.203.218.236:8000/users/update-credit-cost",
+        "http://13.203.218.236:3005/users/update-credit-cost",
         {
           method: "PATCH",
           headers: { 

@@ -22,12 +22,13 @@ const AllUser = () => {
   });
 
   const loggedInUserEmail = JSON.parse(sessionStorage.getItem('user'))?.email || 'Guest';
+const token = sessionStorage.getItem('token');
 
   useEffect(() => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const response = await fetch('http://13.203.218.236:8000/users/user');
+        const response = await fetch('http://13.203.218.236:3005/users/user', { headers: { "Authorization": `Bearer ${token}`  } });
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }

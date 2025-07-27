@@ -1418,6 +1418,7 @@ app.post('/sync-temp-to-main/:uniqueId', async (req, res) => {
   }
 });
 
+
 // // Download endpoint with merged data
 // app.get('/download-verification-data/:uniqueId', async (req, res) => {
 //   try {
@@ -1527,7 +1528,7 @@ function setupScheduledSync() {
       for (const { uniqueId } of uniqueIds) {
         try {
           const response = await axios.post(
-            `http://13.203.218.236:8000/sync-temp-to-main/${uniqueId}`
+            `http://13.203.218.236:3005/sync-temp-to-main/${uniqueId}`
           );
           console.log(`Sync completed for ${uniqueId}:`, response.data);
         } catch (err) {
@@ -1593,7 +1594,7 @@ app.post('/api/deduct-credits', async (req, res) => {
 
 /////////////////////verfication company////////////
 
-const VerificationUpload_com = require('./model/VerificationUpload_com');
+const VerificationUpload_com = require('./model/verification_upload_com');
 
 
 app.post('/upload-excel-verification-com',auth, upload.single('file'), async (req, res) => {
@@ -1701,7 +1702,7 @@ app.post('/upload-excel-verification-com',auth, upload.single('file'), async (re
 
 
 
-const VerificationTemp_com = require('./model/VerificationTemp_com');
+const VerificationTemp_com = require('./model/verification_temp_com');
 
 app.post('/process-matching-com/:uniqueId', async (req, res) => {
   try {
@@ -1747,7 +1748,7 @@ app.post('/process-matching-com/:uniqueId', async (req, res) => {
       location_total: linkRecord.location_total || null,
       overview: linkRecord.overview || null,
       visit_website: linkRecord.visit_website || null,
-      final_remaks: linkRecord.final_remaks || null,
+      final_remarks: linkRecord.final_remarks || null,
       company_id: linkRecord.company_id || null
       });
 
@@ -1961,7 +1962,7 @@ app.post('/sync-temp-to-main-com/:uniqueId', async (req, res) => {
     const { uniqueId } = req.params;
     
     // Get all records from temp table for this uniqueId
-    const tempRecords = await VerificationTemp_com.findAll({
+    const tempR = await VerificationTemp_com.findAll({
       where: { uniqueId }
     });
 
@@ -1970,92 +1971,91 @@ app.post('/sync-temp-to-main-com/:uniqueId', async (req, res) => {
     let markedCompletedCount = 0;
     let deletedCount = 0;
 
-    for (const tempRecord of tempRecords) {
+    for (const tempRR of tempR) {
       // Convert to plain object to better check values
-      const tempData = tempRecord.get({ plain: true });
+      const temp = tempRR.get({ plain: true });
       
       // Debug logging
       console.log('Processing record:', {
-        id: tempData.id,
-        final_remarks: tempData.final_remarks,
-        company_id: tempData.company_id,
-        currentStatus: tempData.status
+        id: temp.id,
+        final_remarks: temp.final_remarks, // Fixed typo here
+        company_id: temp.company_id,
+        currentStatus: temp.status
       });
 
       // Check if both fields have valid values (not null/undefined and not empty strings)
-      const hasValidFinalRemarks = tempData.final_remaks && 
-                                 tempData.final_remaks.trim() !== '';
-      const hasValidContactsId = tempData.company_id && 
-                                tempData.company_id.trim() !== '';
-      const shouldMarkCompleted = hasValidFinalRemarks && hasValidContactsId;
+      const hasValidFinalRemarks = temp.final_remarks && 
+                                 temp.final_remarks.trim() !== '';
+      const hasValidCompanyId = temp.company_id && 
+                              temp.company_id.trim() !== '';
+      const shouldMarkCompleted = hasValidFinalRemarks && hasValidCompanyId;
 
       // Prepare update data for main table
       const updateData = {
-        company_name: tempData.company_name || null,
-        company_url: tempData.company_url || null,
-        company_headquater: tempData.company_headquater || null,
-        company_industry: tempData.company_industry || null,
-        company_size: tempData.company_size || null,
-        employee_count: tempData.employee_count || null,
-        year_founded: tempData.year_founded || null,
-        company_speciality: tempData.company_speciality || null,
-        linkedin_url: tempData.linkedin_url || null,
-        company_stock_name: tempData.company_stock_name || null,
-        verified_page_date: tempData.verified_page_date || null,
-        phone_number: tempData.phone_number || null,
-        company_followers: tempData.company_followers || null,
-        location_total: tempData.location_total || null,
-        overview: tempData.overview || null,
-        visit_website: tempData.visit_website || null,
-        final_remaks: tempData.final_remaks || null,
-        company_id: tempData.company_id || null,
+        company_name: temp.company_name,
+        company_url: temp.company_url,
+        company_headquater: temp.company_headquater,
+        company_industry: temp.company_industry,
+        company_size: temp.company_size,
+        employee_count: temp.employee_count,
+        year_founded: temp.year_founded,
+        company_speciality: temp.company_speciality,
+        linkedin_url: temp.linkedin_url,
+        company_stock_name: temp.company_stock_name,
+        verified_page_date: temp.verified_page_date,
+        phone_number: temp.phone_number,
+        company_followers: temp.company_followers,
+        location_total: temp.location_total,
+        overview: temp.overview,
+        visit_website: temp.visit_website,
+        final_remarks: temp.final_remarks, // Fixed typo here
+        company_id: temp.company_id,
         last_sync: new Date()
       };
 
-      // FORCE STATUS UPDATE - This is the key change
+      // FORCE STATUS UPDATE
       if (shouldMarkCompleted) {
-        updateData.status = 'Completed'; // Note the capital 'C' to match your model
+        updateData.status = 'Completed'; // Make sure this matches your model enum
       }
 
       // Update main table
       const [updated] = await VerificationUpload_com.update(updateData, {
         where: { 
           uniqueId,
-          link_id: tempData.link_id
+          link_id: temp.link_id
         }
       });
 
       if (updated > 0) {
         updatedCount++;
         
-        // If marked as completed, update temp table too
+        // If marked as completed, delete from temp table
         if (shouldMarkCompleted) {
-          // Delete the record from temp table instead of updating
           const deleted = await VerificationTemp_com.destroy({
-            where: { id: tempData.id }
+            where: { id: temp.id }
           });
 
           if (deleted > 0) {
             markedCompletedCount++;
             deletedCount++;
-            console.log(`Marked and deleted completed record ${tempData.id}`);
+            console.log(`Marked as completed and deleted temp record ${temp.id}`);
           }
         }
       } else {
         skippedCount++;
-        console.warn(`No matching record found for link_id: ${tempData.link_id}`);
+        console.warn(`No matching record found for link_id: ${temp.link_id}`);
       }
     }
 
     res.json({
       success: true,
-      message: `Sync completed - Updated ${updatedCount} records (${markedCompletedCount} marked as completed), deleted ${deletedCount} temp records, skipped ${skippedCount}`,
+      message: `Sync completed - Updated ${updatedCount} records (${markedCompletedCount} marked as completed and deleted), skipped ${skippedCount}`,
       uniqueId,
       updatedCount,
       markedCompletedCount,
       deletedCount,
       skippedCount,
-      totalRecords: tempRecords.length
+      totalRecords: tempR.length
     });
 
   } catch (error) {
@@ -2176,7 +2176,7 @@ function setupScheduledSyncCom() {
       for (const { uniqueId } of uniqueIds) {
         try {
           const response = await axios.post(
-            `http://13.203.218.236:8000/sync-temp-to-main-com/${uniqueId},`
+            `http://13.203.218.236:3005/sync-temp-to-main-com/${uniqueId}`
           );
           console.log(`Sync completed for ${uniqueId}:`, response.data);
         } catch (err) {
@@ -2202,66 +2202,6 @@ setupScheduledSyncCom();
 
 
 
-
-async function processVerificationUploads() {
-  try {
-    // Get all unique groups that need processing
-    const uniqueGroups = await VerificationUpload_com.findAll({
-      attributes: ['id'],
-      group: ['id'],
-      where: {
-        final_status: {
-          [Op.ne]: 'Completed' // Only process groups not already marked Completed
-        }
-      }
-    });
-
-    for (const group of uniqueGroups) {
-      const id = group.id;
-      
-      // Get all records for this uniqueId
-      const records = await VerificationUpload_com.findAll({
-        where: { id }
-      });
-
-      // Determine final status based on your rules
-      let finalStatus = 'Completed'; // Assume completed unless we find reasons otherwise
-
-      for (const record of records) {
-        // Rule 1: If any record has status 'Pending' AND remark contains 'pending'
-        if (record.status === 'Pending' && 
-            
-            record.remark.toLowerCase().includes('pending')) {
-          finalStatus = 'Pending';
-          break; // No need to check further
-        }
-        
-        // Rule 2: If any record has status 'Pending' (regardless of remark)
-        // We don't break here because a later record might trigger Rule 1
-        if (record.status === 'Pending') {
-          finalStatus = 'Completed';
-        }
-      }
-
-      // Update all records in this group
-      await VerificationUpload_com.update(
-        { final_status: finalStatus },
-        { where: { id } }
-      );
-
-      console.log(`Processed group ${id}: Final status = ${finalStatus}`);
-    }
-  } catch (error) {
-    console.error('Error processing verification uploads:', error);
-  }
-}
-
-
-// Run every minute
-setInterval(processVerificationUploads, 10 * 1000);
-
-// Initial run
-processVerificationUploads();
 
 
 
@@ -2344,6 +2284,66 @@ app.post('/check-status-link/:uniqueId', async (req, res) => {
     });
   }
 });
+
+async function processVerificationUploads() {
+  try {
+    // Get all unique groups that need processing
+    const uniqueGroups = await VerificationUpload_com.findAll({
+      attributes: ['id'],
+      group: ['id'],
+      where: {
+        final_status: {
+          [Op.ne]: 'Completed' // Only process groups not already marked Completed
+        }
+      }
+    });
+
+    for (const group of uniqueGroups) {
+      const id = group.id;
+      
+      // Get all records for this uniqueId
+      const records = await VerificationUpload_com.findAll({
+        where: { id }
+      });
+
+      // Determine final status based on your rules
+      let finalStatus = 'Completed'; // Assume completed unless we find reasons otherwise
+
+      for (const record of records) {
+        // Rule 1: If any record has status 'Pending' AND remark contains 'pending'
+        if (record.status === 'Pending' && 
+            
+            record.remark.toLowerCase().includes('pending')) {
+          finalStatus = 'Pending';
+          break; // No need to check further
+        }
+        
+        // Rule 2: If any record has status 'Pending' (regardless of remark)
+        // We don't break here because a later record might trigger Rule 1
+        if (record.status === 'Pending') {
+          finalStatus = 'Completed';
+        }
+      }
+
+      // Update all records in this group
+      await VerificationUpload_com.update(
+        { final_status: finalStatus },
+        { where: { id } }
+      );
+
+      console.log(`Processed group ${id}: Final status = ${finalStatus}`);
+    }
+  } catch (error) {
+    console.error('Error processing verification uploads:', error);
+  }
+}
+
+
+// Run every minute
+setInterval(processVerificationUploads, 10 * 1000);
+
+// Initial run
+processVerificationUploads();
 
 
 
@@ -2907,7 +2907,7 @@ app.post('/api/send-completion-email-com',auth, async (req, res) => {
 
 
 // Server-side route
-app.post('/change-password', async (req, res) => {
+app.post('/change-password', auth, async (req, res) => {
   try {
     const { email, currentPassword, newPassword } = req.body;
     
@@ -3083,46 +3083,46 @@ app.post('/api/send-confirmation', async (req, res) => {
 
 
 
-// // Route to create a new team email
-// app.post('/api/team-emails', async (req, res) => {
-//   try {
-//     const { email, name } = req.body;
+// Route to create a new team email
+app.post('/api/team-emails', async (req, res) => {
+  try {
+    const { email, name } = req.body;
 
-//     // Validate required fields
-//     if (!email) {
-//       return res.status(400).json({ error: 'Email is required' });
-//     }
+    // Validate required fields
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
 
-//     // Create the new team email record
-//     const newTeamEmail = await TeamEmail.create({
-//       email,
-//       name: name || null // Set to null if name is not provided
-//     });
+    // Create the new team email record
+    const newTeamEmail = await TeamEmail.create({
+      email,
+      name: name || null // Set to null if name is not provided
+    });
 
-//     // Return the created record
-//     res.status(201).json({
-//       message: 'Team email created successfully',
-//       data: newTeamEmail
-//     });
+    // Return the created record
+    res.status(201).json({
+      message: 'Team email created successfully',
+      data: newTeamEmail
+    });
 
-//   } catch (error) {
-//     console.error('Error creating team email:', error);
+  } catch (error) {
+    console.error('Error creating team email:', error);
     
-//     // Handle validation errors
-//     if (error.name === 'SequelizeValidationError') {
-//       const errors = error.errors.map(err => err.message);
-//       return res.status(400).json({ errors });
-//     }
+    // Handle validation errors
+    if (error.name === 'SequelizeValidationError') {
+      const errors = error.errors.map(err => err.message);
+      return res.status(400).json({ errors });
+    }
     
-//     // Handle duplicate email error
-//     if (error.name === 'SequelizeUniqueConstraintError') {
-//       return res.status(400).json({ error: 'Email already exists' });
-//     }
+    // Handle duplicate email error
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
 
-//     // Generic error handler
-//     res.status(500).json({ error: 'Internal server error' });
-//   }
-// });
+    // Generic error handler
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 
@@ -3226,7 +3226,7 @@ app.post('/api/send-verification-confirmation/company', auth, async (req, res) =
 
 
 // GET /api/links/report
-app.get('/api/links/report', async (req, res) => {
+app.get('/api/links/report',auth, async (req, res) => {
   try {
     // First get aggregated data
     const links = await Link.findAll({
@@ -3303,7 +3303,7 @@ app.get('/api/links/report', async (req, res) => {
 
 
 // GET /api/company-verifications/report
-app.get('/api/company-verifications/report', async (req, res) => {
+app.get('/api/company-verifications/report', auth, async (req, res) => {
   try {
     const verifications = await VerificationUpload_com.findAll({
       attributes: [
@@ -3355,7 +3355,7 @@ app.get('/api/company-verifications/report', async (req, res) => {
 
 
 // GET /api/company-verifications/report
-app.get('/api/verifications/report', async (req, res) => {
+app.get('/api/verifications/report', auth, async (req, res) => {
   try {
     const verifications = await VerificationUpload.findAll({
       attributes: [
@@ -3411,7 +3411,7 @@ const CreditTransaction = require("../backend/model/creditTransactionModel");
 
 
 // GET /api/credit-transactions
-app.get('/api/credit-transactions', async (req, res) => {
+app.get('/api/credit-transactions',auth, async (req, res) => {
   try {
     const transactions = await CreditTransaction.findAll({
       order: [['createdAt', 'DESC']] // Show newest first
@@ -3467,7 +3467,7 @@ app.get('/api/superadmin-transactions', async (req, res) => {
 
 
 // Get createdBy value for a specific userEmail
-app.get('/user/creator/:userEmail', async (req, res) => {
+app.get('/user/creator/:userEmail', auth, async (req, res) => {
   try {
     const { userEmail } = req.params;
     
@@ -3511,59 +3511,11 @@ app.get('/user/creator/:userEmail', async (req, res) => {
 const  CompletedReport = require("./model/CompletedReport")
 
 
-// In your routes file
-app.post('/api/save-completed-reports', async (req, res) => {
-  try {
-    const { reports } = req.body;
-    
-    // Save each report to your database
-    const savedReports = await Promise.all(
-      reports.map(async (report) => {
-        // Check if report already exists
-        const existing = await CompletedReport.findOne({ 
-          where: { 
-            uniqueId: report.uniqueId,
-            type: report.type 
-          } 
-        });
-        
-        if (existing) {
-          return existing;
-        }
-        
-        // Create new record
-        return await CompletedReport.create({
-          process: report.process,
-          uniqueId: report.uniqueId,
-          totalLinks: report.totallink,
-          matchCount: report.matchCount,
-          fileName: report.fileName,
-          date: report.date,
-          email: report.email,
-          createdBy: report.createdBy,
-          transactionType: report.transactionType,
-          amount: report.amount,
-          status: report.finalStatus,
-          type: report.type,
-          // Add any other relevant fields
-        });
-      })
-    );
 
-    res.json({
-      success: true,
-      count: savedReports.length,
-      savedReports
-    });
-  } catch (error) {
-    console.error('Error saving completed reports:', error);
-    res.status(500).json({ error: 'Failed to save completed reports' });
-  }
-});
 
 
 // In your routes file
-app.post('/api/save-completed-reports', async (req, res) => {
+app.post('/api/save-completed-reports', auth, async (req, res) => {
   try {
     const { reports } = req.body;
     
@@ -3727,7 +3679,7 @@ app.post('/verify-payment', (req, res) => {
 
 
 // GET /api/verification-uploads/report
-app.get('/VerificationUpload/report', async (req, res) => {
+app.get('/VerificationUpload/report',auth, async (req, res) => {
   try {
     const verifications = await VerificationUpload.findAll({
       attributes: [
@@ -3782,7 +3734,7 @@ app.get('/VerificationUpload/report', async (req, res) => {
 
 
 // GET /api/verification-uploads/report
-app.get('/company/report', async (req, res) => {
+app.get('/company/report',auth, async (req, res) => {
   try {
     const verifications = await VerificationUpload_com.findAll({
       attributes: [
@@ -3835,7 +3787,7 @@ app.get('/company/report', async (req, res) => {
 
 
 // GET /api/verification-uploads/report
-app.get('/Direct-number/report', async (req, res) => {
+app.get('/Direct-number/report', auth,async (req, res) => {
   try {
     const verifications = await Link.findAll({
       attributes: [
@@ -3882,6 +3834,63 @@ app.get('/Direct-number/report', async (req, res) => {
     res.status(500).json({ 
       error: 'Internal server error',
       details: error.message 
+    });
+  }
+});
+
+
+
+
+
+
+
+app.patch('/users/update-single-credit-cost', auth,async (req, res) => {
+  try {
+    const { userEmail, field, value, updatedBy } = req.body;
+
+    // Validate inputs
+    if (!userEmail || !field || value === undefined) {
+      return res.status(400).json({ 
+        message: 'Missing required fields',
+        requiredFields: ['userEmail', 'field', 'value']
+      });
+    }
+
+    const validFields = ['creditCostPerLink', 'creditCostPerLink_V',"creditCostPerLink_C"];
+    if (!validFields.includes(field)) {
+      return res.status(400).json({ 
+        message: 'Invalid field specified',
+        validFields
+      });
+    }
+
+    if (value <= 0) {
+      return res.status(400).json({ 
+        message: 'Value must be greater than 0'
+      });
+    }
+
+    const user = await User.findOne({ where: { userEmail } });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update the specific field
+    user[field] = value;
+    await user.save();
+
+    res.json({ 
+      message: `${field} updated successfully`,
+      data: {
+        [field]: user[field],
+        userEmail: user.userEmail
+      }
+    });
+  } catch (error) {
+    console.error(`Error updating ${field}:`, error);
+    res.status(500).json({ 
+      message: `Server error while updating ${field}`,
+      error: error.message 
     });
   }
 });
