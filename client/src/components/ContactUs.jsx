@@ -110,7 +110,7 @@ export default function ContactUs() {
     setCaptchaError(null);
 
     try {
-      const response = await fetch('http://13.203.218.236:3005/api/contact', {
+      const response = await fetch('http://13.203.218.236:8000/api/contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

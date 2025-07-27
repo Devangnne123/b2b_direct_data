@@ -37,7 +37,7 @@ const UserList = () => {
   const fetchUsers = async () => {
     try {
       const response = await fetch(
-        `http://13.203.218.236:3005/users/admin/${userEmail}`,{ headers: { "Authorization": `Bearer ${token}`  } }
+        `http://13.203.218.236:8000/users/admin/${userEmail}`,{ headers: { "Authorization": `Bearer ${token}`  } }
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
@@ -64,7 +64,7 @@ const UserList = () => {
   const fetchUserCredits = async () => {
     try {
       const response = await fetch(
-         `http://13.203.218.236:3005/users/credits/${encodeURIComponent(userEmail)}`, { headers: { "Authorization": `Bearer ${token}`  } }
+         `http://13.203.218.236:8000/users/credits/${encodeURIComponent(userEmail)}`, { headers: { "Authorization": `Bearer ${token}`  } }
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
@@ -105,7 +105,7 @@ const UserList = () => {
       setUpdating(prev => ({ ...prev, [`${email}-${field}`]: true }));
 
       const response = await fetch(
-        `http://13.203.218.236:3005/users/update-single-credit-cost`,
+        `http://13.203.218.236:8000/users/update-single-credit-cost`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
@@ -162,7 +162,7 @@ const UserList = () => {
 
     try {
       const response = await fetch(
-        "http://13.203.218.236:3005/transactions/update-credits",
+        "http://13.203.218.236:8000/transactions/update-credits",
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json","Authorization": `Bearer ${token}` },

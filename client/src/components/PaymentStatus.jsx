@@ -14,7 +14,7 @@ const PaymentStatus = () => {
     const orderID = searchParams.get('token'); // optional if needed
 
     if (success === 'true' && email && credits) {
-      axios.post('http://13.203.218.236:3005/api/payments/capture', {
+      axios.post('http://13.203.218.236:8000/api/payments/capture', {
         email,
         creditAmount: parseInt(credits),
         orderID: orderID || 'manual' // fallback for order ID

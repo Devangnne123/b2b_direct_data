@@ -85,10 +85,10 @@ const AllHistory = () => {
       setLoading(true);
       
       const [linksRes, verificationRes, creditRes, companyVerificationRes] = await Promise.all([
-        axios.get('http://13.203.218.236:3005/api/links/report',{ headers: { "Authorization": `Bearer ${token}`  } }),
-        axios.get('http://13.203.218.236:3005/api/verifications/report',{ headers: { "Authorization": `Bearer ${token}`  } }),
-        axios.get('http://13.203.218.236:3005/api/credit-transactions',{ headers: { "Authorization": `Bearer ${token}`  } }),
-        axios.get('http://13.203.218.236:3005/api/company-verifications/report',{ headers: { "Authorization": `Bearer ${token}`  } })
+        axios.get('http://13.203.218.236:8000/api/links/report',{ headers: { "Authorization": `Bearer ${token}`  } }),
+        axios.get('http://13.203.218.236:8000/api/verifications/report',{ headers: { "Authorization": `Bearer ${token}`  } }),
+        axios.get('http://13.203.218.236:8000/api/credit-transactions',{ headers: { "Authorization": `Bearer ${token}`  } }),
+        axios.get('http://13.203.218.236:8000/api/company-verifications/report',{ headers: { "Authorization": `Bearer ${token}`  } })
       ]);
 
       const transformData = (data, type) => {
@@ -169,7 +169,7 @@ const AllHistory = () => {
       const creators = await Promise.all(
         uniqueEmails.map(async (email) => {
           try {
-            const response = await axios.get(`http://13.203.218.236:3005/user/creator/${email}`,{ headers: { "Authorization": `Bearer ${token}`  } });
+            const response = await axios.get(`http://13.203.218.236:8000/user/creator/${email}`,{ headers: { "Authorization": `Bearer ${token}`  } });
             return response.data;
           } catch (error) {
             console.error(`Error fetching creator for ${email}:`, error);
@@ -219,7 +219,7 @@ const AllHistory = () => {
         return;
       }
 
-      const response = await axios.post('http://13.203.218.236:3005/api/save-completed-reports', {
+      const response = await axios.post('http://13.203.218.236:8000/api/save-completed-reports', {
         reports: completedReports
       }, { headers: { "Authorization": `Bearer ${token}`  } });
 

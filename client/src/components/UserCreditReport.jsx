@@ -49,7 +49,7 @@ const UserCreditReport = () => {
   const fetchUsers = async () => {
     try {
       const response = await fetch(
-        `http://13.203.218.236:3005/users/created-by/${userEmail},`,{ headers: { "Authorization": `Bearer ${token}`  } }
+        `http://13.203.218.236:8000/users/created-by/${userEmail},`,{ headers: { "Authorization": `Bearer ${token}`  } }
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
@@ -66,7 +66,7 @@ const UserCreditReport = () => {
   const fetchPaymentHistory = async () => {
     try {
       setPaymentsLoading(true);
-      const response = await axios.get(`http://13.203.218.236:3005/api/payments/${userEmail}`);
+      const response = await axios.get(`http://13.203.218.236:8000/api/payments/${userEmail}`);
       setPayments(processPayments(response.data));
     } catch (error) {
       console.error('Error fetching payment history:', error);
@@ -99,26 +99,26 @@ const UserCreditReport = () => {
     
     try {
       const apiCalls = [
-        axios.get(`http://13.203.218.236:3005/transactions/credit-transactions/${userEmail}`,{ headers: { "Authorization": `Bearer ${token}`  } })
+        axios.get(`http://13.203.218.236:8000/transactions/credit-transactions/${userEmail}`,{ headers: { "Authorization": `Bearer ${token}`  } })
           .catch(error => {
             console.error("Failed to fetch user transactions:", error);
             return { data: { data: [] } };
           }),
         
-        axios.get(`http://13.203.218.236:3005/super-admin/get-credit-transactions`,{ headers: { "Authorization": `Bearer ${token}`  } })
+        axios.get(`http://13.203.218.236:8000/super-admin/get-credit-transactions`,{ headers: { "Authorization": `Bearer ${token}`  } })
           .catch(error => {
             console.error("Failed to fetch admin transactions:", error);
             return { data: { data: [] } };
           }),
         
-        axios.get("http://13.203.218.236:3005/bulklookup/get-links", {
+        axios.get("http://13.203.218.236:8000/bulklookup/get-links", {
         headers: { "user-email": userEmail, "Authorization": `Bearer ${token}`  },
       }).catch(error => {
           console.error("Failed to fetch file uploads:", error);
           return { data: [] };
         }),
         
-        axios.get(`http://13.203.218.236:3005/get-verification-uploads`, {
+        axios.get(`http://13.203.218.236:8000/get-verification-uploads`, {
           headers: { "user-email": userEmail },
           timeout: 10000
         }).catch(error => {
@@ -126,7 +126,7 @@ const UserCreditReport = () => {
           return { data: [] };
         }),
         
-        axios.get(`http://13.203.218.236:3005/get-company-verification-uploads`, {
+        axios.get(`http://13.203.218.236:8000/get-company-verification-uploads`, {
           headers: { "user-email": userEmail },
           timeout: 10000
         }).catch(error => {

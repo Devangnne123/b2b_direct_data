@@ -27,7 +27,7 @@ const SuperAdminTransactions = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const response = await axios.get('http://13.203.218.236:3005/api/superadmin-transactions');
+        const response = await axios.get('http://13.203.218.236:8000/api/superadmin-transactions');
         setTransactions(response.data.data || []);
         setLoading(false);
       } catch (error) {

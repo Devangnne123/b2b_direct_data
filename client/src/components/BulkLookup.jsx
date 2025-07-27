@@ -133,13 +133,13 @@ function BulkLookup() {
       if (!savedEmail || savedEmail === "Guest") return;
 
       const [linksRes, creditsRes] = await Promise.all([
-        axios.get("http://13.203.218.236:3005/bulklookup/get-links", {
+        axios.get("http://13.203.218.236:8000/bulklookup/get-links", {
           headers: {
             "user-email": savedEmail,
             Authorization: `Bearer ${token}`,
           },
         }),
-        axios.get(`http://13.203.218.236:3005/api/user/${savedEmail}`, {
+        axios.get(`http://13.203.218.236:8000/api/user/${savedEmail}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -192,7 +192,7 @@ function BulkLookup() {
   const fetchCreditCost = async (email) => {
     try {
       const response = await axios.post(
-        "http://13.203.218.236:3005/users/getAllAdmin",
+        "http://13.203.218.236:8000/users/getAllAdmin",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -281,7 +281,7 @@ function BulkLookup() {
 
     try {
       const res = await axios.post(
-        "http://13.203.218.236:3005/upload-excel",
+        "http://13.203.218.236:8000/upload-excel",
         formData,
         {
           headers: {
@@ -356,7 +356,7 @@ function BulkLookup() {
     try {
       // First create the TempLinkMobile records
       const tempRes = await axios.post(
-        "http://13.203.218.236:3005/confirm-upload",
+        "http://13.203.218.236:8000/confirm-upload",
         {
           uniqueId: pendingUpload.uniqueId,
           email: savedEmail,
@@ -366,7 +366,7 @@ function BulkLookup() {
 
       // Then deduct credits
       const creditRes = await axios.post(
-        "http://13.203.218.236:3005/api/upload-file",
+        "http://13.203.218.236:8000/api/upload-file",
         {
           userEmail: savedEmail,
           creditCost: pendingUpload.creditToDeduct,
@@ -383,7 +383,7 @@ function BulkLookup() {
       // Send email notification
       try {
         await axios.post(
-          "http://13.203.218.236:3005/send-upload-notification",
+          "http://13.203.218.236:8000/send-upload-notification",
           {
             email: savedEmail,
             fileName: pendingUpload.file,
@@ -433,7 +433,7 @@ function BulkLookup() {
     setLoading(true);
     try {
       await axios.delete(
-        `http://13.203.218.236:3005/cancel-upload/${pendingUpload.uniqueId}`,
+        `http://13.203.218.236:8000/cancel-upload/${pendingUpload.uniqueId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

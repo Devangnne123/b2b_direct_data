@@ -45,7 +45,7 @@ const Checkout = () => {
     if (user && user.email) {
       setEmail(user.email);
 
-      axios.get(`http://13.203.218.236:3005/api/user/${user.email}`, {
+      axios.get(`http://13.203.218.236:8000/api/user/${user.email}`, {
         headers: {  "Authorization": `Bearer ${token}`  },
       })
         .then((res) => {
@@ -72,7 +72,7 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://13.203.218.236:3005/api/payments/create', {
+      const response = await axios.post('http://13.203.218.236:8000/api/payments/create', {
         amount,
         description,
         email,

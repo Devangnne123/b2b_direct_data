@@ -30,7 +30,7 @@ const LinkReport = () => {
   useEffect(() => {
     const fetchLinks = async () => {
       try {
-        const response = await axios.get('http://13.203.218.236:3005/api/links/report');
+        const response = await axios.get('http://13.203.218.236:8000/api/links/report');
         setReportData({
           tableName: response.data.tableName || 'Links Report',
           data: response.data.data || []

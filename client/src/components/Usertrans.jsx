@@ -43,8 +43,8 @@ const UserCreditReport = () => {
     try {
       // Fetch both transactions and file uploads in parallel
       const [transactionsRes, uploadsRes] = await Promise.all([
-        axios.get(`http://13.203.218.236:3005/transactions/credit-transactions/${userEmail}`),
-        axios.get("http://13.203.218.236:3005/bulklookup/get-links", {
+        axios.get(`http://13.203.218.236:8000/transactions/credit-transactions/${userEmail}`),
+        axios.get("http://13.203.218.236:8000/bulklookup/get-links", {
                 headers: { "user-email": savedEmail, "Authorization": `Bearer ${token}`  },
               }),
       ]);

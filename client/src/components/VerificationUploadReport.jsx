@@ -30,7 +30,7 @@ const VerificationReport = () => {
   useEffect(() => {
     const fetchVerifications = async () => {
       try {
-        const response = await axios.get('http://13.203.218.236:3005/api/verifications/report');
+        const response = await axios.get('http://13.203.218.236:8000/api/verifications/report');
         setReportData({
           tableName: response.data.tableName || 'Company Verification Report',
           data: response.data.data || []

@@ -40,7 +40,7 @@ function ChangePassword() {
       setErrorMessage("");
       setSuccessMessage("");
       
-      const response = await fetch("http://13.203.218.236:3005/change-password", {
+      const response = await fetch("http://13.203.218.236:8000/change-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

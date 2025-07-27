@@ -36,7 +36,7 @@ const CheckoutPage = () => {
    // Function to fetch user credits
   const fetchUserCredits = async (email) => {
     try {
-      const response = await fetch(`http://13.203.218.236:3005/api/user/${email}`, {
+      const response = await fetch(`http://13.203.218.236:8000/api/user/${email}`, {
         headers: {  "Authorization": `Bearer ${token}`  },
       });
       const data = await response.json();
@@ -61,7 +61,7 @@ const handleSuccess = async (details) => {
   
   try {
     // Call API to update credits
-    const response = await fetch('http://13.203.218.236:3005/api/payments/update-credits', {
+    const response = await fetch('http://13.203.218.236:8000/api/payments/update-credits', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

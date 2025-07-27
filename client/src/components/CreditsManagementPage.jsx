@@ -27,7 +27,7 @@ const CreditPurchase = () => {
   const fetchUserCredits = async (email) => {
     try {
       const response = await axios.post(
-        `http://13.203.218.236:3005/api/users/credits?email=${email}`,
+        `http://13.203.218.236:8000/api/users/credits?email=${email}`,
         { timeout: 5000 }
       );
       setCredits(response.data.credits);
@@ -76,7 +76,7 @@ const CreditPurchase = () => {
 
   try {
     const response = await axios.post(
-      `http://13.203.218.236:3005/api/verify-payment`,
+      `http://13.203.218.236:8000/api/verify-payment`,
       {
         orderID: data.orderID,
         email: userEmail,
