@@ -189,29 +189,49 @@ function BulkLookup() {
     }
   }, []);
 
-  const fetchCreditCost = async (email) => {
-    try {
-      const response = await axios.post(
-        "http://13.203.218.236:8000/users/getAllAdmin",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "X-API-Key": process.env.REACT_APP_API_KEY,
-          },
+  // const fetchCreditCost = async (email) => {
+  //   try {
+  //     const response = await axios.post(
+  //       "http://13.203.218.236:8000/users/getAllAdmin",
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "X-API-Key": process.env.REACT_APP_API_KEY,
+  //         },
+  //       }
+  //     );
+  //     if (response.data && response.data.users) {
+  //       const adminUser = response.data.users.find(
+  //         (user) => user.userEmail === email
+  //       );
+  //       if (adminUser) {
+  //         setCreditCost(adminUser.creditCostPerLink );
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching admin credit cost:", error);
+  //   }
+  // };
+
+  // Fetch credits when email changes
+   
+      const fetchCreditCost = async (email) => {
+        if (!email || email === "Guest") return;
+        
+        try {
+          const response = await axios.get(`http://13.203.218.236:8000/api/user/${email}`, {
+          headers: {  "Authorization": `Bearer ${token}`  },
+        });
+          setCredits(response.data.credits);
+          setCreditCost(response.data.creditCostPerLink );
+          dataRef.current.credits = response.data.credits;
+        } catch (error) {
+          console.error("Error fetching credits:", error);
+          setCredits(0);
         }
-      );
-      if (response.data && response.data.users) {
-        const adminUser = response.data.users.find(
-          (user) => user.userEmail === email
-        );
-        if (adminUser) {
-          setCreditCost(adminUser.creditCostPerLink || 5);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching admin credit cost:", error);
-    }
-  };
+      };
+  
+  
 
   const getGroupStatus = (group) => {
     if (!group || group.length === 0) return "completed";

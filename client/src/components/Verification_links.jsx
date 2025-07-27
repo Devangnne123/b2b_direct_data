@@ -108,7 +108,7 @@ function VerificationLinks() {
         headers: {  "Authorization": `Bearer ${token}`  },
       });
         setCredits(response.data.credits);
-        setCreditCostPerLink(response.data.creditCostPerLink_V || 5);
+        setCreditCostPerLink(response.data.creditCostPerLink_V );
         dataRef.current.credits = response.data.credits;
       } catch (error) {
         console.error("Error fetching credits:", error);

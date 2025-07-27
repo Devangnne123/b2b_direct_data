@@ -106,7 +106,7 @@ function Verification_company() {
         headers: {  "Authorization": `Bearer ${token}`  },
       });
         setCredits(response.data.credits);
-        setCreditCostPerLink(response.data.creditCostPerLink_C || 5);
+        setCreditCostPerLink(response.data.creditCostPerLink_C);
         dataRef.current.credits = response.data.credits;
       } catch (error) {
         console.error("Error fetching credits:", error);
@@ -652,7 +652,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
             
             <div className="horizontal-table-item">
               <span className="horizontal-table-label">Credits to Deduct</span>
-              <span className="horizontal-table-value">💳 {pendingUpload.creditCost}({creditCost} per link) </span>
+              <span className="horizontal-table-value">💳 {pendingUpload.creditCostPerLink}({creditCostPerLink} per link) </span>
             </div>
             
             <div className="horizontal-table-item">
@@ -787,7 +787,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
                       <div className="history-table">
                         <h3 className="section-title">Your Verification History</h3>
                         <p>
-                          <strong>Cost per pending link:</strong> {creditCost} credits
+                          <strong>Cost per pending link:</strong> {creditCostPerLink} credits
                         </p>
 
                         {isProcessing ? (
