@@ -32,7 +32,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
     setSuccessMessage("");
   
     try {
-      const response = await fetch("http://13.203.218.236:8000/users/login", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -93,7 +93,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
       setErrorMessage("");
       setSuccessMessage("");
       
-      const response = await fetch("http://13.203.218.236:8000/users/send-otp", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/send-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -134,7 +134,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
       setIsSubmitting(true);
       setErrorMessage("");
       
-      const response = await fetch("http://13.203.218.236:8000/users/reset-password", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/reset-password`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

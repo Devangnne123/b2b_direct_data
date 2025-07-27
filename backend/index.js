@@ -1528,7 +1528,7 @@ function setupScheduledSync() {
       for (const { uniqueId } of uniqueIds) {
         try {
           const response = await axios.post(
-            `http://13.203.218.236:8000/sync-temp-to-main/${uniqueId}`
+            `${process.env.VITE_API_BASE_URL}/sync-temp-to-main/${uniqueId}`
           );
           console.log(`Sync completed for ${uniqueId}:`, response.data);
         } catch (err) {
@@ -2176,7 +2176,7 @@ function setupScheduledSyncCom() {
       for (const { uniqueId } of uniqueIds) {
         try {
           const response = await axios.post(
-            `http://13.203.218.236:8000/sync-temp-to-main-com/${uniqueId}`
+            `${process.env.VITE_API_BASE_URL}/sync-temp-to-main-com/${uniqueId}`
           );
           console.log(`Sync completed for ${uniqueId}:`, response.data);
         } catch (err) {

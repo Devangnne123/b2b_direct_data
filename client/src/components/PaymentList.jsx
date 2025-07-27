@@ -19,7 +19,7 @@ function PaymentList() {
   const fetchUserPayments = async (email) => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://13.203.218.236:8000/api/payments/${email}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/payments/${email}`);
       setPayments(response.data);
     } catch (error) {
       console.error('Error fetching payments:', error);

@@ -34,7 +34,7 @@ function App() {
 
   const fetchCredits = async (email) => {
     try {
-      const res = await axios.get(`http://13.203.218.236:8000/api/user/${email}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${email}`);
       setCredits(res.data.credits);
     } catch (err) {
       alert("Failed to fetch credits");
@@ -54,7 +54,7 @@ function App() {
 
   const fetchUserLinks = async (email) => {
     try {
-      const res = await axios.post("http://13.203.218.236:8000/get-links", {
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/get-links`, {
         headers: { "user-email": email },
       });
       setUploadedData(res.data);
@@ -76,7 +76,7 @@ function App() {
 
     try {
       const res = await axios.post(
-        "http://13.203.218.236:8000/upload-excel",
+        `${import.meta.env.VITE_API_BASE_URL}/upload-excel`,
         formData,
         {
           headers: { "user-email": savedEmail },
@@ -87,7 +87,7 @@ function App() {
       const creditToDeduct = matchCount * creditCost;
 
       const creditRes = await axios.post(
-        "http://13.203.218.236:8000/bulklookup/upload-file",
+        `${import.meta.env.VITE_API_BASE_URL}/bulklookup/upload-file`,
         {
           userEmail: savedEmail,
           creditCost: creditToDeduct,

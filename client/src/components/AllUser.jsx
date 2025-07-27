@@ -28,7 +28,7 @@ const token = sessionStorage.getItem('token');
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const response = await fetch('http://13.203.218.236:8000/users/user', { headers: { "Authorization": `Bearer ${token}`  } });
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/user`, { headers: { "Authorization": `Bearer ${token}`  } });
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }

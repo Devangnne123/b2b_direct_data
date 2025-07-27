@@ -110,7 +110,7 @@ export default function ContactUs() {
     setCaptchaError(null);
 
     try {
-      const response = await fetch('http://13.203.218.236:8000/api/contact', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/contact`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

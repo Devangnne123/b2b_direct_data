@@ -116,7 +116,7 @@ export default function removeData() {
     setMessage("Sending OTP to your email...");
 
     try {
-      const response = await fetch("http://13.203.218.236:8000/api/send-otp", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/send-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -152,7 +152,7 @@ export default function removeData() {
     setMessage("Verifying OTP...");
 
     try {
-      const response = await fetch("http://13.203.218.236:8000/api/verify-otp", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/verify-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -202,7 +202,7 @@ export default function removeData() {
 
     try {
       // Send the form data
-      const response = await fetch("http://13.203.218.236:8000/api/subscribe", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/subscribe`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -219,7 +219,7 @@ export default function removeData() {
         }
         
         // Send confirmation email
-        await fetch("http://13.203.218.236:8000/api/send-confirmation", {
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/send-confirmation`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

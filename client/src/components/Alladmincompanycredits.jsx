@@ -38,16 +38,16 @@ const UserCreditReport = () => {
     setError(null);
     try {
       // First get all users created by this user
-      const createdUsersRes = await axios.get(`http://13.203.218.236:8000/users/created-by/${userEmail}`, 
+      const createdUsersRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/users/created-by/${userEmail}`, 
         { headers: { "Authorization": `Bearer ${token}`  } });
       const createdUserEmails = createdUsersRes.data.data.map(user => user.userEmail);
       setCreatedUsers(createdUserEmails);
 
       // Then fetch all related data in parallel
       const [userTxnsRes, adminTxnsRes, uploadsRes] = await Promise.all([
-        axios.get(`http://13.203.218.236:8000/transactions/credit-transactions/${userEmail},`,{ headers: { "Authorization": `Bearer ${token}`  } }),
-        axios.get(`http://13.203.218.236:8000/super-admin/get-credit-transactions`,{ headers: { "Authorization": `Bearer ${token}`  } }),
-        axios.get("http://13.203.218.236:8000/bulklookup/get-links", {
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/transactions/credit-transactions/${userEmail},`,{ headers: { "Authorization": `Bearer ${token}`  } }),
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/super-admin/get-credit-transactions`,{ headers: { "Authorization": `Bearer ${token}`  } }),
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/bulklookup/get-links`, {
                 headers: { "user-email": savedEmail, "Authorization": `Bearer ${token}`  },
               }),
       ]);

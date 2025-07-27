@@ -17,7 +17,7 @@ const PayPalButton = ({ amount, credits, email, onSuccess, onError }) => {
           label: "paypal" // Optional: button label
         }}
         createOrder={(data, actions) => {
-          return fetch('http://13.203.218.236:8000/api/payments/create', {
+          return fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/create`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -28,7 +28,7 @@ const PayPalButton = ({ amount, credits, email, onSuccess, onError }) => {
           .then((order) => order.id);
         }}
         onApprove={(data, actions) => {
-          return fetch(`http://13.203.218.236:8000/api/payments/capture/${data.orderID}`, {
+          return fetch(`${import.meta.env.VITE_API_BASE_URL}/api/payments/capture/${data.orderID}`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

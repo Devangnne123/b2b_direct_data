@@ -55,7 +55,7 @@ const AddUser = () => {
     };
 
     try {
-      const response = await fetch("http://13.203.218.236:8000/users/newuser", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/newuser`, {
         method: "POST",
         headers: { "Content-Type": "application/json","Authorization": `Bearer ${token}` },
         body: JSON.stringify(userData),

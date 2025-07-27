@@ -97,9 +97,9 @@ const VerificationUploadsReport = () => {
       setLoading(true);
       
       const [verificationRes, companyRes, directnumberRes] = await Promise.all([
-        axios.get('http://13.203.218.236:8000/VerificationUpload/report',{ headers: { "Authorization": `Bearer ${token}`  } }),
-        axios.get('http://13.203.218.236:8000/company/report',{ headers: { "Authorization": `Bearer ${token}`  } }),
-        axios.get('http://13.203.218.236:8000/Direct-number/report',{ headers: { "Authorization": `Bearer ${token}`  } })
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/VerificationUpload/report`,{ headers: { "Authorization": `Bearer ${token}`  } }),
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/company/report`,{ headers: { "Authorization": `Bearer ${token}`  } }),
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/Direct-number/report`,{ headers: { "Authorization": `Bearer ${token}`  } })
       ]);
 
       setReports({
@@ -238,7 +238,7 @@ const VerificationUploadsReport = () => {
         return;
       }
 
-      const response = await axios.post('http://13.203.218.236:8000/api/save-completed-reports', {
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/save-completed-reports`, {
         reports: completedReports
       },{ headers: { "Authorization": `Bearer ${token}`  } });
 

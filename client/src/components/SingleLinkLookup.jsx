@@ -15,7 +15,7 @@ const SearchMatchLink = () => {
     setNotFound(false);
 
     try {
-      const res = await axios.get(`http://13.203.218.236:8000/api/links/search-match?matchLink=${matchLink}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/links/search-match?matchLink=${matchLink}`);
       setResult(res.data.result);
     } catch (error) {
       if (error.response?.status === 404) {

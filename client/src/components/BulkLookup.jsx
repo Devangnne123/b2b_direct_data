@@ -133,13 +133,13 @@ function BulkLookup() {
       if (!savedEmail || savedEmail === "Guest") return;
 
       const [linksRes, creditsRes] = await Promise.all([
-        axios.get("http://13.203.218.236:8000/bulklookup/get-links", {
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/bulklookup/get-links`, {
           headers: {
             "user-email": savedEmail,
             Authorization: `Bearer ${token}`,
           },
         }),
-        axios.get(`http://13.203.218.236:8000/api/user/${savedEmail}`, {
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -192,7 +192,7 @@ function BulkLookup() {
   // const fetchCreditCost = async (email) => {
   //   try {
   //     const response = await axios.post(
-  //       "http://13.203.218.236:8000/users/getAllAdmin",
+  //       "${import.meta.env.VITE_API_BASE_URL}/users/getAllAdmin",
   //       {
   //         headers: {
   //           Authorization: `Bearer ${token}`,
@@ -219,7 +219,7 @@ function BulkLookup() {
         if (!email || email === "Guest") return;
         
         try {
-          const response = await axios.get(`http://13.203.218.236:8000/api/user/${email}`, {
+          const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${email}`, {
           headers: {  "Authorization": `Bearer ${token}`  },
         });
           setCredits(response.data.credits);
@@ -301,7 +301,7 @@ function BulkLookup() {
 
     try {
       const res = await axios.post(
-        "http://13.203.218.236:8000/upload-excel",
+        `${import.meta.env.VITE_API_BASE_URL}/upload-excel`,
         formData,
         {
           headers: {
@@ -376,7 +376,7 @@ function BulkLookup() {
     try {
       // First create the TempLinkMobile records
       const tempRes = await axios.post(
-        "http://13.203.218.236:8000/confirm-upload",
+        `${import.meta.env.VITE_API_BASE_URL}/confirm-upload`,
         {
           uniqueId: pendingUpload.uniqueId,
           email: savedEmail,
@@ -386,7 +386,7 @@ function BulkLookup() {
 
       // Then deduct credits
       const creditRes = await axios.post(
-        "http://13.203.218.236:8000/api/upload-file",
+        `${import.meta.env.VITE_API_BASE_URL}/api/upload-file`,
         {
           userEmail: savedEmail,
           creditCost: pendingUpload.creditToDeduct,
@@ -403,7 +403,7 @@ function BulkLookup() {
       // Send email notification
       try {
         await axios.post(
-          "http://13.203.218.236:8000/send-upload-notification",
+          `${import.meta.env.VITE_API_BASE_URL}/send-upload-notification`,
           {
             email: savedEmail,
             fileName: pendingUpload.file,
@@ -453,7 +453,7 @@ function BulkLookup() {
     setLoading(true);
     try {
       await axios.delete(
-        `http://13.203.218.236:8000/cancel-upload/${pendingUpload.uniqueId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/cancel-upload/${pendingUpload.uniqueId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

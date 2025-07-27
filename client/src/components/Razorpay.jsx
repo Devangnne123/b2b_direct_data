@@ -28,7 +28,7 @@ const RazorpayIntegration = () => {
       }
 
       // Create order
-      const orderResponse = await axios.post('http://13.203.218.236:8000/create-order', {
+      const orderResponse = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/create-order`, {
         amount: amount * 100 // Convert to paise
       });
 
@@ -49,7 +49,7 @@ const RazorpayIntegration = () => {
         order_id: order_id,
         handler: async (response) => {
           try {
-            const verification = await axios.post('http://13.203.218.236:8000/verify-payment', {
+            const verification = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/verify-payment`, {
               orderCreationId: order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature

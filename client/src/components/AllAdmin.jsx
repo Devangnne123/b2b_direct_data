@@ -35,7 +35,7 @@ const AllAdmin = () => {
     setError("");
 
     try {
-      const response = await fetch("http://13.203.218.236:8000/users/getAllAdmin", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/getAllAdmin`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -95,7 +95,7 @@ const AllAdmin = () => {
     const senderEmail = JSON.parse(sessionStorage.getItem("user"))?.email || "Super Admin";
 
     try {
-      const response = await fetch("http://13.203.218.236:8000/users/update-credits", {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/update-credits`, {
         method: "PATCH",
         headers: { 
           "Content-Type": "application/json",
@@ -110,7 +110,7 @@ const AllAdmin = () => {
       }
 
       const transactionResponse = await fetch(
-        "http://13.203.218.236:8000/super-admin/assign-credits",
+        `${import.meta.env.VITE_API_BASE_URL}/super-admin/assign-credits`,
         {
           method: "POST",
           headers: { 
@@ -147,7 +147,7 @@ const AllAdmin = () => {
 
     try {
       const response = await fetch(
-        "http://13.203.218.236:8000/users/update-credit-cost",
+        `${import.meta.env.VITE_API_BASE_URL}/users/update-credit-cost`,
         {
           method: "PATCH",
           headers: { 

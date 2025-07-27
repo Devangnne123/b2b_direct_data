@@ -33,7 +33,7 @@ const UserStatistics = () => {
         const formattedDate = threeMonthsAgo.toISOString();
     
         const response = await fetch(
-          `http://13.203.218.236:8000/bulkUpload/userStatistics?email=${userEmail}&fromDate=${formattedDate}`
+          `${import.meta.env.VITE_API_BASE_URL}/bulkUpload/userStatistics?email=${userEmail}&fromDate=${formattedDate}`
         );
     
         if (!response.ok) {
@@ -59,7 +59,7 @@ const UserStatistics = () => {
         const formattedDate = threeMonthsAgo.toISOString();
     
         const response = await fetch(
-          `http://13.203.218.236:8000/excel/history/${userEmail}?fromDate=${formattedDate}`
+          `${import.meta.env.VITE_API_BASE_URL}/excel/history/${userEmail}?fromDate=${formattedDate}`
         );
         if (!response.ok) throw new Error("Failed to fetch file history");
     
@@ -100,7 +100,7 @@ const UserStatistics = () => {
   };
 
   const handleDownloadFile = async (filePath) => {
-    window.open(`http://13.203.218.236:8000/${filePath}`, "_blank");
+    window.open(`${import.meta.env.VITE_API_BASE_URL}/${filePath}`, "_blank");
   };
 
   return (
