@@ -13,7 +13,7 @@ const VerificationTemp_com = sequelize.define('verification_temp_com', {
     allowNull: false
   },
   clean_linkedin_link: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: false,
   },
   status: {
@@ -30,31 +30,31 @@ const VerificationTemp_com = sequelize.define('verification_temp_com', {
     allowNull: false
   },
   company_name: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_url: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_headquater: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_industry: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_size: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   employee_count: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   year_founded: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_speciality: {
@@ -62,27 +62,27 @@ const VerificationTemp_com = sequelize.define('verification_temp_com', {
     allowNull: true
   },
   linkedin_url: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_stock_name: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   verified_page_date: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   phone_number: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_followers: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   location_total: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   overview: {
@@ -90,7 +90,7 @@ const VerificationTemp_com = sequelize.define('verification_temp_com', {
     allowNull: true
   },
   visit_website: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   final_remarks: {  // Corrected spelling here
@@ -98,7 +98,7 @@ const VerificationTemp_com = sequelize.define('verification_temp_com', {
     allowNull: true
   },
   company_id: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   }
 }, {

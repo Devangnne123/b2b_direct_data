@@ -12,7 +12,7 @@ const Link = sequelize.define('Link', {
     defaultValue: 0,
   },
   link: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: false,
   },
   totallink: {
@@ -20,11 +20,11 @@ const Link = sequelize.define('Link', {
     allowNull: false,
   },
   clean_link: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   matchLink: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
     linkedin_link_id: {
@@ -40,7 +40,7 @@ const Link = sequelize.define('Link', {
     allowNull: true,
   },
   email: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: false,
   },
   date: {
@@ -48,7 +48,7 @@ const Link = sequelize.define('Link', {
     defaultValue: DataTypes.NOW,
   },
   fileName: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   mobile_number: {
@@ -60,11 +60,11 @@ const Link = sequelize.define('Link', {
     allowNull: true,
   },
   person_name: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   person_location: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   creditDeducted: {

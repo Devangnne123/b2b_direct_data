@@ -66,44 +66,44 @@ const VerificationUpload_com = sequelize.define('verification_upload_com', {
     defaultValue: 0,
   },
   fileName: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: false
   },
   creditsUsed: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.TEXT,
     defaultValue: 0
   },
   status: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
     defaultValue: 'Pending',
   },
   company_name: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_url: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_headquater: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_industry: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_size: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   employee_count: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   year_founded: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_speciality: {
@@ -111,27 +111,27 @@ const VerificationUpload_com = sequelize.define('verification_upload_com', {
     allowNull: true
   },
   linkedin_url: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_stock_name: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   verified_page_date: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   phone_number: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   company_followers: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   location_total: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   overview: {
@@ -139,7 +139,7 @@ const VerificationUpload_com = sequelize.define('verification_upload_com', {
     allowNull: true
   },
   visit_website: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   final_remarks: {  // Corrected spelling here
@@ -147,7 +147,7 @@ const VerificationUpload_com = sequelize.define('verification_upload_com', {
     allowNull: true
   },
   company_id: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true
   },
   last_sync: {

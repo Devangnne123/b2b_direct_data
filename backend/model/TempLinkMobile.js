@@ -14,7 +14,7 @@ const TempLinkMobile = sequelize.define('TempLinkMobile', {
 },
 
   matchLink: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   mobile_number: {
@@ -26,11 +26,11 @@ const TempLinkMobile = sequelize.define('TempLinkMobile', {
     allowNull: true,
   },
   person_name: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   person_location: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
   },
 }, {

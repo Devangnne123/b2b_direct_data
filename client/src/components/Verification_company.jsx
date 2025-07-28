@@ -117,15 +117,19 @@ function Verification_company() {
     fetchCredits();
   }, [email]);
 
-  const silentRefresh = async () => {
+const silentRefresh = async () => {
   try {
     if (!email || email === "Guest") return;
     
-    const response = await axios.get("${import.meta.env.VITE_API_BASE_URL}/get-verification-links-com", {
-      headers: { "user-email": email,"Authorization": `Bearer ${token}` },
+    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/get-verification-links-com`, {
+      headers: { "user-email": email, "Authorization": `Bearer ${token}` },
     });
 
-    const transformedData = response.data.map(item => ({
+    // Ensure response.data is an array before mapping
+    const responseData = Array.isArray(response.data) ? response.data : 
+                        (response.data.links || response.data.data || []);
+
+    const transformedData = responseData.map(item => ({
       ...item,
       link: item.link || item.profileUrl || '',
       remark: item.remark || 'pending',
@@ -133,7 +137,6 @@ function Verification_company() {
       date: item.date || item.createdAt || new Date().toISOString(),
       creditDeducted: item.creditDeducted || (item.matchCount || 0) * creditCostPerLink
     }));
-
 
     // Check status for all pending/processing batches in background
     transformedData
@@ -148,14 +151,18 @@ function Verification_company() {
     }
 
     const creditRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${email}`, {
-        headers: {  "Authorization": `Bearer ${token}`  },
-      });
+      headers: { "Authorization": `Bearer ${token}` },
+    });
+    
     if (creditRes.data.credits !== dataRef.current.credits) {
       setCredits(creditRes.data.credits);
       dataRef.current.credits = creditRes.data.credits;
     }
   } catch (error) {
     console.error("Silent refresh error:", error);
+    // Optionally set an empty array if the request fails
+    setCategorizedLinks([]);
+    dataRef.current.categorizedLinks = [];
   }
 };
 
