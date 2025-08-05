@@ -4,6 +4,7 @@ const userController = require("../controller/userController");
 const rateLimit = require('express-rate-limit');
 const apiKeyAuth = require("../middleware/apiKeyAuth");
 const auth = require("../middleware/authMiddleware")
+const authlogout = require("../middleware/authlogout")
 // Rate limiting for OTP requests
 const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -20,9 +21,12 @@ router.patch("/update-credits", userController.updateCredits);
 router.get("/user", auth, userController.getUser);
 
 router.post("/login", userController.loginUser);
+router.post("/logout", userController.logoutUser);
+router.post("/check-status", userController.checkStatus);
 router.post("/send-otp", otpLimiter, userController.sendOtp);
 router.post("/reset-password", userController.resetPasswordOtp);
-
+router.post("/auto-login", userController.autoLogin);
+router.post("/force-logout", userController.forceLogout);
 router.post("/signup", userController.addUser);
 
 router.post("/getAllAdmin",apiKeyAuth,auth, userController.getAllAdmin);

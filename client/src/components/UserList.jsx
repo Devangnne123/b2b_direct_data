@@ -6,8 +6,11 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  Hash,
+  Mail,
+  ArrowLeftRight,
+  Settings2,
 } from "lucide-react";
-import { Hash, Mail, ArrowLeftRight, Settings2 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import "../css/UserList.css";
 
@@ -20,10 +23,8 @@ const UserList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
 
-  const userEmail =
-    JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
-
-       const token = sessionStorage.getItem('token');
+  const userEmail = JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
+  const token = sessionStorage.getItem('token');
 
   useEffect(() => {
     fetchUsers();
@@ -34,7 +35,7 @@ const UserList = () => {
     try {
       const response = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/users/created-by/${userEmail}`, 
-        { headers: { "Authorization": `Bearer ${token}`  } }
+        { headers: { "Authorization": `Bearer ${token}` } }
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
@@ -50,7 +51,8 @@ const UserList = () => {
   const fetchUserCredits = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/users/credits/${encodeURIComponent(userEmail)}`, { headers: { "Authorization": `Bearer ${token}`  } }
+        `${import.meta.env.VITE_API_BASE_URL}/users/credits/${encodeURIComponent(userEmail)}`, 
+        { headers: { "Authorization": `Bearer ${token}` } }
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);
 
@@ -128,310 +130,186 @@ const UserList = () => {
   const prevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
 
   return (
-    <div className="main">
-      <div className="main-con">
+    <div className="app-layout">
+      <div className="app-container">
         <Sidebar userEmail={userEmail} />
-
-        <div className="right-side">
-          <div className="right-p">
-            <nav className="main-head">
-              <div className="main-title">
-                <li className="profile">
-                  <p className="title-head">User Management</p>
-                  <li className="credits-main1">
-                    <h5 className="credits">
+        <div className="app-main-content">
+          <div className="app-content-wrapper">
+            <nav className="app-header">
+              <div className="app-header-content">
+                <div className="app-header-left">
+                  <h1 className="app-title">User Management</h1>
+                </div>
+                <div className="app-header-right">
+                  <div className="credits-display">
                     <img
-                        src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
-                        alt="external-credits-university-flaticons-flat-flat-icons"
-                      />
-                      Credits:{userCredits}
-                    </h5>
-                  </li>
-                </li>
-                <li>
-                  {/* <p className="title-des2">
-                    Manage users and credit transfers
-                  </p> */}
-                </li>
-                {/* <h1 className="title-head">User List</h1> */}
+                      src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
+                      alt="credits"
+                      className="credits-icon"
+                    />
+                    <span className="credits-text">
+                      Credits: {userCredits}
+                    </span>
+                  </div>
+                </div>
               </div>
             </nav>
 
-            <section>
-              <div className="main-body0">
-                <div className="main-body1">
-                  <div className="left">
-                    <div className="history-table">
-                      <div className="statistics-page">
-                        {loading ? (
-                          <div className="loading-state">
-                            <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
-                            <p className="text-gray-600 mt-2">
-                              Loading users...
-                            </p>
-                          </div>
-                        ) : error ? (
-                          <div className="error-message">{error}</div>
-                        ) : (
-                          <>
-                            {/* Desktop View */}
-                            <div className="desktop-view">
-                              <div className="table-wrapper">
-                                <table className="statistics-table">
-                                  <thead>
-                                    <tr>
-                                      <th title="Serial Number">
-                                        <div className="flex items-center justify-center gap-1">
-                                          <Hash className="h-4 w-4" />
-                                        </div>
-                                      </th>
-                                      <th title="Email">
-                                        <div className="flex items-center justify-center gap-1">
-                                          <Mail className="h-4 w-4" />
-                                        </div>
-                                      </th>
-                                      <th title="Credits">
-                                        <div className="flex items-center justify-center gap-1">
-                                          <CreditCard className="h-4 w-4" />
-                                        </div>
-                                      </th>
-                                      <th title="Transfer Amount">
-                                        <div className="flex items-center justify-center gap-1">
-                                          <ArrowLeftRight className="h-4 w-4" />
-                                        </div>
-                                      </th>
-                                      <th title="Actions">
-                                        <div className="flex items-center justify-center gap-1">
-                                          <Settings2 className="h-4 w-4" />
-                                        </div>
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {currentRows.length > 0 ? (
-                                      currentRows.map((user, index) => (
-                                        <tr
-                                          key={user.userEmail}
-                                          className="hover:bg-gray-50 transition-colors"
-                                        >
-                                          <td>{indexOfFirstRow + index + 1}</td>
-                                          <td className="email-cell">
-                                            {user.userEmail}
-                                          </td>
-                                          <td>{user.credits}</td>
-                                          <td>
-                                            <input
-                                              type="number"
-                                              className="credit-input"
-                                              placeholder="Enter credits"
-                                              value={
-                                                creditUpdates[user.userEmail] ||
-                                                ""
-                                              }
-                                              onChange={(e) =>
-                                                handleCreditChange(
-                                                  user.userEmail,
-                                                  e.target.value
-                                                )
-                                              }
-                                            />
-                                          </td>
-                                          <td>
-                                            <div className="action-buttons">
-                                              <button
-                                                className="action-btn add-btn"
-                                                onClick={() =>
-                                                  handleCreditTransfer(
-                                                    user.userEmail,
-                                                    user.credits,
-                                                    true
-                                                  )
-                                                }
-                                              >
-                                                <Plus className="h-4 w-4" />
-                                              </button>
-                                              <button
-                                                className="action-btn minus-btn"
-                                                onClick={() =>
-                                                  handleCreditTransfer(
-                                                    user.userEmail,
-                                                    user.credits,
-                                                    false
-                                                  )
-                                                }
-                                              >
-                                                <Minus className="h-4 w-4" />
-                                              </button>
-                                            </div>
-                                          </td>
-                                        </tr>
-                                      ))
-                                    ) : (
-                                      <tr>
-                                        <td colSpan="5" className="no-data">
-                                          No users found.
-                                        </td>
-                                      </tr>
-                                    )}
-                                  </tbody>
-                                </table>
-                              </div>
-
-                              {/* Pagination Controls */}
-                              {users.length > rowsPerPage && (
-                                <div className="pagination-controls">
-                                  <button
-                                    onClick={prevPage}
-                                    disabled={currentPage === 1}
-                                    className={`pagination-btn ${
-                                      currentPage === 1 ? "disabled" : ""
-                                    }`}
-                                  >
-                                    <ChevronLeft className="h-4 w-4" />
-                                  </button>
-
-                                  {Array.from(
-                                    { length: totalPages },
-                                    (_, i) => i + 1
-                                  ).map((number) => (
-                                    <button
-                                      key={number}
-                                      onClick={() => paginate(number)}
-                                      className={`pagination-btn ${
-                                        currentPage === number ? "active" : ""
-                                      }`}
-                                    >
-                                      {number}
-                                    </button>
-                                  ))}
-
-                                  <button
-                                    onClick={nextPage}
-                                    disabled={currentPage === totalPages}
-                                    className={`pagination-btn ${
-                                      currentPage === totalPages
-                                        ? "disabled"
-                                        : ""
-                                    }`}
-                                  >
-                                    <ChevronRight className="h-4 w-4" />
-                                  </button>
+            <section className="app-body">
+              <div className="data-section">
+                {loading ? (
+                  <div className="loading-state">
+                    <Loader2 className="loading-spinner" />
+                    <p className="loading-text">Loading users...</p>
+                  </div>
+                ) : error ? (
+                  <div className="error-message">{error}</div>
+                ) : (
+                  <>
+                    <div className="data-table-container">
+                      <div className="data-table-wrapper">
+                        <table className="data-table">
+                          <thead className="data-table-header">
+                            <tr>
+                              <th className="data-table-header-cell">
+                                <div className="data-table-header-content">
+                                  <Hash className="table-icon" />
                                 </div>
-                              )}
-                            </div>
-
-                            {/* Mobile View */}
-                            <div className="mobile-view_credit">
-                              {currentRows.length > 0 ? (
-                                currentRows.map((user, index) => (
-                                  <div
-                                    key={user.userEmail}
-                                    className="stat-card_credit"
-                                  >
-                                    <div className="card-header">
-                                      <div className="user-info">
-                                        <span className="user-number">
-                                          {indexOfFirstRow + index + 1}
-                                        </span>
-                                        <span className="user-email">
-                                          {user.userEmail}
-                                        </span>
-                                      </div>
-                                      <div className="credits-badge">
-                                        <CreditCard className="h-4 w-4" />
-                                        <span>{user.credits} credits</span>
-                                      </div>
+                              </th>
+                              <th className="data-table-header-cell">
+                                <div className="data-table-header-content">
+                                  <Mail className="table-icon" />
+                                  <span className="table-header-text">Email</span>
+                                </div>
+                              </th>
+                              <th className="data-table-header-cell">
+                                <div className="data-table-header-content">
+                                  <CreditCard className="table-icon" />
+                                  <span className="table-header-text">Credits</span>
+                                </div>
+                              </th>
+                              <th className="data-table-header-cell">
+                                <div className="data-table-header-content">
+                                  <ArrowLeftRight className="table-icon" />
+                                  <span className="table-header-text">Transfer</span>
+                                </div>
+                              </th>
+                              <th className="data-table-header-cell">
+                                <div className="data-table-header-content">
+                                  <Settings2 className="table-icon" />
+                                  <span className="table-header-text">Actions</span>
+                                </div>
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="data-table-body">
+                            {currentRows.length > 0 ? (
+                              currentRows.map((user, index) => (
+                                <tr key={user.userEmail} className="data-table-row">
+                                  <td className="data-table-cell">
+                                    {indexOfFirstRow + index + 1}
+                                  </td>
+                                  <td className="data-table-cell email-cell">
+                                    {user.userEmail}
+                                  </td>
+                                  <td className="data-table-cell">
+                                    {user.credits}
+                                  </td>
+                                  <td className="data-table-cell">
+                                    <input
+                                      type="number"
+                                      className="credit-input"
+                                      placeholder="Enter credits"
+                                      value={creditUpdates[user.userEmail] || ""}
+                                      onChange={(e) =>
+                                        handleCreditChange(user.userEmail, e.target.value)
+                                      }
+                                    />
+                                  </td>
+                                  <td className="data-table-cell">
+                                    <div className="action-buttons">
+                                      <button
+                                        className="action-btn add-btn"
+                                        onClick={() =>
+                                          handleCreditTransfer(
+                                            user.userEmail,
+                                            user.credits,
+                                            true
+                                          )
+                                        }
+                                      >
+                                        <Plus className="action-icon" />
+                                      </button>
+                                      <button
+                                        className="action-btn minus-btn"
+                                        onClick={() =>
+                                          handleCreditTransfer(
+                                            user.userEmail,
+                                            user.credits,
+                                            false
+                                          )
+                                        }
+                                      >
+                                        <Minus className="action-icon" />
+                                      </button>
                                     </div>
-
-                                    <div className="card-body_credit">
-                                      <div className="transfer-section">
-                                        <input
-                                          type="number"
-                                          className="mobile-credit-input"
-                                          placeholder="Enter credits"
-                                          value={
-                                            creditUpdates[user.userEmail] || ""
-                                          }
-                                          onChange={(e) =>
-                                            handleCreditChange(
-                                              user.userEmail,
-                                              e.target.value
-                                            )
-                                          }
-                                        />
-                                        <div className="mobile-action-buttons">
-                                          <button
-                                            className="mobile-action-btn add-btn"
-                                            onClick={() =>
-                                              handleCreditTransfer(
-                                                user.userEmail,
-                                                user.credits,
-                                                true
-                                              )
-                                            }
-                                          >
-                                            <Plus className="h-4 w-4" />
-                                            <span>Add</span>
-                                          </button>
-                                          <button
-                                            className="mobile-action-btn minus-btn"
-                                            onClick={() =>
-                                              handleCreditTransfer(
-                                                user.userEmail,
-                                                user.credits,
-                                                false
-                                              )
-                                            }
-                                          >
-                                            <Minus className="h-4 w-4" />
-                                            <span>Deduct</span>
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="empty-state">
-                                  <p>No users found.</p>
-                                </div>
-                              )}
-
-                              {/* Mobile Pagination Controls */}
-                              {users.length > rowsPerPage && (
-                                <div className="mobile-pagination">
-                                  <button
-                                    onClick={prevPage}
-                                    disabled={currentPage === 1}
-                                    className={`pagination-btn ${
-                                      currentPage === 1 ? "disabled" : ""
-                                    }`}
-                                  >
-                                    <ChevronLeft className="h-4 w-4" /> Prev
-                                  </button>
-                                  <span className="page-info">
-                                    Page {currentPage} of {totalPages}
-                                  </span>
-                                  <button
-                                    onClick={nextPage}
-                                    disabled={currentPage === totalPages}
-                                    className={`pagination-btn ${
-                                      currentPage === totalPages
-                                        ? "disabled"
-                                        : ""
-                                    }`}
-                                  >
-                                    Next <ChevronRight className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </>
-                        )}
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr className="data-table-row">
+                                <td colSpan="5" className="no-data">
+                                  No users found.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
-                  </div>
-                </div>
+
+                    {users.length > rowsPerPage && (
+                      <div className="pagination-container">
+                        <button
+                          onClick={prevPage}
+                          disabled={currentPage === 1}
+                          className={`pagination-button ${
+                            currentPage === 1 ? "pagination-button-disabled" : ""
+                          }`}
+                        >
+                          <ChevronLeft className="pagination-icon" />
+                        </button>
+
+                        <div className="pagination-numbers">
+                          {Array.from(
+                            { length: totalPages },
+                            (_, i) => i + 1
+                          ).map((number) => (
+                            <button
+                              key={number}
+                              onClick={() => paginate(number)}
+                              className={`pagination-number ${
+                                currentPage === number ? "pagination-number-active" : ""
+                              }`}
+                            >
+                              {number}
+                            </button>
+                          ))}
+                        </div>
+
+                        <button
+                          onClick={nextPage}
+                          disabled={currentPage === totalPages}
+                          className={`pagination-button ${
+                            currentPage === totalPages ? "pagination-button-disabled" : ""
+                          }`}
+                        >
+                          <ChevronRight className="pagination-icon" />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </section>
           </div>

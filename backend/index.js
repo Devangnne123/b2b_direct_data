@@ -1,6 +1,6 @@
 const express = require('express')
 const app = express()
-
+const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const xlsx= require('xlsx');
 const { Sequelize,Op } = require('sequelize');
@@ -54,7 +54,53 @@ const auth = require("./middleware/authMiddleware")
 
 const upload = multer({ dest: 'uploads/' });
 
-app.post('/upload-excel', auth , upload.single('file'), async (req, res) => {
+
+
+app.post('/upload-excel', auth, upload.single('file'), async (req, res) => {
+  try {
+    const email = req.headers['user-email'];
+    if (!email) return res.status(400).json({ error: "Email required" });
+
+    const filePath = req.file.path;
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+    // Extract and filter LinkedIn links
+    const links = rows.flat().filter(cell => 
+      typeof cell === 'string' && 
+      cell.toLowerCase().includes('linkedin.com')
+    );
+
+    if (links.length === 0) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ message: 'No LinkedIn links found.' });
+    }
+
+    // For any number of links (less than or equal to 1000), require confirmation
+    if (links.length <= 1000) {
+      return res.status(200).json({ 
+        message: "Confirmation required to proceed", 
+        linkCount: links.length,
+        requiresConfirmation: true,
+        fileName: req.file.originalname
+      });
+    }
+
+    // If more than 1000 links, reject immediately
+    if (links.length > 1000) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ message: "Max 1000 links allowed" });
+    }
+
+  } catch (err) {
+    console.error('Upload error:', err);
+    if (req.file?.path) fs.unlinkSync(req.file.path);
+    res.status(500).json({ error: 'Upload failed', details: err.message });
+  }
+});
+
+app.post('/confirm-upload-excel', auth , upload.single('file'), async (req, res) => {
   try {
     const email = req.headers['user-email'];
     if (!email) return res.status(400).json({ error: "Email required" });
@@ -76,8 +122,9 @@ app.post('/upload-excel', auth , upload.single('file'), async (req, res) => {
     }
     // Example of potential backend limit
 if (links.length > 1000) {
-  return res.status(400).json({ message: "Max 10 links allowed" });
+  return res.status(400).json({ message: "Max 1000 links allowed" });
 }
+
 
     const uniqueId = uuidv4();
     let matchCount = 0;
@@ -101,6 +148,7 @@ if (links.length > 1000) {
       let cleanedLink = link;
       if (remark === 'ok') {
         cleanedLink = link
+          .replace(/^(https?:\/\/)?(www\.)?/i, '') // Strips http/https/www // Remove http://, https://, and www.
           .replace(/Linkedin\.Com\/In\//i, 'linkedin.com/in/')
           .replace(/linkedin\.com\/\/in\//i, 'linkedin.com/in/')
           .toLowerCase();
@@ -192,6 +240,107 @@ app.post('/confirm-upload',auth, async (req, res) => {
 
 
 
+// New consolidated route in your backend
+app.post('/api/process-upload', auth, async (req, res) => {
+  try {
+    const { 
+      userEmail, 
+      creditCost, 
+      uniqueId, 
+      fileName, 
+      totalLinks, 
+      matchCount 
+    } = req.body;
+
+    // 1. Deduct credits
+    const user = await User.findOne({ where: { userEmail } });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (user.credits < creditCost) {
+      return res.status(400).json({ message: 'Insufficient credits' });
+    }
+
+    user.credits -= creditCost;
+    await user.save();
+
+    // 2. Update Link entries
+    await Link.update(
+      {
+        creditDeducted: creditCost,
+        remainingCredits: user.credits,
+      },
+      { where: { uniqueId } }
+    );
+
+    // 3. Create TempLinkMobile records
+    const matchedLinks = await Link.findAll({
+      where: { 
+        uniqueId,
+        email: userEmail,
+        matchLink: { [Op.ne]: null }
+      }
+    });
+
+    for (const link of matchedLinks) {
+      await TempLinkMobile.create({
+        uniqueId: link.uniqueId,
+        matchLink: link.matchLink,
+        linkedin_link_id: link.linkedin_link_id
+      });
+    }
+
+    // 4. Send notification (fire and forget)
+    try {
+      const mailOptions = {
+        from: "b2bdirectdata@gmail.com",
+        to: userEmail,
+        subject: 'Your Bulk LinkedIn Lookup Upload Status',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2563eb;">Bulk LinkedIn Lookup - Upload Processed</h2>
+            <p>Your file has been successfully processed by our system.</p>
+            
+            <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+              <h3 style="margin-top: 0; color: #1f2937;">Upload Details</h3>
+              <p><strong>File Name:</strong> ${fileName}</p>
+              <p><strong>Total Links Processed:</strong> ${totalLinks}</p>
+              <p><strong>Matches Found:</strong> ${matchCount}</p>
+              <p><strong>Credits Deducted:</strong> ${creditCost}</p>
+            </div>
+            
+            <p>You can download your results from the Bulk Lookup section of your dashboard.</p>
+            <p>If you have any questions, please reply to this email.</p>
+            
+            <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+              This is an automated message. Please do not reply directly to this email.
+            </p>
+          </div>
+        `
+      };
+      transporter.sendMail(mailOptions).catch(console.error);
+    } catch (emailError) {
+      console.error('Email failed:', emailError);
+      // Don't fail the whole request if email fails
+    }
+
+    res.json({
+      success: true,
+      message: 'Upload processed successfully',
+      updatedCredits: user.credits,
+      tempRecordsCreated: matchedLinks.length
+    });
+
+  } catch (error) {
+    console.error('Process upload error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Upload processing failed',
+      error: error.message 
+    });
+  }
+});
+
 
 
 
@@ -243,6 +392,68 @@ app.delete('/cancel-upload/:uniqueId',auth, async (req, res) => {
   }
 });
   
+
+
+// Add these routes to your Express server
+
+// Check file processing status
+app.get('/api/check-file-processing', async (req, res) => {
+  try {
+    const { userEmail } = req.query;
+    const user = await User.findOne({ where: { userEmail } });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ isProcessing: user.isProcessingFile });
+  } catch (error) {
+    console.error('Error checking file processing status:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+// In your set-file-processing endpoint
+app.post('/api/set-file-processing', async (req, res) => {
+  try {
+    const { userEmail, isProcessing } = req.body;
+    const user = await User.findOne({ where: { userEmail } });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const updateData = {
+      isProcessingFile: isProcessing,
+      processingStartTime: isProcessing ? new Date() : null
+    };
+
+    await user.update(updateData);
+    
+    // Set timeout to automatically reset if still processing after 5 minutes
+    if (isProcessing) {
+      setTimeout(async () => {
+        try {
+          const refreshedUser = await User.findOne({ where: { userEmail } });
+          if (refreshedUser && refreshedUser.isProcessingFile && 
+              refreshedUser.processingStartTime <= new Date(Date.now() - 5 * 60 * 1000)) {
+            await refreshedUser.update({ 
+              isProcessingFile: false,
+              processingStartTime: null 
+            });
+          }
+        } catch (error) {
+          console.error('Error in processing timeout:', error);
+        }
+      }, 5 * 60 * 1000); // 5 minutes
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error setting file processing status:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 
   
   

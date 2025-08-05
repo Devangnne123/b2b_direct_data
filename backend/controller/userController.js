@@ -1,6 +1,7 @@
 const User = require("../model/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { v4: uuidv4 } = require('uuid');
 const { sendOtpEmail } = require('../routes/mailer');
 require("dotenv").config();
 
@@ -95,9 +96,25 @@ exports.getUsersByadmin = async (req, res) => {
   }
 
   try {
+    // First, find the requesting user to check their role
+    const requestingUser = await User.findOne({
+      where: { userEmail },
+      attributes: ["roleId"]
+    });
+
+    if (!requestingUser) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Check if the requesting user is an admin (roleId 3)
+    if (requestingUser.roleId !== 3) {
+      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+
+    // If user is admin, fetch all users with roleId 1 (assuming these are regular users)
     const users = await User.findAll({
-      where: { roleId: 1 }, // Fetch only users created by this email"
-      attributes: ["id", "userEmail", "roleId", "credits","creditCostPerLink","creditCostPerLink_V","creditCostPerLink_C", "createdAt"], // Select only necessary fields
+      where: { roleId: 1 }, // Fetch only regular users
+      attributes: ["id", "userEmail", "roleId", "credits", "creditCostPerLink", "creditCostPerLink_V", "creditCostPerLink_C", "createdAt"],
     });
 
     res.status(200).json({ success: true, data: users });
@@ -106,7 +123,6 @@ exports.getUsersByadmin = async (req, res) => {
     res.status(500).json({ message: "Something went wrong.", error: err.message });
   }
 };
-
 
 
 // Update Credits
@@ -148,7 +164,9 @@ exports.getUser = async (req, res) => {
   }
 };
 
-// Login User
+
+
+// controllers/userController.js
 exports.loginUser = async (req, res) => {
   try {
     const { userEmail, userPassword } = req.body;
@@ -158,13 +176,36 @@ exports.loginUser = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
+    // Check if user is already logged in
+    if (user.isActiveLogin === true) {
+      return res.status(401).json({ 
+        message: "User is already logged in. Please logout from other devices first." 
+      });
+    }
+
     const isMatch = await bcrypt.compare(userPassword, user.userPassword);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid email or password." });
     }
 
+    // Generate unique session ID
+    const sessionId = uuidv4();
+    const sessionExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    
+    // Update user with new session and active login status
+    await user.update({
+      currentSessionId: sessionId,
+      sessionExpiry: sessionExpiry,
+      lastLogin: new Date(),
+      isActiveLogin: true
+    });
+
     const token = jwt.sign(
-      { id: user.id, email: user.userEmail },
+      { 
+        id: user.id, 
+        email: user.userEmail,
+        sessionId: sessionId
+      },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
@@ -184,8 +225,148 @@ exports.loginUser = async (req, res) => {
   }
 };
 
+// controllers/userController.js
+exports.logoutUser = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ where: { userEmail: email } });
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update the user's active status
+    await user.update({
+      isActiveLogin: false,
+      currentSessionId: null,
+      sessionExpiry: null
+    });
+
+    res.status(200).json({ 
+      message: "Logout successful",
+      email: user.userEmail
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ message: "Server error during logout" });
+  }
+};
+
+// Check status endpoint
+exports.checkStatus = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ where: { userEmail: email } });
+    
+    if (!user) {
+      return res.status(404).json({ 
+        isActiveLogin: false,
+        message: "User not found"
+      });
+    }
+
+    res.status(200).json({ 
+      isActiveLogin: user.isActiveLogin,
+      email: user.userEmail
+    });
+  } catch (error) {
+    console.error("Status check error:", error);
+    res.status(500).json({ 
+      isActiveLogin: false,
+      message: "Error checking status"
+    });
+  }
+};
+
+// Updated auto-login endpoint in userController.js
+exports.autoLogin = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ where: { userEmail: email } });
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if user is already logged in
+    if (user.isActiveLogin === true) {
+      return res.status(401).json({ 
+        message: "User is already logged in. Please logout from other devices first." 
+      });
+    }
+
+    // Generate new session
+    const sessionId = uuidv4();
+    // const sessionExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const sessionExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    
+    await user.update({
+      isActiveLogin: true,
+      currentSessionId: sessionId,
+      sessionExpiry: sessionExpiry
+    });
+
+    const token = jwt.sign(
+      { id: user.id, email: user.userEmail, sessionId },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    res.status(200).json({
+      message: "Auto login successful",
+      token,
+      user: {
+        id: user.id,
+        email: user.userEmail,
+        roleId: user.roleId
+      }
+    });
+  } catch (error) {
+    console.error("Auto login error:", error);
+    res.status(500).json({ message: "Server error during auto login" });
+  }
+};
 
 
+
+
+// Forced logout endpoint in userController.js
+exports.forceLogout = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ where: { userEmail: email } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Verify password
+    const isMatch = await bcrypt.compare(password, user.userPassword);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid password" });
+    }
+
+    // Clear session data
+    await user.update({
+      isActiveLogin: false,
+      currentSessionId: null,
+      sessionExpiry: null
+    });
+
+    res.status(200).json({ message: "Logged out from all devices successfully" });
+  } catch (error) {
+    console.error("Force logout error:", error);
+    res.status(500).json({ message: "Server error during forced logout" });
+  }
+};
 
   exports.sendOtp = async (req, res) => {
     try {

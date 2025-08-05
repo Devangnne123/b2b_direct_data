@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { IoArrowBackCircle } from "react-icons/io5";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Sidebar from "../components/Sidebar";
-import "../css/UserList.css";
+import "../css/ChangePassword.css";
 
 function ChangePassword() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -15,12 +14,10 @@ function ChangePassword() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
   const navigate = useNavigate();
 
   const userEmail = JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
-
-   const token = sessionStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -71,106 +68,134 @@ function ChangePassword() {
   };
 
   return (
-    <div className="main">
-      <div className="main-con">
-        {showSidebar && <Sidebar userEmail={userEmail} />}
-        <div className="right-side">
-          <div className="right-p">
-            <nav className="main-head">
-              {/* <li className="back1">
-                <IoArrowBackCircle className="back1" onClick={() => navigate(-1)} /> 
-              </li> */}
-              <div className="main-title">
-                <li className="profile">
-                  <p className="title-head">Change Password</p>
-                </li>
+    <div className="app-layout">
+      <div className="app-container">
+        <Sidebar userEmail={userEmail} />
+        
+        <div className="app-main-content">
+          <div className="app-content-wrapper">
+            <nav className="app-header">
+              <div className="app-header-content">
+                <div className="app-header-left">
+                  <h1 className="app-title">Change Password</h1>
+                </div>
+                <div className="app-header-right">
+                  <div className="credits-display">
+                    <span className="credits-text">
+                      User: {userEmail}
+                    </span>
+                  </div>
+                </div>
               </div>
             </nav>
-          </div>
-          <section>
-            <div className="main-body0">
-              <div className="main-body1">
-                <div className="left">
-                  <div className="left-main"></div>
-                  <div className="add-user-form-container">
-                    <form onSubmit={handleSubmit}>
-                      <div className="password-input-wrapper">
+<div className="form-margin1">
+            <section className="app-body">
+              <div className="upload-section-container">
+                <div className="upload-section-wrapper">
+                  <div className="upload-section-content">
+                    <div className="form-description">
+                      <p>Secure your account with a new password</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="change-password-form">
+                      <div className="form-group">
+                        <label htmlFor="currentPassword">Current Password</label>
                         <div className="password-input-container">
                           <input
                             type={showCurrentPassword ? "text" : "password"}
-                            placeholder="Current Password"
+                            id="currentPassword"
+                            placeholder="Enter current password"
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
                             required
+                            className="form-input"
                           />
-                          <span 
+                          <button 
+                            type="button" 
                             className="password-toggle"
                             onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                           >
                             {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
-                          </span>
+                          </button>
                         </div>
                       </div>
 
-                      <div className="password-input-wrapper">
+                      <div className="form-group">
+                        <label htmlFor="newPassword">New Password</label>
                         <div className="password-input-container">
                           <input
                             type={showNewPassword ? "text" : "password"}
-                            placeholder="New Password (min 8 characters)"
+                            id="newPassword"
+                            placeholder="Enter new password (min 8 characters)"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
                             required
                             minLength="8"
+                            className="form-input"
                           />
-                          <span
+                          <button 
+                            type="button" 
                             className="password-toggle"
                             onClick={() => setShowNewPassword(!showNewPassword)}
                           >
                             {showNewPassword ? <FaEyeSlash /> : <FaEye />}
-                          </span>
+                          </button>
                         </div>
                       </div>
 
-                      <div className="password-input-wrapper">
+                      <div className="form-group">
+                        <label htmlFor="confirmPassword">Confirm New Password</label>
                         <div className="password-input-container">
                           <input
                             type={showConfirmPassword ? "text" : "password"}
-                            placeholder="Confirm New Password"
+                            id="confirmPassword"
+                            placeholder="Confirm new password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             required
                             minLength="8"
+                            className="form-input"
                           />
-                          <span
+                          <button 
+                            type="button" 
                             className="password-toggle"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                           >
                             {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                          </span>
+                          </button>
                         </div>
                       </div>
 
                       {errorMessage && (
-                        <p className="error-message">{errorMessage}</p>
-                      )}
-                      {successMessage && (
-                        <p className="success-message_S">{successMessage}</p>
+                        <div className="error-message">{errorMessage}</div>
                       )}
 
-                      <div className="form-submit-button">
-                        <button type="submit" disabled={isSubmitting}>
-                          {isSubmitting ? "Changing..." : "Change Password"}
-                        </button>
-                      </div>
+                      {successMessage && (
+                        <div className="success-message">{successMessage}</div>
+                      )}
+
+                      <button 
+                        type="submit" 
+                        className="submit-button"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <span className="spinner"></span>
+                        ) : (
+                          "Change Password"
+                        )}
+                      </button>
                     </form>
                   </div>
                 </div>
               </div>
+            </section>
             </div>
-          </section>
+          </div>
+        </div>
         </div>
       </div>
-    </div>
+   
   );
 }
 

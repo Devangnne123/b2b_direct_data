@@ -1,183 +1,399 @@
-/* Form Container */
-.add-user-form-container {
-  max-width: 300px;
-  justify-content: center;
-  padding: 20px;
-  margin: 10px auto;
-  background-color: #f9f9f9;
-  border-radius: 20px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  font-family: "Arial", sans-serif;
+/* Main Layout */
+.main {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #f8fafc;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.add-user-form-container h1 {
-  text-align: center;
-  color: #333;
-  
+.main-con {
+  display: flex;
+  width: 100%;
 }
 
-.add-user-form-container form {
+.right-side {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  width: 100%;
 }
 
-.add-user-form-container input[type="email"],
-.add-user-form-container input[type="password"],
-.add-user-form-container input[type="number"] {
-  padding: 12px 15px;
-  
-  font-size: 14px;
-  border: 1px solid #dcdcdc;
-  border-radius: 8px;
-  background-color: #ffffff;
-  color: black;
-  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+.right-p {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
 }
 
-.add-user-form-container input[type="email"]:focus,
-.add-user-form-container input[type="password"]:focus,
-.add-user-form-container input[type="number"]:focus {
-  border-color: #5f7d9e;
+/* Header Styles */
+.main-head {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.main-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.title-head {
+  font-size: 1.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.credits-main1 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.credits {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  backdrop-filter: blur(5px);
+}
+
+.credits img {
+  width: 24px;
+  height: 24px;
+  filter: brightness(0) invert(1);
+}
+
+/* Table Styles */
+.history-table {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  width: 100%;
+}
+
+.statistics-page {
+  padding: 1.5rem;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 1rem;
+}
+
+.error-message {
+  color: #ef4444;
+  background-color: #fee2e2;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+/* Desktop Table */
+.desktop-view {
+  display: block;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.statistics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.statistics-table th {
+  background-color: #f1f5f9;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #334155;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.statistics-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle;
+}
+
+.statistics-table tr:hover {
+  background-color: #f8fafc;
+}
+
+.email-cell {
+  word-break: break-all;
+}
+
+.credit-input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  width: 120px;
+  max-width: 100%;
+}
+
+.credit-input:focus {
   outline: none;
-  box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
 }
 
-.add-user-form-container button[type="submit"] {
-  padding: 12px 15px;
-  background-color: #6897ca;
-  color: rgb(255, 255, 255);
-  border: none;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: bold;
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
   cursor: pointer;
-  transition: background-color 0.3s ease-in-out;
+  transition: all 0.2s;
+  border: none;
 }
 
-.add-user-form-container button[type="submit"]:hover {
-  background-color: #0056b3;
+.action-btn.add-btn {
+  background-color: #10b981;
+  color: white;
 }
 
-.add-user-form-container button[type="submit"]:disabled {
-  background-color: #cccccc;
+.action-btn.add-btn:hover {
+  background-color: #059669;
+}
+
+.action-btn.minus-btn {
+  background-color: #ef4444;
+  color: white;
+}
+
+.action-btn.minus-btn:hover {
+  background-color: #dc2626;
+}
+
+/* Pagination */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 0;
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid #e2e8f0;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(.disabled) {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.pagination-btn.active {
+  background-color: #667eea;
+  color: white;
+  border-color: #667eea;
+}
+
+.pagination-btn.disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.add-user-form-container .error-message {
-  color: #ff4d4f;
-  font-size: 14px;
-  text-align: center;
+/* Mobile View */
+.mobile-view_credit {
+  display: none;
 }
 
-.add-user-form-container div {
+.stat-card_credit {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-number {
+  background-color: #667eea;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+.user-email {
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.credits-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background-color: #e0e7ff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 50px;
+  color: #4f46e5;
+  font-size: 0.875rem;
+}
+
+.card-body_credit {
+  padding: 1rem;
+}
+
+.transfer-section {
   display: flex;
   flex-direction: column;
+  gap: 0.75rem;
 }
 
-.add-user-form-container input::placeholder {
-  color: #999;
-}
-
-.add-user-form-container input[type="email"]:hover,
-.add-user-form-container input[type="password"]:hover,
-.add-user-form-container input[type="number"]:hover {
-  background-color: #f1f1f1;
-}
-
-/* User List Table Styles */
-.user-table {
+.mobile-credit-input {
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
   width: 100%;
-  border-collapse: collapse;
-  /* margin: 20px 0;
-  font-size: 16px;
-  text-align: center;
-  background-color: #f9f9f9;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); */
 }
 
-.user-table th,
-.user-table td {
-  padding: 8px;
-  text-align: center;
-  border-bottom: 1px solid #ddd;
-}
-
-.user-table th {
-  background-color: #007bff;
-  color: white;
-  text-transform: uppercase;
-}
-
-.user-table tr:nth-child(even) {
-  background-color: #f2f2f2;
-}
-
-.user-table tr:hover {
-  background-color: #e6f7ff;
-}
-
-.user-table td {
-  color: #333;
-}
-
-/* Header Styling */
-.user-list-header {
-  font-size: 24px;
-  font-weight: bold;
-  color: #333;
-  /* margin-top: 20px; */
-  text-align: center;
-}
-
-.add-btn{
-  margin-right: 10px;
-}
-
-/* Error Message Styling */
-.error-message {
-  color: #ff4d4f;
-  font-size: 16px;
-  text-align: center;
-  margin: 10px 0;
-}
-
-.dashboard {
+.mobile-action-buttons {
   display: flex;
-  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-/* Loading Message */
-.main-content p {
-  font-size: 16px;
-  color: #666;
+.mobile-action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.mobile-action-btn.add-btn {
+  background-color: #10b981;
+  color: white;
+}
+
+.mobile-action-btn.add-btn:hover {
+  background-color: #059669;
+}
+
+.mobile-action-btn.minus-btn {
+  background-color: #ef4444;
+  color: white;
+}
+
+.mobile-action-btn.minus-btn:hover {
+  background-color: #dc2626;
+}
+
+.empty-state {
   text-align: center;
+  padding: 2rem;
+  color: #64748b;
 }
 
-/* Styling the Update button */
-button {
-   /* Green background */
-  color: rgb(0, 0, 0); /* White text */
-  padding: 10px 10px; /* Padding for the button */
-  border: none; /* Remove border */
-  border-radius: 5px; /* Rounded corners */
-  cursor: pointer; /* Change cursor to pointer when hovering */
-  transition: background-color 0.3s ease; /* Smooth background color transition */
+/* Mobile Pagination */
+.mobile-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  margin-top: 1rem;
 }
 
-
-
-/* Styling the textbox for entering credits */
-input[type="number"] {
-  padding: 10px; /* Padding inside the input */
-  border: 1px solid #ccc; /* Light gray border */
-  border-radius: 5px; /* Rounded corners */
-  width: 150px; /* Set a fixed width */
-  margin-right: 10px; /* Space between textbox and button */
-  font-size: 16px; /* Larger font size */
+.page-info {
+  font-size: 0.875rem;
+  color: #64748b;
 }
 
-input[type="number"]:focus {
-  outline: none; /* Remove the outline when the input is focused */
-  border-color: #4caf50; /* Green border when focused */
+/* Responsive Design */
+@media (max-width: 768px) {
+  .desktop-view {
+    display: none;
+  }
+
+  .mobile-view_credit {
+    display: block;
+  }
+
+  .right-p {
+    padding: 0.5rem;
+  }
+
+  .main-head {
+    padding: 1rem;
+  }
+
+  .title-head {
+    font-size: 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .credits {
+    font-size: 1rem;
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .mobile-action-btn span {
+    display: none;
+  }
+
+  .mobile-action-btn {
+    padding: 0.75rem;
+  }
 }

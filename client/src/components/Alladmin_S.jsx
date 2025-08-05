@@ -28,6 +28,7 @@ const UserList = () => {
   const userEmail =
     JSON.parse(sessionStorage.getItem("user"))?.email || "Guest";
       const token = sessionStorage.getItem('token');
+     const roleId = JSON.parse(sessionStorage.getItem("user"))?.roleId || 0;
 
   useEffect(() => {
     fetchUsers();
@@ -36,7 +37,9 @@ const UserList = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(
+     
+        
+        const response = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/users/admin/${userEmail}`,{ headers: { "Authorization": `Bearer ${token}`  } }
       );
       if (!response.ok) throw new Error(`Error: ${response.statusText}`);

@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { IoMdClose, IoMdEye, IoMdEyeOff } from "react-icons/io";
-import "../css/SignUp.css";
-import "../css/Login.css";
+import "../css/Auth.css";
 
 const SignUp = ({ closeModal, setShowModal }) => {
   const [email, setEmail] = useState("");
@@ -18,23 +17,15 @@ const SignUp = ({ closeModal, setShowModal }) => {
   const canvasRef = useRef(null);
   const navigate = useNavigate();
 
-
-  const user = JSON.parse(sessionStorage.getItem("user"));
-
- 
-  // Generate a random CAPTCHA text
   const generateCaptchaText = () => {
     const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let result = "";
     for (let i = 0; i < 5; i++) {
-      result += characters.charAt(
-        Math.floor(Math.random() * characters.length)
-      );
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
     }
     return result;
   };
 
-  // Draw CAPTCHA on canvas
   const drawCaptcha = () => {
     const text = generateCaptchaText();
     setCaptchaText(text);
@@ -42,23 +33,15 @@ const SignUp = ({ closeModal, setShowModal }) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
 
-    // Set canvas dimensions
     canvas.width = 180;
     canvas.height = 50;
-
-    // Clear previous CAPTCHA
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Background styling
     ctx.fillStyle = "#f3f3f3";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Random font styles
     ctx.font = "30px Arial";
     ctx.fillStyle = "#000";
     ctx.textBaseline = "middle";
 
-    // Slight rotation for each letter
     let x = 20;
     for (let i = 0; i < text.length; i++) {
       ctx.save();
@@ -69,7 +52,6 @@ const SignUp = ({ closeModal, setShowModal }) => {
       x += 25;
     }
 
-    // Add noise dots
     for (let i = 0; i < 30; i++) {
       ctx.fillStyle = `rgba(0,0,0,${Math.random()})`;
       ctx.beginPath();
@@ -83,7 +65,6 @@ const SignUp = ({ closeModal, setShowModal }) => {
       ctx.fill();
     }
 
-    // Add random lines
     for (let i = 0; i < 4; i++) {
       ctx.strokeStyle = `rgba(0,0,0,${Math.random()})`;
       ctx.beginPath();
@@ -93,7 +74,6 @@ const SignUp = ({ closeModal, setShowModal }) => {
     }
   };
 
-  // Generate CAPTCHA on component mount
   useEffect(() => {
     drawCaptcha();
   }, []);
@@ -101,26 +81,18 @@ const SignUp = ({ closeModal, setShowModal }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Field validation
     if (!email || !password || !companyName || !phoneNumber || !captchaInput) {
       setError("All fields are mandatory.");
-      setTimeout(() => {
-        setError("");
-      }, 1000);
+      setTimeout(() => setError(""), 1000);
       return;
     }
 
-
-    // CAPTCHA validation
     if (captchaInput !== captchaText) {
       setCaptchaError("CAPTCHA does not match.");
-      setTimeout(() => {
-        setCaptchaError("");
-      }, 1000)
+      setTimeout(() => setCaptchaError(""), 1000);
       return;
     }
 
-    // User data to be sent to backend
     const userData = {
       userEmail: email,
       userPassword: password,
@@ -134,8 +106,6 @@ const SignUp = ({ closeModal, setShowModal }) => {
         method: "POST",
         headers: { "Content-Type": "application/json"},
         body: JSON.stringify(userData),
-        
-       
       });
 
       const data = await response.json();
@@ -144,11 +114,8 @@ const SignUp = ({ closeModal, setShowModal }) => {
         sessionStorage.setItem("userEmail", email);
         setSuccessMessage("Signup successful! Redirecting...");
         
-      if (!response.ok) {
-    throw new Error('API request failed');
-  }
+        if (!response.ok) throw new Error('API request failed');
 
-        // Clear form and errors
         setEmail("");
         setPassword("");
         setCompanyName("");
@@ -156,17 +123,14 @@ const SignUp = ({ closeModal, setShowModal }) => {
         setCaptchaInput("");
         setError("");
         setCaptchaError("");
-        drawCaptcha(); // Refresh CAPTCHA
+        drawCaptcha();
         
-        // Redirect after 2 seconds
         setTimeout(() => {
           navigate(setShowModal("login"));
         }, 2000);
       } else if (response.status === 409) {
         setError("User already exists.");
-        setTimeout(() => {
-          setError("");
-        }, 2000)
+        setTimeout(() => setError(""), 2000);
       } else {
         setError(data.message || "An error occurred during signup.");
       }
@@ -176,105 +140,119 @@ const SignUp = ({ closeModal, setShowModal }) => {
   };
 
   return (
-    <div className="main-container">
-      <div className="container1">
-        <div className="login-card">
-          <div className="left-panel">
-            <div className="login-right">
-              <div className="login-info">
-                <h3 className="login-subtitle">LinkedIn Contact Verification</h3>
-                <p className="login-description">
-                  Verify and <span className="highlight-text"> Connect </span> with professionals on{" "}
-                  <span className="highlight-text"> LinkedIn</span>
-                </p>
-                <img src="newd.png" alt="Illustration" className="login-illustration1" />
-              </div>
-            </div>
+    <div className="auth-container">
+      <div className="auth-card">
+        {/* <div className="auth-hero-section">
+          <div className="auth-hero-content">
+            <h3>LinkedIn Contact Verification</h3>
+            <p>
+              Verify and <span>Connect</span> with professionals on{" "}
+              <span>LinkedIn</span>
+            </p>
+            <img src="newd.png" alt="Illustration" className="auth-hero-image" />
+          </div>
+        </div> */}
+        
+        <div className="auth-form-section">
+          <div className="auth-header">
+            <img src="new.png" alt="Company Logo" className="auth-logo" />
+            <button className="auth-close-btn" onClick={closeModal}>
+              <IoMdClose />
+            </button>
           </div>
           
-          <div className="right-panel">
-            <div className="logo-container">
-              <img src="new.png" alt="Company Logo" className="login-logo" />
-              
-              <a className="svg" onClick={closeModal}><IoMdClose /></a>
-            </div>
-            <div className="logo-container1">
-           
-              <h2 className="login-logo1">Sign up</h2>
-             
-            </div>
+          <h2 className="auth-title">Create Account</h2>
+          <p className="auth-subtitle">Get started with your free account</p>
+          
+          <form className="auth-form" onSubmit={handleSubmit}>
+            {error && <div className="auth-message error">{error}</div>}
+            {captchaError && <div className="auth-message error">{captchaError}</div>}
+            {successMessage && <div className="auth-message success">{successMessage}</div>}
             
-            <form className="form" onSubmit={handleSubmit}>
-              {error && <h3 className="error-message">{error}</h3>}
-              {captchaError && <h3 className="error-message">{captchaError}</h3>}
-              {successMessage && <p className="success-message_S">{successMessage}</p>}
-              
+            <div className="form-group">
+              <label htmlFor="email">Email</label>
               <input 
                 type="email" 
+                id="email"
                 placeholder="Enter your email" 
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
               />
-              
-              <div className="login_main1">
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="password">Password</label>
+              <div className="password-input">
                 <input
                   type={showPassword ? "text" : "password"}
+                  id="password"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
-                  className="password-toggle11"
+                  className="password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <IoMdEyeOff /> : <IoMdEye />}
                 </button>
               </div>
-              
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="company">Company Name</label>
               <input 
                 type="text" 
+                id="company"
                 placeholder="Enter your company name" 
                 value={companyName} 
                 onChange={(e) => setCompanyName(e.target.value)} 
               />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="phone">Phone Number</label>
               <input 
                 type="text" 
+                id="phone"
                 placeholder="Enter your phone number" 
                 value={phoneNumber} 
                 onChange={(e) => setPhoneNumber(e.target.value)} 
               />
-              
-              <div className="captcha-section">
+            </div>
+            
+            <div className="form-group">
+              <label>CAPTCHA Verification</label>
+              <div className="captcha-container">
                 <canvas ref={canvasRef} className="captcha-canvas"></canvas>
                 <button
                   type="button"
                   onClick={drawCaptcha}
-                  className="refresh-captcha"
+                  className="captcha-refresh"
                 >
                   🔄
                 </button>
               </div>
-              
               <input 
                 type="text" 
                 placeholder="Enter CAPTCHA" 
                 value={captchaInput} 
                 onChange={(e) => setCaptchaInput(e.target.value)} 
               />
-              
-              <button type="submit" className="login-button">Create account</button>
-              
-              <p className="terms">
-                By signing up, you agree to our <a href="/terms-and-conditions">Terms of Service</a> and
-                our <a href="/privacy_policy">Privacy Policy</a>.
-              </p>
-            </form>
+            </div>
             
-            <p className="login-link">
-              Already have an account? <a onClick={() => setShowModal("login")}>login</a>
+            <button type="submit" className="auth-btn primary">Create Account</button>
+            
+            <p className="auth-terms">
+              By signing up, you agree to our <a href="/terms-and-conditions">Terms of Service</a> and
+              our <a href="/privacy_policy">Privacy Policy</a>.
             </p>
-          </div>
+          </form>
+          
+          <p className="auth-switch">
+            Already have an account? <button onClick={() => setShowModal("login")}>Login</button>
+          </p>
         </div>
       </div>
     </div>

@@ -123,7 +123,31 @@ creditCostPerLink_C: {
   },
   lastLogin: {
     type: DataTypes.DATE
-  }
+  },  currentSessionId: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  sessionExpiry: {
+    type: DataTypes.DATE,
+    allowNull: true
+
+  }, isActiveLogin: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: false
+  },// In your User model definition
+
+  isProcessingFile: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: false,
+  allowNull: false
+},processingStartTime: {
+  type: DataTypes.DATE,
+  allowNull: true
+},processingTimeoutId: {
+  type: DataTypes.STRING,
+  allowNull: true
+}
 }, {
  
   timestamps: true,

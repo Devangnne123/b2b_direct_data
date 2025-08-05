@@ -14,41 +14,63 @@ import {
   ChevronLeft,
   ChevronRight,
   Hash,
-  Check,
-  X,
-  AlertCircle,
-  Clock
+  Star
 } from 'lucide-react';
 import { FaCoins } from 'react-icons/fa';
 import Sidebar from "../components/Sidebar";
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Error caught by boundary:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-fallback">
+          Something went wrong. Please try again.
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function Verification_company() {
   const [file, setFile] = useState(null);
-  const [email, setEmail] = useState('');
+  const [savedEmail, setSavedEmail] = useState("Guest");
   const [credits, setCredits] = useState(null);
   const [categorizedLinks, setCategorizedLinks] = useState([]);
   const [uniqueId, setUniqueId] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
-  const [creditCost, setCreditCost] = useState(3);
-  const [creditCostPerLink, setCreditCostPerLink] = useState(5);
+  const [creditCost, setCreditCost] = useState(5);
   const [sortConfig, setSortConfig] = useState({
     key: 'date',
     direction: 'desc'
   });
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingUpload, setPendingUpload] = useState(null);
-  const [processingStatus, setProcessingStatus] = useState({});
   const [statusCheckData, setStatusCheckData] = useState(null);
   const [isConfirmationActive, setIsConfirmationActive] = useState(false);
   const dataRef = useRef({ categorizedLinks: [], credits: null });
 
-  // Handle refresh/back navigation when confirmation is active
+  const token = sessionStorage.getItem('token');
+
   useEffect(() => {
     if (!isConfirmationActive) return;
-    
+     
     const handleBeforeUnload = (e) => {
       e.preventDefault();
       e.returnValue = '';
@@ -63,7 +85,7 @@ function Verification_company() {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('popstate', handlePopState);
-    
+     
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('popstate', handlePopState);
@@ -85,28 +107,28 @@ function Verification_company() {
     }
   }, []);
 
-    const token = sessionStorage.getItem('token');
-
+  // Auto-set email from session storage
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
     if (user && user.email) {
-      setEmail(user.email);
+      setSavedEmail(user.email);
       fetchCreditCost(user.email);
     } else {
-      setEmail("Guest");
+      setSavedEmail("Guest");
     }
   }, []);
 
+  // Fetch credits when email changes
   useEffect(() => {
     const fetchCredits = async () => {
-      if (!email || email === "Guest") return;
+      if (!savedEmail || savedEmail === "Guest") return;
       
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${email}`, {
-        headers: {  "Authorization": `Bearer ${token}`  },
-      });
+        const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`, {
+          headers: { "Authorization": `Bearer ${token}` },
+        });
         setCredits(response.data.credits);
-        setCreditCostPerLink(response.data.creditCostPerLink_C);
+        setCreditCost(response.data.creditCostPerLink_C);
         dataRef.current.credits = response.data.credits;
       } catch (error) {
         console.error("Error fetching credits:", error);
@@ -115,61 +137,12 @@ function Verification_company() {
     };
 
     fetchCredits();
-  }, [email]);
-
-const silentRefresh = async () => {
-  try {
-    if (!email || email === "Guest") return;
-    
-    const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/get-verification-links-com`, {
-      headers: { "user-email": email, "Authorization": `Bearer ${token}` },
-    });
-
-    // Ensure response.data is an array before mapping
-    const responseData = Array.isArray(response.data) ? response.data : 
-                        (response.data.links || response.data.data || []);
-
-    const transformedData = responseData.map(item => ({
-      ...item,
-      link: item.link || item.profileUrl || '',
-      remark: item.remark || 'pending',
-      matchLink: item.matchLink || null,
-      date: item.date || item.createdAt || new Date().toISOString(),
-      creditDeducted: item.creditDeducted || (item.matchCount || 0) * creditCostPerLink
-    }));
-
-    // Check status for all pending/processing batches in background
-    transformedData
-      .filter(item => item.final_status !== 'completed')
-      .forEach(item => {
-        checkStatus(item.uniqueId, true); // true indicates background check
-      });
-   
-    if (JSON.stringify(transformedData) !== JSON.stringify(dataRef.current.categorizedLinks)) {
-      setCategorizedLinks(transformedData);
-      dataRef.current.categorizedLinks = transformedData;
-    }
-
-    const creditRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${email}`, {
-      headers: { "Authorization": `Bearer ${token}` },
-    });
-    
-    if (creditRes.data.credits !== dataRef.current.credits) {
-      setCredits(creditRes.data.credits);
-      dataRef.current.credits = creditRes.data.credits;
-    }
-  } catch (error) {
-    console.error("Silent refresh error:", error);
-    // Optionally set an empty array if the request fails
-    setCategorizedLinks([]);
-    dataRef.current.categorizedLinks = [];
-  }
-};
+  }, [savedEmail]);
 
   const fetchCreditCost = async (email) => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/getAllAdmin`,{
-         headers:{"Authorization": `Bearer ${token}`,'X-API-Key': process.env.REACT_APP_API_KEY }
+      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/getAllAdmin`, {
+        headers: { "Authorization": `Bearer ${token}`, 'X-API-Key': process.env.REACT_APP_API_KEY }
       });
       if (response.data && response.data.users) {
         const adminUser = response.data.users.find(
@@ -184,63 +157,112 @@ const silentRefresh = async () => {
     }
   };
 
+  const silentRefresh = async () => {
+    try {
+      if (!savedEmail || savedEmail === "Guest") return;
+      
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/get-verification-links-com`, {
+        headers: { "user-email": savedEmail, "Authorization": `Bearer ${token}` },
+      });
+
+      // Ensure response.data is an array before mapping
+      const responseData = Array.isArray(response.data) ? response.data : 
+                          (response.data.links || response.data.data || []);
+
+      const transformedData = responseData.map(item => ({
+        ...item,
+        link: item.link || item.profileUrl || '',
+        remark: item.remark || 'pending',
+        matchLink: item.matchLink || null,
+        date: item.date || item.createdAt || new Date().toISOString(),
+        creditDeducted: item.creditDeducted || (item.matchCount || 0) * creditCost
+      }));
+
+      // Check status for all pending/processing batches in background
+      transformedData
+        .filter(item => item.final_status !== 'completed')
+        .forEach(item => {
+          checkStatus(item.uniqueId, true); // true indicates background check
+        });
+   
+      if (JSON.stringify(transformedData) !== JSON.stringify(dataRef.current.categorizedLinks)) {
+        setCategorizedLinks(transformedData);
+        dataRef.current.categorizedLinks = transformedData;
+      }
+
+      const creditRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`, {
+        headers: { "Authorization": `Bearer ${token}` },
+      });
+      
+      if (creditRes.data.credits !== dataRef.current.credits) {
+        setCredits(creditRes.data.credits);
+        dataRef.current.credits = creditRes.data.credits;
+      }
+    } catch (error) {
+      console.error("Silent refresh error:", error);
+      // Optionally set an empty array if the request fails
+      setCategorizedLinks([]);
+      dataRef.current.categorizedLinks = [];
+    }
+  };
+
   useEffect(() => {
     silentRefresh();
     const intervalId = setInterval(silentRefresh, 10000);
     return () => clearInterval(intervalId);
-  }, [email]);
+  }, [savedEmail]);
 
-
-const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
-  try {
-    // Only show processing for manual checks
-    if (!isBackgroundCheck) setIsProcessing(true);
-    
-    const response = await axios.get(
-      `${import.meta.env.VITE_API_BASE_URL}/check-status/${uniqueId}`
-    );
-
-    // Silent update for background checks
-    if (isBackgroundCheck) {
-      setCategorizedLinks(prev => 
-        prev.map(item => 
-          item.uniqueId === uniqueId 
-            ? { ...item, ...response.data } 
-            : item
-        )
-      );
-    } else {
-      setStatusCheckData(response.data);
-      toast.success(`Status checked for ${uniqueId}`);
-    }
-
-    // Handle completion logic silently
-    if (response.data.status === 'completed' && !response.data.emailSent) {
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/send-completion-email-com`, {
-        email: email,
-        uniqueId: uniqueId,
-        totalRecords: response.data.totalRecords,
-        completedRecords: response.data.completedRecords
-      },{headers:{"Authorization": `Bearer ${token}`}});
+  const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
+    try {
+      // Only show processing for manual checks
+      if (!isBackgroundCheck) setLoading(true);
       
-      // Update state silently
-      setCategorizedLinks(prev => 
-        prev.map(item => 
-          item.uniqueId === uniqueId 
-            ? { ...item, emailSent: true } 
-            : item
-        )
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/check-status/${uniqueId}`
       );
+
+      // Silent update for background checks
+      if (isBackgroundCheck) {
+        setCategorizedLinks(prev => 
+          prev.map(item => 
+            item.uniqueId === uniqueId 
+              ? { ...item, ...response.data } 
+              : item
+          )
+        );
+      } else {
+        setStatusCheckData(response.data);
+        toast.success(`Status checked for ${uniqueId}`);
+      }
+
+      // Handle completion logic silently
+      if (response.data.status === 'completed' && !response.data.emailSent) {
+        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/send-completion-email-com`, {
+          email: savedEmail,
+          uniqueId: uniqueId,
+          totalRecords: response.data.totalRecords,
+          completedRecords: response.data.completedRecords
+        }, { headers: { "Authorization": `Bearer ${token}` } });
+        
+        // Update state silently
+        setCategorizedLinks(prev => 
+          prev.map(item => 
+            item.uniqueId === uniqueId 
+              ? { ...item, emailSent: true } 
+              : item
+          )
+        );
+      }
+    } catch (error) {
+      if (!isBackgroundCheck) {
+        console.error('Error checking status:', error);
+        toast.error(error.response?.data?.message || 'Failed to check status');
+      }
+    } finally {
+      if (!isBackgroundCheck) setLoading(false);
     }
-  } catch (error) {
-    if (!isBackgroundCheck) {
-      console.error('Error checking status:', error);
-      toast.error(error.response?.data?.message || 'Failed to check status');
-    }
-  } finally {
-    if (!isBackgroundCheck) setIsProcessing(false);
-  }
-};
+  };
+
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
@@ -261,8 +283,8 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
       toast.error('Please select a file');
       return;
     }
-    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-      toast.error('Please enter a valid email address');
+    if (!savedEmail || savedEmail === "Guest") {
+      toast.error('Please login to upload files');
       return;
     }
 
@@ -270,12 +292,12 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     formData.append('file', file);
 
     try {
-      setIsProcessing(true);
+      setLoading(true);
       setUploadProgress(0);
       const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload-excel-verification-com`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'user-email': email,
+          'user-email': savedEmail,
           "Authorization": `Bearer ${token}`
         },
         onUploadProgress: (progressEvent) => {
@@ -291,12 +313,11 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
         totalLinks: response.data.categorizedLinks?.length || 0,
         pendingCount: response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0,
         uniqueId: response.data.uniqueId,
-        creditCost: (response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0) * creditCost,
+        creditToDeduct: (response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0) * creditCost,
         date: response.data.date || new Date().toISOString(),
         final_status: response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0,
         timestamp: new Date().toISOString(),
       };
-
 
       // Save to session storage
       sessionStorage.setItem(
@@ -307,7 +328,6 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
       setPendingUpload(uploadData);
       setShowConfirmation(true);
       setIsConfirmationActive(true);
-      
       
       setFile(null);
       document.getElementById('file-input').value = '';
@@ -320,92 +340,84 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
       toast.error(errorMessage);
       setUploadProgress(0);
     } finally {
-      setIsProcessing(false);
+      setLoading(false);
     }
   };
 
- const confirmProcessing = async () => {
-  if (!pendingUpload || !email) {
-    toast.error('Missing required information');
-    return;
-  }
-
-  if (credits < pendingUpload.creditCost) {
-    toast.error(`Not enough credits. You need ${pendingUpload.creditCost} credits`);
-    return;
-  }
-
-  setIsProcessing(true);
-  try {
-    // 1. Process the matching
-    const response = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/process-matching-com/${pendingUpload.uniqueId}`, 
-      {},
-      { headers: { 'user-email': email } }
-    );
-
-    // 2. Deduct credits
-    const creditRes = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/deduct-credits_v-com`,
-      {
-        userEmail: email,
-        credits: pendingUpload.creditCost,
-        uniqueId: pendingUpload.uniqueId
-      },{ headers: { "Authorization": `Bearer ${token}` } }
-    );
-
-    setCredits(creditRes.data.updatedCredits);
-    toast.success(`Processed ${pendingUpload.pendingCount} links successfully! Deducted ${pendingUpload.creditCost} credits`);
-
-    // // 3. Send email to the current user
-    // await axios.post('${import.meta.env.VITE_API_BASE_URL}/api/send-verification-confirmation', {
-    //   email: email,
-    //   uniqueId: pendingUpload.uniqueId,
-    //   totalLinks: pendingUpload.totalLinks,
-    //   pendingCount: pendingUpload.pendingCount,
-    //   creditCost: pendingUpload.creditCost
-    // });
-
-    // 4. Send emails to all team members
-    const teamEmailsResponse = await axios.get('${import.meta.env.VITE_API_BASE_URL}/get/team-emails',{ headers: {"Authorization": `Bearer ${token}`  } }
-    );
-    const teamEmails = teamEmailsResponse.data.data || [];
-    
-    if (teamEmails.length > 0) {
-      const emailPromises = teamEmails.map(teamMember => 
-        axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/send-verification-confirmation/company`, {
-          email: teamMember.email,
-          uniqueId: pendingUpload.uniqueId,
-          totalLinks: pendingUpload.totalLinks,
-          pendingCount: pendingUpload.pendingCount,
-          creditCost: pendingUpload.creditCost,
-          initiatedBy: email
-        },{headers:{"Authorization": `Bearer ${token}`}  }).catch(e => {
-          console.error(`Failed to send to ${teamMember.email}:`, e.response?.data || e.message);
-          return null;
-        })
-      );
-
-      await Promise.all(emailPromises);
-      console.log('Notifications sent to all team members');
+  const confirmProcessing = async () => {
+    if (!pendingUpload || !savedEmail) {
+      toast.error('Missing required information');
+      return;
     }
 
-    silentRefresh();
-  } catch (error) {
-    console.error('Processing error:', error);
-    const errorMessage = error.response?.data?.error || 
-                       error.response?.data?.message || 
-                       error.message || 
-                       'Processing failed. Please try again.';
-    toast.error(errorMessage);
-  } finally {
-    setIsProcessing(false);
-    setShowConfirmation(false);
-    setIsConfirmationActive(false);
-    setPendingUpload(null);
-    sessionStorage.removeItem('pendingVerificationUpload');
-  }
-};
+    if (credits < pendingUpload.creditToDeduct) {
+      toast.error(`Not enough credits. You need ${pendingUpload.creditToDeduct} credits`);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Process the matching
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/process-matching-com/${pendingUpload.uniqueId}`, 
+        {},
+        { headers: { 'user-email': savedEmail } }
+      );
+
+      // 2. Deduct credits
+      const creditRes = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/deduct-credits_v-com`,
+        {
+          userEmail: savedEmail,
+          credits: pendingUpload.creditToDeduct,
+          uniqueId: pendingUpload.uniqueId
+        }, { headers: { "Authorization": `Bearer ${token}` } }
+      );
+
+      setCredits(creditRes.data.updatedCredits);
+      toast.success(`Processed ${pendingUpload.pendingCount} links successfully! Deducted ${pendingUpload.creditToDeduct} credits`);
+
+      // 4. Send emails to all team members
+      const teamEmailsResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/get/team-emails`, { 
+        headers: { "Authorization": `Bearer ${token}` } 
+      });
+      const teamEmails = teamEmailsResponse.data.data || [];
+      
+      if (teamEmails.length > 0) {
+        const emailPromises = teamEmails.map(teamMember => 
+          axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/send-verification-confirmation/company`, {
+            email: teamMember.email,
+            uniqueId: pendingUpload.uniqueId,
+            totalLinks: pendingUpload.totalLinks,
+            pendingCount: pendingUpload.pendingCount,
+            creditCost: pendingUpload.creditToDeduct,
+            initiatedBy: savedEmail
+          }, { headers: { "Authorization": `Bearer ${token}` } }).catch(e => {
+            console.error(`Failed to send to ${teamMember.email}:`, e.response?.data || e.message);
+            return null;
+          })
+        );
+
+        await Promise.all(emailPromises);
+        console.log('Notifications sent to all team members');
+      }
+
+      silentRefresh();
+    } catch (error) {
+      console.error('Processing error:', error);
+      const errorMessage = error.response?.data?.error || 
+                         error.response?.data?.message || 
+                         error.message || 
+                         'Processing failed. Please try again.';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+      setShowConfirmation(false);
+      setIsConfirmationActive(false);
+      setPendingUpload(null);
+      sessionStorage.removeItem('pendingVerificationUpload');
+    }
+  };
 
   const cancelProcessing = async () => {
     if (!pendingUpload?.uniqueId) {
@@ -419,16 +431,12 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     }
 
     try {
-      setIsProcessing(true);
+      setLoading(true);
       await axios.delete(
-        `${import.meta.env.VITE_API_BASE_URL}/api/delete-verification-uploads-com/${pendingUpload.uniqueId}`,{ headers: { "Authorization": `Bearer ${token}`  } }
+        `${import.meta.env.VITE_API_BASE_URL}/api/delete-verification-uploads-com/${pendingUpload.uniqueId}`, { 
+          headers: { "Authorization": `Bearer ${token}` } 
+        }
       );
-      
-      setProcessingStatus(prev => {
-        const newStatus = {...prev};
-        delete newStatus[pendingUpload.uniqueId];
-        return newStatus;
-      });
       
       toast.success('Upload cancelled and data deleted');
       silentRefresh();
@@ -436,7 +444,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
       console.error('Error cancelling upload:', error);
       toast.error('Failed to cancel upload. Please try again.');
     } finally {
-      setIsProcessing(false);
+      setLoading(false);
       setShowConfirmation(false);
       setIsConfirmationActive(false);
       setPendingUpload(null);
@@ -456,8 +464,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     return grouped;
   };
 
-
-    const getGroupStatus = (group) => {
+  const getGroupStatus = (group) => {
     if (!group || group.length === 0) return "completed";
     
     // Check if email was sent (final completion)
@@ -480,15 +487,12 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     return "incompleted";
   };
 
-
   const sortedGroupedEntries = useMemo(() => {
     const grouped = groupByUniqueId(categorizedLinks);
     let entries = Object.entries(grouped);
 
     return entries.sort((a, b) => {
       if (sortConfig.key === "status") {
-        // const aStatus = a[1][0]?.final_status || 'pending';
-        // const bStatus = b[1][0]?.final_status || 'pending';
         const aStatus = getGroupStatus(a[1]);
         const bStatus = getGroupStatus(b[1]);
         return sortConfig.direction === "desc"
@@ -530,7 +534,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
         return;
       }
 
-      setIsProcessing(true);
+      setLoading(true);
       
       const response = await axios.get(
         `${import.meta.env.VITE_API_BASE_URL}/api/verification-uploads-com/${uniqueId}`,
@@ -582,7 +586,7 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
       console.error('Download error:', error);
       toast.error('Failed to download data. Please try again.');
     } finally {
-      setIsProcessing(false);
+      setLoading(false);
     }
   };
 
@@ -634,38 +638,58 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     );
   };
 
-  function PendingUploadAlert({ onConfirm, onCancel, pendingUpload, currentCredits, isProcessing }) {
-    const remainingCredits = currentCredits - pendingUpload.creditCost;
+  function PendingUploadAlert({
+    onConfirm,
+    onCancel,
+    pendingUpload,
+    currentCredits,
+  }) {
+    const totalLinks = pendingUpload.totalLinks || 0;
+    const pendingCount = pendingUpload.pendingCount || 0;
+    const notFoundCount = totalLinks - pendingCount;
+    const creditsToDeduct = pendingUpload.creditToDeduct || 0;
+    const remainingCredits = currentCredits - creditsToDeduct;
 
     return (
       <div className="modal-container">
-        <h3 className="modal-heading">Confirm Verification Processing</h3>
+        <h3 className="modal-heading">Confirm Upload</h3>
         <div className="modal-content-space">
           <div className="horizontal-table">
             <div className="horizontal-table-item">
               <span className="horizontal-table-label">File</span>
-              <span className="horizontal-table-value">📄 {pendingUpload.file}</span>
+              <span className="horizontal-table-value">
+                📄 {pendingUpload.file}
+              </span>
             </div>
-            
+
             <div className="horizontal-table-item">
               <span className="horizontal-table-label">Total Links</span>
-              <span className="horizontal-table-value">🔗 {pendingUpload.totalLinks}</span>
+              <span className="horizontal-table-value">🔗 {totalLinks}</span>
             </div>
-            
+
             <div className="horizontal-table-item">
               <span className="horizontal-table-label">Pending Links</span>
-              <span className="horizontal-table-value text-warning">⏳ {pendingUpload.pendingCount}</span>
+              <span className="horizontal-table-value text-warning">
+                ⏳ {pendingCount}
+              </span>
             </div>
-            
+
             <div className="horizontal-table-item">
               <span className="horizontal-table-label">Credits to Deduct</span>
-              <span className="horizontal-table-value">💳 {pendingUpload.creditCostPerLink}({creditCostPerLink} per link) </span>
+              <span className="horizontal-table-value">
+                💳 {creditsToDeduct} ({creditCost} per link)
+              </span>
             </div>
-            
+
             <div className="horizontal-table-item">
               <span className="horizontal-table-label">Remaining Credits</span>
               <span className="horizontal-table-value">
-                🧮 <span className={remainingCredits < 0 ? "text-danger" : "text-success"}>
+                🧮{" "}
+                <span
+                  className={
+                    remainingCredits < 0 ? "text-danger" : "text-success"
+                  }
+                >
                   {remainingCredits}
                 </span>
               </span>
@@ -673,24 +697,14 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
           </div>
         </div>
         <div className="buttons-container">
-          <button 
-            onClick={onCancel} 
-            className="cancel-button"
-            disabled={isProcessing}
-          >
-            {isProcessing ? (
-              <Loader2 className="animate-spin h-4 w-4" />
-            ) : (
-              <>
-                <span>❌</span>
-                <span>Cancel</span>
-              </>
-            )}
+          <button onClick={onCancel} className="cancel-button">
+            <span>❌</span>
+            <span>Cancel Upload</span>
           </button>
           <button
             onClick={onConfirm}
             className="confirm-button"
-            disabled={remainingCredits < 0 || isProcessing}
+            disabled={remainingCredits < 0}
             title={remainingCredits < 0 ? "Not enough credits" : ""}
           >
             <span>✅</span>
@@ -702,486 +716,355 @@ const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
   }
 
   return (
-    <div className="main">
-      {/* Blocking overlay when confirmation is active */}
-      {isConfirmationActive && (
-        <div className="blocking-overlay"></div>
-      )}
-      
-      <div className="main-con">
-        <Sidebar Email={setEmail} />
-        <div className="right-side">
-          <div className="right-p">
-            <nav className="main-head">
-              <div className="main-title">
-                <li className="profile">
-                  <p className="title-head">LinkedIn Company Details</p>
-                  <li className="credits-main1">
-                    <h5 className="credits">
+    <ErrorBoundary>
+      <div className="app-layout">
+        <div className="app-container">
+          <Sidebar userEmail={savedEmail} />
+          <div className="app-main-content">
+            <div className="app-content-wrapper">
+              <nav className="app-header">
+                <div className="app-header-content">
+                  <div className="app-header-left">
+                    <h1 className="app-title">LinkedIn Company Verification</h1>
+                  </div>
+                  <div className="app-header-right">
+                    <div className="credits-display">
                       <img
                         src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
                         alt="credits"
                         className="credits-icon"
                       />
-                      Credits: {credits !== null ? credits : "Loading..."}
-                    </h5>
-                  </li>
-                </li>
-              </div>
-            </nav>
+                      <span className="credits-text">
+                        Credits: {credits !== null ? credits : "Loading..."}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </nav>
 
-            <section>
-              <div className="main-body0">
-                <div className="main-body1">
-                  <div className="left">
-                    <div className="upload-section">
-                      <div className="file-upload-group">
-                        <label
-                          htmlFor="file-input"
-                          className={`file-upload-label ${
-                            isConfirmationActive ? "disabled" : ""
-                          }`}
-                        >
-                          <FileSpreadsheet className="file-icon" />
-                          <span>
-                            {file ? file.name : "Choose Excel File"}
-                          </span>
-                        </label>
-                        <input
-                          type="file"
-                          id="file-input"
-                          accept=".xlsx, .xls, .csv"
-                          onChange={handleFileChange}
-                          className="file-input"
-                          disabled={isProcessing || isConfirmationActive}
-                          required
-                        />
-                        <button
-                          onClick={handleUpload}
-                          className={`upload-btn ${
-                            !file || isProcessing || isConfirmationActive ? "disabled" : ""
-                          }`}
-                          disabled={!file || isProcessing || isConfirmationActive}
-                        >
-                          {isProcessing ? (
-                            <Loader2 className="animate-spin h-4 w-4" />
-                          ) : (
-                            "Upload File"
-                          )}
-                        </button>
+              <section className="app-body">
+                <div className="upload-section-container">
+                  <div className="upload-section-wrapper">
+                    <div className="upload-section-content">
+                      <div className="file-upload-area">
+                        <div className="file-upload-group">
+                          <label
+                            htmlFor="file-input"
+                            className={`file-upload-label ${
+                              showConfirmation ? "file-upload-disabled" : ""
+                            }`}
+                          >
+                            <FileSpreadsheet className="file-upload-icon" />
+                            <span className="file-upload-text">
+                              {file ? file.name : "Choose Excel File"}
+                            </span>
+                          </label>
+                          <input
+                            type="file"
+                            id="file-input"
+                            accept=".xlsx, .xls, .csv"
+                            onChange={handleFileChange}
+                            className="file-upload-input"
+                            disabled={showConfirmation || isConfirmationActive}
+                            required
+                          />
+                          <button
+                            onClick={handleUpload}
+                            className={`upload-button ${
+                              showConfirmation || !file || isConfirmationActive
+                                ? "upload-button-disabled"
+                                : ""
+                            }`}
+                            disabled={
+                              !file ||
+                              !savedEmail ||
+                              savedEmail === "Guest" ||
+                              credits < creditCost ||
+                              loading ||
+                              showConfirmation ||
+                              isConfirmationActive
+                            }
+                          >
+                            {loading ? (
+                              <Loader2 className="upload-button-loader" />
+                            ) : (
+                              "Upload File"
+                            )}
+                          </button>
+                        </div>
+                        {uploadProgress > 0 && uploadProgress < 100 && (
+                          <div className="upload-progress">
+                            <div 
+                              className="upload-progress-bar" 
+                              style={{ width: `${uploadProgress}%` }}
+                            ></div>
+                          </div>
+                        )}
+                        {!file && (
+                          <p className="file-required-message">
+                            * Please select a file to proceed
+                          </p>
+                        )}
                       </div>
-                      {uploadProgress > 0 && uploadProgress < 100 && (
-                        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                          <div 
-                            className="bg-blue-600 h-2.5 rounded-full" 
-                            style={{ width: `${uploadProgress}%` }}
-                          ></div>
+
+                      {showConfirmation && pendingUpload && (
+                        <PendingUploadAlert
+                          onConfirm={confirmProcessing}
+                          onCancel={cancelProcessing}
+                          pendingUpload={pendingUpload}
+                          currentCredits={credits}
+                        />
+                      )}
+
+                      {categorizedLinks.length > 0 && !showConfirmation && (
+                        <div className="data-section">
+                          <div className="data-section-header">
+                            <h3 className="data-section-title">Your Verification History</h3>
+                            <p className="data-section-info">
+                              <strong>Cost per link:</strong> {creditCost} credits
+                            </p>
+                          </div>
+
+                          {loading ? (
+                            <div className="loading-state">
+                              <Loader2 className="loading-spinner" />
+                              <p className="loading-text">
+                                Loading data...
+                              </p>
+                            </div>
+                          ) : currentEntries.length > 0 ? (
+                            <>
+                              <div className="data-table-container">
+                                <div className="data-table-wrapper">
+                                  <table className="data-table">
+                                    <thead className="data-table-header">
+                                      <tr>
+                                        <th className="data-table-header-cell">
+                                          <div className="data-table-header-content">
+                                            <Hash className="table-icon" />
+                                          </div>
+                                        </th>
+                                        <SortableHeader sortKey="uniqueId">
+                                          <Database className="table-icon" />
+                                          <span className="table-header-text">ID</span>
+                                        </SortableHeader>
+                                        <SortableHeader sortKey="fileName">
+                                          <FileSpreadsheet className="table-icon" />
+                                          <span className="table-header-text">File</span>
+                                        </SortableHeader>
+                                        <SortableHeader sortKey="totalLinks">
+                                          <LinkIcon className="table-icon" />
+                                          <span className="table-header-text">Links</span>
+                                        </SortableHeader>
+                                        <SortableHeader sortKey="pendingCount">
+                                          <Users className="table-icon" />
+                                          <span className="table-header-text">Pending</span>
+                                        </SortableHeader>
+                                        <SortableHeader sortKey="status">
+                                          <Star className="table-icon" />
+                                          <span className="table-header-text">Status</span>
+                                        </SortableHeader>
+                                        <SortableHeader sortKey="date">
+                                          <Calendar className="table-icon" />
+                                          <span className="table-header-text">Date</span>
+                                        </SortableHeader>
+                                        <th className="data-table-header-cell">
+                                          <div className="data-table-header-content">
+                                            <FaCoins className="table-icon table-icon-credits" />
+                                            <span className="table-header-text">Credits</span>
+                                          </div>
+                                        </th>
+                                        <th className="data-table-header-cell">
+                                          <div className="data-table-header-content">
+                                            <Download className="table-icon" />
+                                            <span className="table-header-text">Download</span>
+                                          </div>
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="data-table-body">
+                                      {currentEntries.map(
+                                        ([uniqueId, group], idx) => {
+                                          const first = group[0] || {};
+                                          const status = getGroupStatus(group);
+
+                                          return (
+                                            <tr key={idx} className="data-table-row">
+                                              <td className="data-table-cell">
+                                                {indexOfFirstRow + idx + 1}
+                                              </td>
+                                              <td className="data-table-cell data-table-cell-id">
+                                                {uniqueId}
+                                              </td>
+                                              <td className="data-table-cell">
+                                                <div className="data-table-file-info">
+                                                  <FileSpreadsheet className="data-table-file-icon" />
+                                                  <span className="data-table-file-name">
+                                                    {first.fileName || "Unknown"}
+                                                  </span>
+                                                </div>
+                                              </td>
+                                              <td className="data-table-cell">
+                                                {first.totalLinks || 0}
+                                              </td>
+                                              <td className="data-table-cell">
+                                                {first.pendingCount || 0}
+                                              </td>
+                                              <td className="data-table-cell">
+                                                {status === "completed" ? (
+                                                  <span className="status-badge status-badge-completed">
+                                                    Completed
+                                                  </span>
+                                                ) : (
+                                                  <button
+                                                    onClick={() => checkStatus(uniqueId)}
+                                                    className="status-check-button"
+                                                    disabled={loading}
+                                                  >
+                                                    {loading ? (
+                                                      <Loader2 className="status-check-loader" />
+                                                    ) : (
+                                                      "Check Status"
+                                                    )}
+                                                  </button>
+                                                )}
+                                              </td>
+                                              <td className="data-table-cell">
+                                                {formatDate(first.date)}
+                                              </td>
+                                              <td className="data-table-cell">
+                                                <div className="data-table-credits">
+                                                  <FaCoins className="data-table-credits-icon" />
+                                                  <span>{first.creditDeducted || 0}</span>
+                                                </div>
+                                              </td>
+                                              <td className="data-table-cell">
+                                                <button
+                                                  onClick={() =>
+                                                    downloadGroupedEntry(group)
+                                                  }
+                                                  className="download-button"
+                                                >
+                                                  <Download className="download-button-icon" />
+                                                  <span className="download-button-text">
+                                                    Download
+                                                  </span>
+                                                </button>
+                                              </td>
+                                            </tr>
+                                          );
+                                        }
+                                      )}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+
+                              {sortedGroupedEntries.length > rowsPerPage && (
+                                <div className="pagination-container">
+                                  <button
+                                    onClick={prevPage}
+                                    disabled={currentPage === 1}
+                                    className={`pagination-button ${
+                                      currentPage === 1 ? "pagination-button-disabled" : ""
+                                    }`}
+                                  >
+                                    <ChevronLeft className="pagination-icon" />
+                                  </button>
+
+                                  <div className="pagination-numbers">
+                                    {Array.from(
+                                      { length: totalPages },
+                                      (_, i) => i + 1
+                                    ).map((number) => (
+                                      <button
+                                        key={number}
+                                        onClick={() => paginate(number)}
+                                        className={`pagination-number ${
+                                          currentPage === number ? "pagination-number-active" : ""
+                                        }`}
+                                      >
+                                        {number}
+                                      </button>
+                                    ))}
+                                  </div>
+
+                                  <button
+                                    onClick={nextPage}
+                                    disabled={currentPage === totalPages}
+                                    className={`pagination-button ${
+                                      currentPage === totalPages
+                                        ? "pagination-button-disabled"
+                                        : ""
+                                    }`}
+                                  >
+                                    <ChevronRight className="pagination-icon" />
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="no-data-state">
+                              No verification history found.
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-
-                    {showConfirmation && pendingUpload && (
-                      <PendingUploadAlert
-                        onConfirm={confirmProcessing}
-                        onCancel={cancelProcessing}
-                        pendingUpload={pendingUpload}
-                        currentCredits={credits}
-                       
-                      />
-                    )}
-
-                    {categorizedLinks.length > 0 && !showConfirmation && (
-                      <div className="history-table">
-                        <h3 className="section-title">Your Verification History</h3>
-                        <p>
-                          <strong>Cost per pending link:</strong> {creditCostPerLink} credits
-                        </p>
-
-                        {isProcessing ? (
-                          <div className="loading-state">
-                            <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
-                            <p className="text-gray-600 mt-2">
-                              Loading data...
-                            </p>
-                          </div>
-                        ) : currentEntries.length > 0 ? (
-                          <>
-                            <div className="table-container">
-                              <table className="link-data-table">
-                                <thead>
-                                  <tr>
-                                    <th>
-                                      <div className="flex items-center gap-1">
-                                        <Hash className="h-4 w-4" />
-                                      </div>
-                                    </th>
-                                    <SortableHeader sortKey="uniqueId">
-                                      <Database className="h-4 w-4" />
-                                    </SortableHeader>
-                                    <SortableHeader sortKey="fileName">
-                                      <FileSpreadsheet className="h-4 w-4" />
-                                    </SortableHeader>
-                                    <SortableHeader sortKey="totalLinks">
-                                      <LinkIcon className="h-4 w-4" />
-                                    </SortableHeader>
-                                    <SortableHeader sortKey="pendingCount">
-                                      <Users className="h-4 w-4" />
-                                    </SortableHeader>
-                                    <SortableHeader sortKey="status">
-                                      <Clock className="h-4 w-4" />
-                                    </SortableHeader>
-                                    <SortableHeader sortKey="date">
-                                      <Calendar className="h-4 w-4" />
-                                    </SortableHeader>
-                                    <th>
-                                      <div className="flex items-center gap-1">
-                                        <FaCoins className="h-4 w-4 text-yellow-500" />
-                                      </div>
-                                    </th>
-                                    <th>
-                                      <div className="flex items-center gap-1">
-                                        <Download className="h-4 w-4" />
-                                      </div>
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {currentEntries.map(([uniqueId, group], idx) => {
-                                    const firstItem = group[0] || {};
-                                    const status = getGroupStatus(group);
-                                    return (
-                                      <tr key={idx}>
-                                        <td>{indexOfFirstRow + idx + 1}</td>
-                                        <td className="font-mono text-sm">
-                                          {uniqueId}
-                                        </td>
-                                        <td>
-                                          <div className="flex items-center gap-2">
-                                            <FileSpreadsheet className="h-4 w-4 text-blue-500" />
-                                            <span className="truncate max-w-[180px]">
-                                              {firstItem.fileName || "Unknown"}
-                                            </span>
-                                          </div>
-                                        </td>
-                                        <td>{firstItem.totalLinks}</td>
-                                        <td>{firstItem.pendingCount}</td>
-                                       
- <td>
-   {status === 'completed' ? (
-     <span className="completed-badge">
-       Completed
-     </span>
-   ) : (
-     <button
-       onClick={() => checkStatus(uniqueId)}
-       className="status-check-btn"
-       disabled={isProcessing}
-     >
-       {isProcessing ? (
-         <Loader2 className="animate-spin h-4 w-4" />
-       ) : (
-         "Check Status"
-       )}
-     </button>
-   )}
- </td>
- 
-                                        <td>{formatDate(firstItem.date)}</td>
-                                        <td>
-                                          <div className="flex items-center gap-1">
-                                            <FaCoins className="text-yellow-500" />
-                                            <span>
-                                              {firstItem.creditsUsed}
-                                            </span>
-                                          </div>
-                                        </td>
-                                        <td>
-                                          <button
-                                            onClick={() => downloadGroupedEntry(group)}
-                                            className="download-btn"
-                                            disabled={isProcessing}
-                                          >
-                                            {isProcessing ? (
-                                              <Loader2 className="animate-spin h-4 w-4" />
-                                            ) : (
-                                              <>
-                                                <Download className="h-4 w-4" />
-                                                <span className="hidden md:inline">Download</span>
-                                              </>
-                                            )}
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                  {currentEntries.length === 0 && (
-                                    <tr>
-                                      <td colSpan="9" className="text-center py-4">
-                                        No verification history found
-                                      </td>
-                                    </tr>
-                                  )}
-                                </tbody>
-                              </table>
-                            </div>
-
-                            {sortedGroupedEntries.length > rowsPerPage && (
-                              <div className="pagination-controls">
-                                <button
-                                  onClick={prevPage}
-                                  disabled={currentPage === 1}
-                                  className={`pagination-btn ${
-                                    currentPage === 1 ? "disabled" : ""
-                                  }`}
-                                >
-                                  <ChevronLeft className="h-4 w-4" />
-                                </button>
-
-                                {Array.from(
-                                  { length: totalPages },
-                                  (_, i) => i + 1
-                                ).map((number) => (
-                                  <button
-                                    key={number}
-                                    onClick={() => paginate(number)}
-                                    className={`pagination-btn ${
-                                      currentPage === number ? "active" : ""
-                                    }`}
-                                  >
-                                    {number}
-                                  </button>
-                                ))}
-
-                                <button
-                                  onClick={nextPage}
-                                  disabled={currentPage === totalPages}
-                                  className={`pagination-btn ${
-                                    currentPage === totalPages
-                                      ? "disabled"
-                                      : ""
-                                  }`}
-                                >
-                                  <ChevronRight className="h-4 w-4" />
-                                </button>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="no-data">
-                            No verification history found.
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
-              </div>
-            </section>
-            <ToastContainer position="top-center" autoClose={5000} />
-          
-            {/* Status Check Modal */}
-            {statusCheckData && (
-  <div className="status-modal">
-    <div className="status-modal-content">
-      <h3>Verification Status for {statusCheckData.uniqueId}</h3>
-      <div className="status-progress">
-        <div className="progress-bar">
-          <div 
-            className="progress-fill"
-            style={{ 
-              width: `${(statusCheckData.completedRecords / statusCheckData.totalRecords) * 100}%` 
-            }}
-          ></div>
-        </div>
-        <div className="progress-text">
-          {statusCheckData.completedRecords} of {statusCheckData.totalRecords} completed
-        </div>
-      </div>
-      <div className="status-summary">
-        <div className="status-item">
-          <span className="status-label">Overall Status:</span>
-          <span className={`status-value ${statusCheckData.status}`}>
-            {statusCheckData.status.toUpperCase()}
-          </span>
-        </div>
-        {statusCheckData.status === 'completed' && (
-          <>
-            <div className="completion-message">
-              All verifications completed successfully!
-            </div>
-            <div className="email-notification">
-             {statusCheckData.status === 'completed' && (
-  <>
-    <div className="completion-message">
-      All verifications completed successfully!
-    </div>
-    <div className="email-notification">
-      
-    </div>
-  </>
-)}
+              </section>
 
-            </div>
-          </>
-        )}
-      </div>
-      <button 
-        onClick={() => setStatusCheckData(null)}
-        className="close-modal-btn"
-      >
-        Close
-      </button>
-    </div>
-  </div>
-)}
+              {statusCheckData && (
+                <div className="status-modal">
+                  <div className="status-modal-content">
+                    <h3>Verification Status for {statusCheckData.uniqueId}</h3>
+                    <div className="status-progress">
+                      <div className="progress-bar">
+                        <div 
+                          className="progress-fill"
+                          style={{ 
+                            width: `${(statusCheckData.completedRecords / statusCheckData.totalRecords) * 100}%` 
+                          }}
+                        ></div>
+                      </div>
+                      <div className="progress-text">
+                        {statusCheckData.completedRecords} of {statusCheckData.totalRecords} completed
+                      </div>
+                    </div>
+                    <div className="status-summary">
+                      <div className="status-item">
+                        <span className="status-label">Overall Status:</span>
+                        <span className={`status-value ${statusCheckData.status}`}>
+                          {statusCheckData.status.toUpperCase()}
+                        </span>
+                      </div>
+                      {statusCheckData.status === 'completed' && (
+                        <div className="completion-message">
+                          All verifications completed successfully!
+                        </div>
+                      )}
+                    </div>
+                    <button 
+                      onClick={() => setStatusCheckData(null)}
+                      className="close-modal-btn"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
 
+              <ToastContainer 
+                position="top-center" 
+                autoClose={5000}
+                className="toast-container-custom"
+              />
+            </div>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-       
-        .status-modal {
-          z-index: 102;
-        }
-        
-        /* Status Modal */
-        .status-modal {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-
-        .status-modal-content {
-          background: white;
-          padding: 2rem;
-          border-radius: 8px;
-          max-width: 500px;
-          width: 100%;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .status-progress {
-          margin: 1rem 0;
-        }
-
-        .progress-bar {
-          height: 10px;
-          background: #e0e0e0;
-          border-radius: 5px;
-          overflow: hidden;
-        }
-
-        .progress-fill {
-          height: 100%;
-          background: #4CAF50;
-          transition: width 0.3s ease;
-        }
-
-        .progress-text {
-          text-align: center;
-          margin-top: 0.5rem;
-          font-size: 0.9rem;
-          color: #666;
-        }
-
-        .status-summary {
-          margin: 1.5rem 0;
-        }
-
-        .status-item {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 0.5rem;
-          padding: 0.5rem 0;
-          border-bottom: 1px solid #eee;
-        }
-
-        .status-label {
-          font-weight: bold;
-        }
-
-        .status-value {
-          font-weight: bold;
-          padding: 0.2rem 0.5rem;
-          border-radius: 4px;
-        }
-
-        .status-value.completed {
-          background: #e8f5e9;
-          color: #2e7d32;
-        }
-
-        .status-value.pending {
-          background: #fff8e1;
-          color: #ff8f00;
-        }
-
-        .completion-message {
-          background: #e8f5e9;
-          color: #2e7d32;
-          padding: 0.5rem;
-          border-radius: 4px;
-          margin-top: 1rem;
-          text-align: center;
-        }
-
-        .close-modal-btn {
-          background: #2196F3;
-          color: white;
-          border: none;
-          padding: 0.5rem 1rem;
-          border-radius: 4px;
-          cursor: pointer;
-          margin-top: 1rem;
-          width: 100%;
-          transition: background 0.2s;
-        }
-
-        .close-modal-btn:hover {
-          background: #0b7dda;
-        }
-
-        /* Status check button */
-        .status-check-btn {
-          background: #2196F3;
-          color: white;
-          border: none;
-          padding: 0.3rem 0.6rem;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 0.8rem;
-          margin-top: 0.5rem;
-          transition: background 0.2s;
-          display: block;
-          width: 100%;
-        }
-
-        .status-check-btn:hover {
-          background: #0b7dda;
-        }
-
-        .status-check-btn:disabled {
-          background: #cccccc;
-          cursor: not-allowed;
-        }
-            .completed-badge {
-    background: #e8f5e9;
-    color: #2e7d32;
-    padding: 0.3rem 0.6rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    display: inline-block;
-  }
-      `}</style>
-    </div>
+    </ErrorBoundary>
   );
 }
 

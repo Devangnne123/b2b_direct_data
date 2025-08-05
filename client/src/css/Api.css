@@ -150,7 +150,8 @@
 .otp-button,
 .notify-button {
   background-color: var(--primary);
-  color: white;
+  color: white; 
+ 
   border: none;
   text-decoration: none;
   padding: 0.8rem 1.5rem;

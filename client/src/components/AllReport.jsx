@@ -1,32 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  TextField,
-  Typography,
-  TableSortLabel,
-  Box,
-  CircularProgress,
-  Chip,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  Button,
-  Snackbar,
-  Alert,
-  Tooltip,
-  IconButton,
-  Collapse
-} from '@mui/material';
-import { format } from 'date-fns';
-import {
   Download,
   Calendar,
   Users,
@@ -39,10 +13,12 @@ import {
   Hash,
   Copy as ContentCopyIcon,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Loader2
 } from 'lucide-react';
-import Sidebar from './Sidebar';
+import Sidebar from '../components/Sidebar';
 import * as XLSX from 'xlsx';
+import '../css/AllHistory.css';
 
 const AllHistory = () => {
   const [data, setData] = useState([]);
@@ -67,28 +43,28 @@ const AllHistory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
   const [expandedRows, setExpandedRows] = useState({});
-  const [roleId, setroleId] = useState("Guest");
+  const [roleId, setRoleId] = useState("Guest");
 
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
     const roleId = user?.roleId;
-    setroleId(roleId);
+    setRoleId(roleId);
     if (user?.email) {
       setSavedEmail(user.email);
     }
   }, []);
 
-   const token = sessionStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
 
   const fetchAllData = async () => {
     try {
       setLoading(true);
       
       const [linksRes, verificationRes, creditRes, companyVerificationRes] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/links/report`,{ headers: { "Authorization": `Bearer ${token}`  } }),
-        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/verifications/report`,{ headers: { "Authorization": `Bearer ${token}`  } }),
-        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/credit-transactions`,{ headers: { "Authorization": `Bearer ${token}`  } }),
-        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/company-verifications/report`,{ headers: { "Authorization": `Bearer ${token}`  } })
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/links/report`, { headers: { "Authorization": `Bearer ${token}` } }),
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/verifications/report`, { headers: { "Authorization": `Bearer ${token}` } }),
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/credit-transactions`, { headers: { "Authorization": `Bearer ${token}` } }),
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/company-verifications/report`, { headers: { "Authorization": `Bearer ${token}` } })
       ]);
 
       const transformData = (data, type) => {
@@ -169,7 +145,7 @@ const AllHistory = () => {
       const creators = await Promise.all(
         uniqueEmails.map(async (email) => {
           try {
-            const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/creator/${email}`,{ headers: { "Authorization": `Bearer ${token}`  } });
+            const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/user/creator/${email}`, { headers: { "Authorization": `Bearer ${token}` } });
             return response.data;
           } catch (error) {
             console.error(`Error fetching creator for ${email}:`, error);
@@ -221,7 +197,7 @@ const AllHistory = () => {
 
       const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/save-completed-reports`, {
         reports: completedReports
-      }, { headers: { "Authorization": `Bearer ${token}`  } });
+      }, { headers: { "Authorization": `Bearer ${token}` } });
 
       setSnackbar({
         open: true,
@@ -348,46 +324,37 @@ const AllHistory = () => {
       transactionFilter === 'all' || 
       (transactionFilter === 'debit' && item.transactionType?.toLowerCase() === 'debit') ||
       (transactionFilter === 'credit' && item.transactionType?.toLowerCase() === 'credit');
-    if (roleId === 3){
-    return (
-      
-      ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
-      (createdBy.toLowerCase().includes(searchLower)))&&
-      (item.email && item.email.toLowerCase().includes(emailSearchLower)) &&
-      transactionMatch
-    );
-  } else if (roleId === 2){
-    return (
-      
-      ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
-      (createdBy.toLowerCase()===savedEmail.toLowerCase())) &&
-      (item.email && item.email.toLowerCase()===savedEmail.toLowerCase()) && 
-      
-      transactionMatch
-    );
-
-
-  }
-  else if (roleId === 1){
-
-    return (
-      
-      ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
-      (createdBy.toLowerCase()===savedEmail.toLowerCase())) &&
-      (item.email && item.email.toLowerCase()===savedEmail.toLowerCase()) && 
-      
-      transactionMatch
-    );
-  }
-   if (roleId === 123){
-    return (
-      
-      ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
-      (createdBy.toLowerCase().includes(searchLower))) &&
-      (item.email && item.email.toLowerCase().includes(emailSearchLower)) &&
-      transactionMatch
-    );
-  }
+    
+    if (roleId === 3) {
+      return (
+        ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
+        (createdBy.toLowerCase().includes(searchLower))) &&
+        (item.email && item.email.toLowerCase().includes(emailSearchLower)) &&
+        transactionMatch
+      );
+    } else if (roleId === 2) {
+      return (
+        ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
+        (createdBy.toLowerCase() === savedEmail.toLowerCase())) &&
+        (item.email && item.email.toLowerCase() === savedEmail.toLowerCase()) && 
+        transactionMatch
+      );
+    } else if (roleId === 1) {
+      return (
+        ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
+        (createdBy.toLowerCase() === savedEmail.toLowerCase())) &&
+        (item.email && item.email.toLowerCase() === savedEmail.toLowerCase()) && 
+        transactionMatch
+      );
+    } else if (roleId === 123) {
+      return (
+        ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
+        (createdBy.toLowerCase().includes(searchLower))) &&
+        (item.email && item.email.toLowerCase().includes(emailSearchLower)) &&
+        transactionMatch
+      );
+    }
+    return false;
   });
 
   const indexOfLastRow = currentPage * rowsPerPage;
@@ -399,664 +366,425 @@ const AllHistory = () => {
   const nextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
   const prevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
 
-  const getStatusColor = (status) => {
-    if (!status) return 'default';
-    status = status.toLowerCase();
-    switch (status) {
-      case 'completed': case 'success': return 'success';
-      case 'pending': case 'processing': return 'warning';
-      case 'failed': case 'error': return 'error';
-      default: return 'default';
+  const format = (date, formatStr) => {
+    if (!date) return 'N/A';
+    try {
+      return new Date(date).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return 'Invalid date';
     }
   };
 
+  const getStatusColor = (status) => {
+    if (!status) return 'default';
+    status = status.toLowerCase();
+    if (status === 'completed' || status === 'success') return 'bg-green-100 text-green-800';
+    if (status === 'pending' || status === 'processing') return 'bg-yellow-100 text-yellow-800';
+    if (status === 'failed' || status === 'error') return 'bg-red-100 text-red-800';
+    return 'bg-gray-100 text-gray-800';
+  };
+
   const getTransactionColor = (type) => {
-    if (!type) return 'default';
-    return type.toLowerCase().includes('credit') ? 'success' : 'error';
+    if (!type) return 'bg-gray-100 text-gray-800';
+    return type.toLowerCase().includes('credit') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
 
   if (loading && data.length === 0) {
     return (
-      <Box display="flex" justifyContent="center" mt={4}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  return (
-    <div className="main-con">
-      <Sidebar userEmail={savedEmail} />
-      <div className="right-side">
-        <div className="right-p">
-          <div className="main-body0">
-            <div className="main-body1">
-              <div className="left">
-                <div className="history-table">
-                  <div className="section-header">
-                    <h3 className="section-title">All History</h3>
-                    <div className="controls">
-                      {lastUpdated && (
-                        <span className="last-updated">
-                          Last updated: {format(lastUpdated, 'PPpp')}
-                        </span>
-                      )}
-                      <button 
-                        className="refresh-btn"
-                        onClick={handleManualRefresh}
-                        disabled={loading}
-                      >
-                        {loading ? <CircularProgress size={20} /> : 'Refresh Now'}
-                      </button>
-                      <button 
-                        className="save-btn"
-                        onClick={saveCompletedReports}
-                        disabled={loading || combinedData.length === 0 || saving}
-                      >
-                        {saving ? 'Saving...' : 'Save Completed Reports'}
-                      </button>
-                      <button 
-                        className="download-btn"
-                        onClick={exportToExcel}
-                        disabled={loading || filteredData.length === 0 || downloading}
-                      >
-                        {downloading ? (
-                          <>
-                            <CircularProgress size={20} style={{ marginRight: '8px' }} />
-                            Exporting...
-                          </>
-                        ) : (
-                          <>
-                            <Download size={16} style={{ marginRight: '8px' }} />
-                            Export to Excel
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="filter-controls">
-                    <FormControl variant="outlined" className="report-type-select">
-                      <InputLabel>Report Type</InputLabel>
-                      <Select
-                        value={reportType}
-                        onChange={handleReportTypeChange}
-                        label="Report Type"
-                      >
-                        <MenuItem value="all">All</MenuItem>
-                        <MenuItem value="links">Link Report</MenuItem>
-                        <MenuItem value="verification">Company Verification</MenuItem>
-                        <MenuItem value="company-verification">Company Verification Report</MenuItem>
-                        <MenuItem value="credit">Credit Transactions</MenuItem>
-                      </Select>
-                    </FormControl>
-
-                    <FormControl variant="outlined" className="transaction-filter-select">
-                      <InputLabel>Transaction Type</InputLabel>
-                      <Select
-                        value={transactionFilter}
-                        onChange={(e) => setTransactionFilter(e.target.value)}
-                        label="Transaction Type"
-                      >
-                        <MenuItem value="all">All</MenuItem>
-                        <MenuItem value="debit">Debit</MenuItem>
-                        <MenuItem value="credit">Credit</MenuItem>
-                      </Select>
-                    </FormControl>
-
-                    <TextField
-                      label="Search by Unique ID or Created By"
-                      variant="outlined"
-                      fullWidth
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="search-field"
-                    />
-
-                    <TextField
-                      label="Search by Email"
-                      variant="outlined"
-                      fullWidth
-                      value={emailSearchTerm}
-                      onChange={(e) => setEmailSearchTerm(e.target.value)}
-                      className="search-field"
-                    />
-                  </div>
-
-                  <TableContainer component={Paper} className="table-container">
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>#</TableCell>
-                          <TableCell>
-                            <TableSortLabel
-                              active={orderBy === 'email'}
-                              direction={orderBy === 'email' ? order : 'asc'}
-                              onClick={() => handleSort('email')}
-                            >
-                              Email
-                            </TableSortLabel>
-                          </TableCell>
-                          <TableCell>
-                            <TableSortLabel
-                              active={orderBy === 'formattedDate'}
-                              direction={orderBy === 'formattedDate' ? order : 'desc'}
-                              onClick={() => handleSort('formattedDate')}
-                            >
-                              <div className="header-cell">
-                                <Calendar size={16} />
-                                <span>Date</span>
-                              </div>
-                            </TableSortLabel>
-                          </TableCell>
-                          <TableCell>
-                            <TableSortLabel
-                              active={orderBy === 'process'}
-                              direction={orderBy === 'process' ? order : 'asc'}
-                              onClick={() => handleSort('process')}
-                            >
-                              <div className="header-cell">
-                                <Database size={16} />
-                                <span>Process</span>
-                              </div>
-                            </TableSortLabel>
-                          </TableCell>
-                          <TableCell>From</TableCell>
-                          <TableCell>
-                            <TableSortLabel
-                              active={orderBy === 'email'}
-                              direction={orderBy === 'email' ? order : 'asc'}
-                              onClick={() => handleSort('email')}
-                            >
-                              To
-                            </TableSortLabel>
-                          </TableCell>
-                          <TableCell align="right">Amount</TableCell>
-                          <TableCell>Transaction Type</TableCell>
-                          <TableCell>
-                            <div className="header-cell">
-                              <LinkIcon size={16} />
-                              <span>Balance</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>Actions</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {currentData.map((item, index) => {
-                          const rowId = item.uniqueId || index;
-                          const isExpanded = expandedRows[rowId];
-                          return (
-                            <React.Fragment key={rowId}>
-                              <TableRow className="table-row">
-                                <TableCell>{indexOfFirstRow + index + 1}</TableCell>
-                                <TableCell>
-                                  {item.email ? (
-                                    <Tooltip title={item.email}>
-                                      <span>{item.email.length > 15 ? `${item.email.substring(0, 8)}...` : item.email}</span>
-                                    </Tooltip>
-                                  ) : '-----'}
-                                </TableCell>
-                                <TableCell>{format(new Date(item.date), 'PPpp')}</TableCell>
-                                <TableCell>
-                                  {item.process}
-                                </TableCell>
-                                <TableCell>
-                                  {item.senderEmail ? (
-                                    <Tooltip title={item.senderEmail}>
-                                      <span>{item.senderEmail.length > 15 ? `${item.senderEmail.substring(0, 8)}...` : item.senderEmail}</span>
-                                    </Tooltip>
-                                  ) : '-----'}
-                                </TableCell>
-                                <TableCell>
-                                  {item.email ? (
-                                    <Tooltip title={item.email}>
-                                      <span>{item.email.length > 15 ? `${item.email.substring(0, 8)}...` : item.email}</span>
-                                    </Tooltip>
-                                  ) : '-----'}
-                                </TableCell>
-                                <TableCell align="right" className="amount-cell">
-                                  {item.transactionType?.toLowerCase() === 'debit' ? '-' : ''}
-                                  {Number(item.amount || 0).toFixed(2)}
-                                </TableCell>
-                                <TableCell>
-                                  <span className={`status-badge ${
-                                    item.transactionType?.toLowerCase() === 'credit' ? 'credit' : 'debit'
-                                  }`}>
-                                    {item.transactionType}
-                                  </span>
-                                </TableCell>
-                                <TableCell align="right">{item.remainingCredits || '0'}</TableCell>
-                                <TableCell>
-                                  <Tooltip title={isExpanded ? "Hide details" : "Show details"}>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => toggleRowExpand(rowId)}
-                                    >
-                                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                                    </IconButton>
-                                  </Tooltip>
-                                </TableCell>
-                              </TableRow>
-                              
-                              <TableRow>
-                                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={10}>
-                                  <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-                                    <Box sx={{ margin: 1 }}>
-                                      <Typography variant="h6" gutterBottom component="div">
-                                        Transaction Details
-                                      </Typography>
-                                      <div className="detail-grid">
-                                        <div className="detail-item">
-                                          <Typography variant="subtitle2" className="detail-label">
-                                            Unique ID
-                                          </Typography>
-                                          <Typography variant="body2" className="detail-value">
-                                            {item.uniqueId || 'N/A'}
-                                          </Typography>
-                                        </div>
-                                        <div className="detail-item">
-                                          <Typography variant="subtitle2" className="detail-label">
-                                            Filename
-                                          </Typography>
-                                          <Typography variant="body2" className="detail-value">
-                                            {item.fileName || 'N/A'}
-                                          </Typography>
-                                        </div>
-                                        <div className="detail-item">
-                                          <Typography variant="subtitle2" className="detail-label">
-                                            Total Link
-                                          </Typography>
-                                          <Typography variant="body2" className="detail-value">
-                                            {item.totallink ? (
-                                              <a href={item.totallink} target="_blank" rel="noopener noreferrer">
-                                                {item.totallink}
-                                              </a>
-                                            ) : 'N/A'}
-                                          </Typography>
-                                        </div>
-                                        <div className="detail-item">
-                                          <Typography variant="subtitle2" className="detail-label">
-                                            Match Count
-                                          </Typography>
-                                          <Typography variant="body2" className="detail-value">
-                                            {item.matchCount || 'N/A'}
-                                          </Typography>
-                                        </div>
-                                        <div className="detail-item">
-                                          <Typography variant="subtitle2" className="detail-label">
-                                            Created By
-                                          </Typography>
-                                          <Typography variant="body2" className="detail-value">
-                                            {item.email ? (creatorMap[item.email] || 'Admin') : 'N/A'}
-                                          </Typography>
-                                        </div>
-                                        <div className="detail-item">
-                                          <Typography variant="subtitle2" className="detail-label">
-                                            Final Status
-                                          </Typography>
-                                          <Typography variant="body2" className="detail-value">
-                                            {item.finalStatus || 'N/A'}
-                                          </Typography>
-                                        </div>
-                                        {Object.entries(item)
-                                          .filter(([key]) => !['uniqueId', 'fileName', 'totallink', 'matchCount', 'email', 'finalStatus', 'process', 'transactionType', 'amount', 'remainingCredits', 'senderEmail', 'date', 'type', 'formattedDate'].includes(key))
-                                          .map(([key, value]) => (
-                                            <div key={key} className="detail-item">
-                                              <Typography variant="subtitle2" className="detail-label">
-                                                {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                                              </Typography>
-                                              <Typography variant="body2" className="detail-value">
-                                                {value === null || value === undefined 
-                                                  ? 'N/A' 
-                                                  : typeof value === 'object' 
-                                                    ? JSON.stringify(value, null, 2) 
-                                                    : String(value)}
-                                              </Typography>
-                                            </div>
-                                          ))}
-                                      </div>
-                                    </Box>
-                                  </Collapse>
-                                </TableCell>
-                              </TableRow>
-                            </React.Fragment>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-
-                  {filteredData.length > rowsPerPage && (
-                    <div className="pagination-controls">
-                      <button
-                        onClick={prevPage}
-                        disabled={currentPage === 1}
-                        className="pagination-btn"
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNum;
-                        if (totalPages <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => paginate(pageNum)}
-                            className={`pagination-btn ${currentPage === pageNum ? 'active' : ''}`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                      
-                      <button
-                        onClick={nextPage}
-                        disabled={currentPage === totalPages}
-                        className="pagination-btn"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+      <div className="app-layout">
+        <div className="app-container">
+          <Sidebar userEmail={savedEmail} />
+          <div className="app-main-content">
+            <div className="loading-state">
+              <Loader2 className="loading-spinner" />
+              <p className="loading-text">Loading data...</p>
             </div>
           </div>
         </div>
       </div>
+    );
+  }
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
+  return (
+    <div className="app-layout">
+      <div className="app-container">
+        <Sidebar userEmail={savedEmail} />
+        <div className="app-main-content">
+          <div className="app-content-wrapper">
+            <nav className="app-header">
+              <div className="app-header-content">
+                <div className="app-header-left">
+                  <h1 className="app-title">All History Report</h1>
+                </div>
+                <div className="app-header-right">
+                  <div className="credits-display">
+                    <span className="credits-text">
+                      User: {savedEmail}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </nav>
+
+            <section className="app-body">
+              <div className="data-section">
+                <div className="section-header">
+                  <div className="section-info">
+                    {lastUpdated && (
+                      <p className="last-updated">
+                        Last updated: {format(lastUpdated, 'PPpp')}
+                      </p>
+                    )}
+                  </div>
+                  <div className="section-controls">
+                    <button 
+                      className="refresh-button"
+                      onClick={handleManualRefresh}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <Loader2 className="refresh-icon" />
+                      ) : (
+                        'Refresh Data'
+                      )}
+                    </button>
+                    <button 
+                      className="save-button"
+                      onClick={saveCompletedReports}
+                      disabled={loading || combinedData.length === 0 || saving}
+                    >
+                      {saving ? 'Saving...' : 'Save Completed Reports'}
+                    </button>
+                    <button 
+                      className="download-button"
+                      onClick={exportToExcel}
+                      disabled={loading || filteredData.length === 0 || downloading}
+                    >
+                      {downloading ? (
+                        <>
+                          <Loader2 className="download-icon" />
+                          Exporting...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="download-icon" />
+                          Export to Excel
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="filter-controls">
+                  <div className="filter-group">
+                    <label>Report Type</label>
+                    <select
+                      value={reportType}
+                      onChange={handleReportTypeChange}
+                      className="filter-select"
+                    >
+                      <option value="all">All</option>
+                      <option value="links">Link Report</option>
+                      <option value="verification">Company Verification</option>
+                      <option value="company-verification">Company Verification Report</option>
+                      <option value="credit">Credit Transactions</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label>Transaction Type</label>
+                    <select
+                      value={transactionFilter}
+                      onChange={(e) => setTransactionFilter(e.target.value)}
+                      className="filter-select"
+                    >
+                      <option value="all">All</option>
+                      <option value="debit">Debit</option>
+                      <option value="credit">Credit</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label>Search by ID or Creator</label>
+                    <input
+                      type="text"
+                      placeholder="Search by Unique ID or Created By"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="search-input"
+                    />
+                  </div>
+
+                  <div className="filter-group">
+                    <label>Search by Email</label>
+                    <input
+                      type="text"
+                      placeholder="Search by Email"
+                      value={emailSearchTerm}
+                      onChange={(e) => setEmailSearchTerm(e.target.value)}
+                      className="search-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="data-table-container">
+                  <div className="data-table-wrapper">
+                    <table className="data-table">
+                      <thead className="data-table-header">
+                        <tr>
+                          <th>#</th>
+                          <th 
+                            className="sortable-header"
+                            onClick={() => handleSort('email')}
+                          >
+                            <div className="header-content">
+                              Email
+                              {orderBy === 'email' && (
+                                <span className="sort-icon">
+                                  {order === 'asc' ? '↑' : '↓'}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                          <th 
+                            className="sortable-header"
+                            onClick={() => handleSort('formattedDate')}
+                          >
+                            <div className="header-content">
+                              <Calendar className="header-icon" />
+                              Date
+                              {orderBy === 'formattedDate' && (
+                                <span className="sort-icon">
+                                  {order === 'asc' ? '↑' : '↓'}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                          <th 
+                            className="sortable-header"
+                            onClick={() => handleSort('process')}
+                          >
+                            <div className="header-content">
+                              <Database className="header-icon" />
+                              Process
+                              {orderBy === 'process' && (
+                                <span className="sort-icon">
+                                  {order === 'asc' ? '↑' : '↓'}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                          <th>From</th>
+                          <th>To</th>
+                          <th 
+                            className="sortable-header"
+                            onClick={() => handleSort('amount')}
+                          >
+                            <div className="header-content">
+                              Amount
+                              {orderBy === 'amount' && (
+                                <span className="sort-icon">
+                                  {order === 'asc' ? '↑' : '↓'}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                          <th>Type</th>
+                          <th>
+                            <div className="header-content">
+                              <LinkIcon className="header-icon" />
+                              Balance
+                            </div>
+                          </th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="data-table-body">
+                        {currentData.length > 0 ? (
+                          currentData.map((item, index) => {
+                            const rowId = item.uniqueId || index;
+                            const isExpanded = expandedRows[rowId];
+                            return (
+                              <React.Fragment key={rowId}>
+                                <tr className="data-table-row">
+                                  <td>{indexOfFirstRow + index + 1}</td>
+                                  <td>
+                                    {item.email ? (
+                                      <div className="email-cell">
+                                        {item.email.length > 15 ? `${item.email.substring(0, 8)}...` : item.email}
+                                      </div>
+                                    ) : '-----'}
+                                  </td>
+                                  <td>{format(item.date, 'PPpp')}</td>
+                                  <td>
+                                    {item.process}
+                                  </td>
+                                  <td>
+                                    {item.senderEmail ? (
+                                      <div className="email-cell">
+                                        {item.senderEmail.length > 15 ? `${item.senderEmail.substring(0, 8)}...` : item.senderEmail}
+                                      </div>
+                                    ) : '-----'}
+                                  </td>
+                                  <td>
+                                    {item.email ? (
+                                      <div className="email-cell">
+                                        {item.email.length > 15 ? `${item.email.substring(0, 8)}...` : item.email}
+                                      </div>
+                                    ) : '-----'}
+                                  </td>
+                                  <td className={`amount-cell ${item.transactionType?.toLowerCase() === 'credit' ? 'credit' : 'debit'}`}>
+                                    {item.transactionType?.toLowerCase() === 'debit' ? '-' : ''}
+                                    {Number(item.amount || 0).toFixed(2)}
+                                  </td>
+                                  <td>
+                                    <span className={`status-badge ${getTransactionColor(item.transactionType)}`}>
+                                      {item.transactionType}
+                                    </span>
+                                  </td>
+                                  <td>{item.remainingCredits || '0'}</td>
+                                  <td>
+                                    <button
+                                      className="expand-button"
+                                      onClick={() => toggleRowExpand(rowId)}
+                                    >
+                                      {isExpanded ? (
+                                        <ChevronUp className="expand-icon" />
+                                      ) : (
+                                        <ChevronDown className="expand-icon" />
+                                      )}
+                                    </button>
+                                  </td>
+                                </tr>
+                                
+                                {isExpanded && (
+                                  <tr className="details-row">
+                                    <td colSpan="10">
+                                      <div className="details-content">
+                                        <h4>Transaction Details</h4>
+                                        <div className="details-grid">
+                                          <div className="detail-item">
+                                            <span className="detail-label">Unique ID:</span>
+                                            <span className="detail-value">
+                                              {item.uniqueId || 'N/A'}
+                                            </span>
+                                          </div>
+                                          <div className="detail-item">
+                                            <span className="detail-label">Filename:</span>
+                                            <span className="detail-value">
+                                              {item.fileName || 'N/A'}
+                                            </span>
+                                          </div>
+                                          <div className="detail-item">
+                                            <span className="detail-label">Total Link:</span>
+                                            <span className="detail-value">
+                                              {item.totallink ? (
+                                                <a href={item.totallink} target="_blank" rel="noopener noreferrer">
+                                                  {item.totallink}
+                                                </a>
+                                              ) : 'N/A'}
+                                            </span>
+                                          </div>
+                                          <div className="detail-item">
+                                            <span className="detail-label">Match Count:</span>
+                                            <span className="detail-value">
+                                              {item.matchCount || 'N/A'}
+                                            </span>
+                                          </div>
+                                          <div className="detail-item">
+                                            <span className="detail-label">Created By:</span>
+                                            <span className="detail-value">
+                                              {item.email ? (creatorMap[item.email] || 'Admin') : 'N/A'}
+                                            </span>
+                                          </div>
+                                          <div className="detail-item">
+                                            <span className="detail-label">Final Status:</span>
+                                            <span className="detail-value">
+                                              {item.finalStatus || 'N/A'}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            );
+                          })
+                        ) : (
+                          <tr className="data-table-row">
+                            <td colSpan="10" className="no-data">
+                              No found matching your criteria.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {filteredData.length > rowsPerPage && (
+                  <div className="pagination-container">
+                    <button
+                      onClick={prevPage}
+                      disabled={currentPage === 1}
+                      className={`pagination-button ${currentPage === 1 ? 'disabled' : ''}`}
+                    >
+                      <ChevronLeft className="pagination-icon" />
+                    </button>
+                    
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => paginate(pageNum)}
+                          className={`pagination-button ${currentPage === pageNum ? 'active' : ''}`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    
+                    <button
+                      onClick={nextPage}
+                      disabled={currentPage === totalPages}
+                      className={`pagination-button ${currentPage === totalPages ? 'disabled' : ''}`}
+                    >
+                      <ChevronRight className="pagination-icon" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      {snackbar.open && (
         <div className={`snackbar ${snackbar.severity}`}>
           {snackbar.message}
+          <button onClick={handleCloseSnackbar} className="snackbar-close">
+            &times;
+          </button>
         </div>
-      </Snackbar>
-
-      <style jsx>{`
-        .main-con {
-          display: flex;
-          min-height: 100vh;
-          background-color: #f8fafc;
-        }
-        
-        .right-side {
-          flex: 1;
-          padding: 20px;
-        }
-        
-        .right-p {
-          background-color: white;
-          border-radius: 8px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-          padding: 20px;
-        }
-        
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-        }
-        
-        .section-title {
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: #2d3748;
-        }
-        
-        .controls {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        
-        .last-updated {
-          font-size: 0.875rem;
-          color: #718096;
-        }
-        
-        .refresh-btn {
-          padding: 8px 16px;
-          border-radius: 4px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
-          background-color: white;
-          border: 1px solid #cbd5e0;
-          color: #4a5568;
-        }
-        
-        .refresh-btn:hover {
-          background-color: #f7fafc;
-        }
-        
-        .save-btn {
-          padding: 8px 16px;
-          border-radius: 4px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
-          background-color: #4299e1;
-          border: 1px solid #4299e1;
-          color: white;
-        }
-        
-        .save-btn:hover {
-          background-color: #3182ce;
-        }
-        
-        .save-btn:disabled {
-          background-color: #a0aec0;
-          border-color: #a0aec0;
-          cursor: not-allowed;
-        }
-        
-        .download-btn {
-          padding: 8px 16px;
-          border-radius: 4px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
-          background-color: #38a169;
-          border: 1px solid #38a169;
-          color: white;
-          display: flex;
-          align-items: center;
-        }
-        
-        .download-btn:hover {
-          background-color: #2f855a;
-        }
-        
-        .download-btn:disabled {
-          background-color: #a0aec0;
-          border-color: #a0aec0;
-          cursor: not-allowed;
-        }
-        
-        .filter-controls {
-          display: flex;
-          gap: 15px;
-          margin-bottom: 20px;
-          flex-wrap: wrap;
-        }
-        
-        .report-type-select,
-        .transaction-filter-select,
-        .credit-assigned-filter-select {
-          min-width: 180px;
-        }
-        
-        .search-field {
-          min-width: 200px;
-          flex: 1;
-        }
-        
-        .table-container {
-          border-radius: 8px;
-          overflow: hidden;
-        }
-        
-        .table-row:hover {
-          background-color: #f7fafc !important;
-        }
-        
-        .header-cell {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        
-        .link-cell {
-          color: #3182ce;
-          text-decoration: none;
-        }
-        
-        .link-cell:hover {
-          text-decoration: underline;
-        }
-        
-        .status-badge {
-          display: inline-block;
-          padding: 4px 8px;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 500;
-        }
-        
-        .status-badge.completed {
-          background-color: #c6f6d5;
-          color: #22543d;
-        }
-        
-        .status-badge.pending {
-          background-color: #feebc8;
-          color: #7b341e;
-        }
-        
-        .status-badge.error {
-          background-color: #fed7d7;
-          color: #822727;
-        }
-        
-        .status-badge.credit {
-          background-color: #c6f6d5;
-          color: #22543d;
-        }
-        
-        .status-badge.debit {
-          background-color: #fed7d7;
-          color: #822727;
-        }
-        
-        .amount-cell {
-          font-weight: 500;
-        }
-        
-        .pagination-controls {
-          display: flex;
-          justify-content: center;
-          margin-top: 20px;
-          gap: 5px;
-        }
-        
-        .pagination-btn {
-          padding: 6px 12px;
-          border: 1px solid #cbd5e0;
-          background-color: white;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .pagination-btn:hover {
-          background-color: #f7fafc;
-        }
-        
-        .pagination-btn.active {
-          background-color: #4299e1;
-          color: white;
-          border-color: #4299e1;
-        }
-        
-        .pagination-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        
-        .snackbar {
-          padding: 12px 24px;
-          border-radius: 4px;
-          color: white;
-          font-weight: 500;
-        }
-        
-        .snackbar.success {
-          background-color: #48bb78;
-        }
-        
-        .snackbar.error {
-          background-color: #f56565;
-        }
-        
-        .snackbar.info {
-          background-color: #4299e1;
-        }
-        
-        .detail-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-          gap: 16px;
-          padding: 16px;
-          background-color: #f9f9f9;
-          border-radius: 8px;
-        }
-        
-        .detail-item {
-          padding: 12px;
-          background-color: white;
-          border-radius: 4px;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
-        
-        .detail-label {
-          font-weight: 600;
-          color: #4a5568;
-          margin-bottom: 4px;
-          font-size: 0.75rem;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-        
-        .detail-value {
-          word-break: break-word;
-          font-size: 0.875rem;
-          color: #2d3748;
-        }
-        
-        .detail-value a {
-          color: #3182ce;
-          text-decoration: none;
-        }
-        
-        .detail-value a:hover {
-          text-decoration: underline;
-        }
-      `}</style>
+      )}
     </div>
   );
 };

@@ -82,18 +82,25 @@ function BulkLookup() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [pendingUpload, setPendingUpload] = useState(null);
   const [processingStatus, setProcessingStatus] = useState({});
-  const [creditCost, setCreditCost] = useState(5);
+  const [creditCost, setCreditCost] = useState(null);
   const [isConfirmationActive, setIsConfirmationActive] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [isProcessingReload, setIsProcessingReload] = useState(false);
+
   const dataRef = useRef({ uploadedData: [], credits: null });
+  const token = sessionStorage.getItem("token");
 
   // Handle refresh/back navigation when confirmation is active
   useEffect(() => {
     if (!isConfirmationActive) return;
 
     const handleBeforeUnload = (e) => {
-      e.preventDefault();
-      e.returnValue = "";
-      return "You have pending upload confirmation. Are you sure you want to leave?";
+      if (isConfirmationActive && pendingUpload) {
+        e.preventDefault();
+        e.returnValue =
+          "You have pending upload confirmation. Are you sure you want to leave?";
+        return "You have pending upload confirmation. Are you sure you want to leave?";
+      }
     };
 
     const handlePopState = () => {
@@ -111,22 +118,44 @@ function BulkLookup() {
     };
   }, [isConfirmationActive, pendingUpload]);
 
-  // Restore pending upload on component mount
+  // Check for pending uploads on component mount
   useEffect(() => {
-    const savedPendingUpload = sessionStorage.getItem("pendingUpload");
-    if (savedPendingUpload) {
-      try {
-        const parsed = JSON.parse(savedPendingUpload);
-        setPendingUpload(parsed);
-        setShowConfirmation(true);
-        setIsConfirmationActive(true);
-      } catch (e) {
-        sessionStorage.removeItem("pendingUpload");
+    const checkPendingUpload = async () => {
+      const pending = sessionStorage.getItem("pendingUpload");
+      if (pending) {
+        try {
+          const uploadData = JSON.parse(pending);
+          const res = await axios.get(
+            `${
+              import.meta.env.VITE_API_BASE_URL
+            }/bulklookup/check-upload-status/${uploadData.uniqueId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (res.data.status === "completed") {
+            sessionStorage.removeItem("pendingUpload");
+            setShouldRefresh(true);
+          } else {
+            setIsProcessingReload(true);
+            setPendingUpload(uploadData);
+            setShowConfirmation(true);
+            setIsConfirmationActive(true);
+          }
+        } catch (error) {
+          console.error("Error checking upload status:", error);
+          sessionStorage.removeItem("pendingUpload");
+        }
       }
-    }
+    };
+
+    checkPendingUpload();
   }, []);
 
-  const token = sessionStorage.getItem("token");
+  
 
   const silentRefresh = useCallback(async () => {
     try {
@@ -139,9 +168,12 @@ function BulkLookup() {
             Authorization: `Bearer ${token}`,
           },
         }),
-        axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        ),
       ]);
 
       const now = Date.now();
@@ -151,7 +183,7 @@ function BulkLookup() {
       const updatedData = newData.map((item) => {
         const itemTime = new Date(item.date || 0).getTime();
         if (now - itemTime < 60000) {
-          // Less than 1 minute old
+
           return { ...item, status: "pending" };
         }
         return item;
@@ -173,7 +205,7 @@ function BulkLookup() {
     } catch (error) {
       console.error("Silent refresh error:", error);
     }
-  }, [savedEmail]);
+  }, [savedEmail, token]);
 
   useEffect(() => {
     silentRefresh();
@@ -189,51 +221,24 @@ function BulkLookup() {
     }
   }, []);
 
-  // const fetchCreditCost = async (email) => {
-  //   try {
-  //     const response = await axios.post(
-  //       "${import.meta.env.VITE_API_BASE_URL}/users/getAllAdmin",
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //           "X-API-Key": process.env.REACT_APP_API_KEY,
-  //         },
-  //       }
-  //     );
-  //     if (response.data && response.data.users) {
-  //       const adminUser = response.data.users.find(
-  //         (user) => user.userEmail === email
-  //       );
-  //       if (adminUser) {
-  //         setCreditCost(adminUser.creditCostPerLink );
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching admin credit cost:", error);
-  //   }
-  // };
-
-  // Fetch credits when email changes
-   
-      const fetchCreditCost = async (email) => {
-        if (!email || email === "Guest") return;
-        
-        try {
-          const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${email}`, {
-          headers: {  "Authorization": `Bearer ${token}`  },
-        });
-          setCredits(response.data.credits);
-          setCreditCost(response.data.creditCostPerLink );
-          dataRef.current.credits = response.data.credits;
-        } catch (error) {
-          console.error("Error fetching credits:", error);
-          setCredits(0);
+  const fetchCreditCost = async (email) => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/user/${email}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
         }
-      };
-  
-  
+      );
+      setCredits(response.data.credits);
+      setCreditCost(response.data.creditCostPerLink);
+      dataRef.current.credits = response.data.credits;
+    } catch (error) {
+      console.error("Error fetching credits:", error);
+      setCredits(0);
+    }
+  };
 
-  const getGroupStatus = (group) => {
+const getGroupStatus = (group) => {
     if (!group || group.length === 0) return "completed";
 
     const firstItem = group[0] || {};
@@ -279,21 +284,46 @@ function BulkLookup() {
     // Default case
     return "incompleted";
   };
-
-  const handleUpload = async () => {
+  
+ const handleUpload = async () => {
     if (!file) {
       toast.error("Please choose a file to upload first");
       return;
     }
 
-    if (!savedEmail || savedEmail === "Guest") {
-      return toast.error("Please save your email first");
+    if (creditCost === null) {
+      toast.error("Please refresh your browser");
+      return;
     }
 
-    if (credits < creditCost) {
-      return toast.error("Not enough credits");
-    }
-    // Example of potential backend limit
+  // In your handleUpload function
+const processingCheck = await axios.get(
+  `${import.meta.env.VITE_API_BASE_URL}/api/check-file-processing`,
+  {
+    params: { userEmail: savedEmail },
+    headers: { Authorization: `Bearer ${token}` }
+  }
+);
+
+if (processingCheck.data.isProcessing) {
+  const startTime = new Date(processingCheck.data.processingStartTime);
+  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+  
+  if (startTime < fiveMinutesAgo) {
+    // Force reset if stuck
+    await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
+      { userEmail: savedEmail, isProcessing: false },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  } else {
+    toast.error("Please wait until your current file processing completes");
+    return;
+  }
+}
+
+ // 1. First API call - Set processing status to true
+   
 
     setLoading(true);
     const formData = new FormData();
@@ -311,259 +341,172 @@ function BulkLookup() {
         }
       );
 
-      const totalLinks = res.data.totallink || res.data.totalLinks || 0;
-      const uploadData = {
-        file: file.name,
-        matchCount: res.data.matchCount || 0,
-        totallink: totalLinks,
-        links: res.data.link,
-        uniqueId: res.data.uniqueId,
-        creditToDeduct: res.data.matchCount * creditCost,
-        timestamp: new Date().toISOString(),
-      };
-
-      // Save pending upload to session storage
-      sessionStorage.setItem("pendingUpload", JSON.stringify(uploadData));
-
-      setPendingUpload(uploadData);
-      setShowConfirmation(true);
-      setIsConfirmationActive(true);
-
-      // Set initial status as pending for 1 minute
-      setProcessingStatus((prev) => ({
-        ...prev,
-        [res.data.uniqueId]: {
-          status: "pending",
-          startTime: Date.now(),
-        },
-      }));
-
-      // After 1 minute, update status based on actual data
-      setTimeout(() => {
-        setProcessingStatus((prev) => {
-          const group = uploadedData.filter(
-            (item) => item.uniqueId === res.data.uniqueId
-          );
-          const actualStatus = group.some(
-            (item) => item.status === "processing"
-          )
-            ? "processing"
-            : group.every((item) => item.matchLink)
-            ? "completed"
-            : "incompleted";
-
-          return {
-            ...prev,
-            [res.data.uniqueId]: {
-              ...prev[res.data.uniqueId],
-              status: actualStatus,
-            },
-          };
+      if (res.data.requiresConfirmation) {
+        setPendingUpload({
+          type: "normalConfirmation",
+          linkCount: res.data.linkCount,
+          file: res.data.fileName,
+          originalFile: file,
         });
-      }, 60000); // 1 minute
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to upload file");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const confirmUpload = async () => {
-    if (!pendingUpload) return;
-
-    setLoading(true);
-    try {
-      // First create the TempLinkMobile records
-      const tempRes = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/confirm-upload`,
-        {
-          uniqueId: pendingUpload.uniqueId,
-          email: savedEmail,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Then deduct credits
-      const creditRes = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/upload-file`,
-        {
-          userEmail: savedEmail,
-          creditCost: pendingUpload.creditToDeduct,
-          uniqueId: pendingUpload.uniqueId,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setCredits(creditRes.data.updatedCredits);
-      toast.success(
-        `Processing complete! Deducted ${pendingUpload.creditToDeduct} credits`
-      );
-
-      // Send email notification
-      try {
-        await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/send-upload-notification`,
-          {
-            email: savedEmail,
-            fileName: pendingUpload.file,
-            totalLinks: pendingUpload.totallink || 0,
-            matchCount: pendingUpload.matchCount || 0,
-            creditsDeducted: pendingUpload.creditToDeduct,
-          },
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-      } catch (emailError) {
-        console.error("Failed to send email notification:", emailError);
+        setShowConfirmation(true);
+        setIsConfirmationActive(true);
+        return;
       }
 
-      sessionStorage.removeItem("pendingUpload");
-      setPendingUpload(null);
-      setFile(null);
-      document.querySelector('input[type="file"]').value = null;
-      setIsConfirmationActive(false);
+      if (res.data.message === "Max 1000 links allowed") {
+        toast.error(res.data.message);
+        return;
+      }
+
+      toast.success("File uploaded successfully!");
+       await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
+      {
+        userEmail: savedEmail,
+        isProcessing: true
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
       setShouldRefresh(true);
     } catch (err) {
-      toast.error("Failed to confirm processing");
       console.error(err);
+      toast.error(err.response?.data?.message || "Failed to upload file");
     } finally {
       setLoading(false);
-      setShowConfirmation(false);
     }
-  };
+};
+const confirmUpload = async () => {
+  if (isConfirming || isProcessingReload) return;
 
-  useEffect(() => {
-    if (!shouldRefresh) return;
-    const timer = setTimeout(() => {
-      window.location.reload();
-    }, 20000);
-    return () => clearTimeout(timer);
-  }, [shouldRefresh]);
+  setIsConfirming(true);
+  sessionStorage.setItem("isProcessing", "true");
+  setLoading(true);
 
-  const cancelUpload = async () => {
-    if (!pendingUpload?.uniqueId) {
-      setShowConfirmation(false);
-      setPendingUpload(null);
-      setIsConfirmationActive(false);
-      return;
-    }
+  try {
+   
 
-    setLoading(true);
-    try {
-      await axios.delete(
-        `${import.meta.env.VITE_API_BASE_URL}/cancel-upload/${pendingUpload.uniqueId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      toast.info("Upload canceled - all data removed");
+    // 2. Upload file
+    const formData = new FormData();
+    formData.append("file", pendingUpload.originalFile);
 
-      // Remove pending upload from session storage
-      sessionStorage.removeItem("pendingUpload");
-
-      setProcessingStatus((prev) => {
-        const newStatus = { ...prev };
-        delete newStatus[pendingUpload.uniqueId];
-        return newStatus;
-      });
-    } catch (err) {
-      toast.error("Failed to completely cancel upload");
-      console.error(err);
-    } finally {
-      setPendingUpload(null);
-      setFile(null);
-      document.querySelector('input[type="file"]').value = null;
-      setLoading(false);
-      setShowConfirmation(false);
-      setIsConfirmationActive(false);
-    }
-  };
-
-  function PendingUploadAlert({
-    onConfirm,
-    onCancel,
-    pendingUpload,
-    currentCredits,
-  }) {
-    const totalLinks = pendingUpload.totallink || 0;
-    const matchCount = pendingUpload.matchCount || 0;
-    const notFoundCount = totalLinks - matchCount;
-    const creditsToDeduct = pendingUpload.creditToDeduct || 0;
-    const remainingCredits = currentCredits - creditsToDeduct;
-
-    return (
-      <div className="modal-container">
-        <h3 className="modal-heading">Confirm Upload</h3>
-        <div className="modal-content-space">
-          <div className="horizontal-table">
-            <div className="horizontal-table-item">
-              <span className="horizontal-table-label">File</span>
-              <span className="horizontal-table-value">
-                📄 {pendingUpload.file}
-              </span>
-            </div>
-
-            <div className="horizontal-table-item">
-              <span className="horizontal-table-label">Total Links</span>
-              <span className="horizontal-table-value">🔗 {totalLinks}</span>
-            </div>
-
-            <div className="horizontal-table-item">
-              <span className="horizontal-table-label">Matches Found</span>
-              <span className="horizontal-table-value text-success">
-                ✅ {matchCount}
-              </span>
-            </div>
-
-            <div className="horizontal-table-item">
-              <span className="horizontal-table-label">Not Found</span>
-              <span className="horizontal-table-value text-danger">
-                ❌ {notFoundCount}
-              </span>
-            </div>
-
-            <div className="horizontal-table-item">
-              <span className="horizontal-table-label">Credits to Deduct</span>
-              <span className="horizontal-table-value">
-                💳 {creditsToDeduct}
-              </span>
-            </div>
-
-            <div className="horizontal-table-item">
-              <span className="horizontal-table-label">Remaining Credits</span>
-              <span className="horizontal-table-value">
-                🧮{" "}
-                <span
-                  className={
-                    remainingCredits < 0 ? "text-danger" : "text-success"
-                  }
-                >
-                  {remainingCredits}
-                </span>
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="buttons-container">
-          <button onClick={onCancel} className="cancel-button">
-            <span>❌</span>
-            <span>Cancel Upload</span>
-          </button>
-          <button
-            onClick={onConfirm}
-            className="confirm-button"
-            disabled={remainingCredits < 0}
-            title={remainingCredits < 0 ? "Not enough credits" : ""}
-          >
-            <span>✅</span>
-            <span>Confirm & Process</span>
-          </button>
-        </div>
-      </div>
+    const uploadRes = await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/confirm-upload-excel`,
+      formData,
+      {
+        headers: {
+          "user-email": savedEmail,
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
+
+    const totalLinks = uploadRes.data.totallink || 0;
+    const matchCount = uploadRes.data.matchCount || 0;
+    const creditToDeduct = matchCount * creditCost;
+
+    const uploadData = {
+      file: uploadRes.data.fileName,
+      matchCount,
+      totallink: totalLinks,
+      uniqueId: uploadRes.data.uniqueId,
+      creditToDeduct,
+      timestamp: new Date().toISOString(),
+    };
+
+
+     await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
+      {
+        userEmail: savedEmail,
+        isProcessing: false
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    
+    // 3. Consolidated API call for all processing
+    const processRes = await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/api/process-upload`,
+      {
+        userEmail: savedEmail,
+        creditCost: creditToDeduct,
+        uniqueId: uploadData.uniqueId,
+        fileName: uploadData.file,
+        totalLinks,
+        matchCount
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    setCredits(processRes.data.updatedCredits);
+    toast.success(`Processing complete! Deducted ${creditToDeduct} credits`);
+
+    // 4. Reset processing status
+   
+
+    // Update state
+    sessionStorage.setItem("pendingUpload", JSON.stringify(uploadData));
+    setPendingUpload(uploadData);
+    setShowConfirmation(false);
+    setIsConfirmationActive(false);
+    setShouldRefresh(true);
+
+  } catch (err) {
+    console.error(err);
+    toast.error(err.response?.data?.message || "Failed to confirm upload");
+
+    // Ensure processing status is reset even on error
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
+        {
+          userEmail: savedEmail,
+          isProcessing: false
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (resetError) {
+      console.error("Failed to reset processing status:", resetError);
+    }
+  } finally {
+    sessionStorage.removeItem("isProcessing");
+    setIsProcessingReload(false);
+    setIsConfirming(false);
+    setLoading(false);
   }
+};
+
+
+ const cancelUpload = async () => {
+  if (isConfirming || isProcessingReload) {
+    toast.info("Cannot cancel during processing");
+    return;
+  }
+
+  try {
+    // Notify backend to cancel processing
+   await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
+        {
+          userEmail: savedEmail,
+          isProcessing: false
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    
+    // Clean up frontend state
+    sessionStorage.removeItem("isProcessing");
+    sessionStorage.removeItem("pendingUpload");
+    setPendingUpload(null);
+    setShowConfirmation(false);
+    setIsConfirmationActive(false);
+    setIsProcessingReload(false);
+    
+    toast.success("Upload cancelled successfully");
+  } catch (error) {
+    console.error("Failed to cancel upload:", error);
+    toast.error("Failed to cancel upload");
+  }
+};
 
   const requestSort = (key) => {
     let direction = "desc";
@@ -705,48 +648,114 @@ function BulkLookup() {
     );
   };
 
+  function UploadConfirmationDialog({
+  pendingUpload,
+  onConfirm,
+  onCancel,
+  isConfirming,
+  isProcessingReload,
+}) {
+  const blocked = isProcessingReload || isConfirming;
+
+  return (
+    <div className={`modal-container ${blocked ? "modal-blocked" : ""}`}>
+      <h3 className="modal-heading">Confirm Upload</h3>
+
+      <div className="modal-content-space">
+        <div className="horizontal-table">
+          <div className="horizontal-table-item">
+            <span className="horizontal-table-label">File</span>
+            <span className="horizontal-table-value">
+              📄 {pendingUpload.file}
+            </span>
+          </div>
+          <div className="horizontal-table-item">
+            <span className="horizontal-table-label">Links Found</span>
+            <span className="horizontal-table-value">
+              🔗 {pendingUpload.linkCount}
+            </span>
+          </div>
+        </div>
+
+        <div className="info-message">
+          Your file contains {pendingUpload.linkCount} LinkedIn links. Do you
+          want to proceed with processing?
+        </div>
+
+        {/* Warning message when processing was interrupted */}
+        {blocked && (
+          <div className="warning-message">
+            <div className="warning-icon">⚠️</div>
+            <div className="warning-text">
+              You have a file processing. If you refresh, you may lose data and need to wait 5 minutes to upload again.
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="buttons-container">
+        <button
+          onClick={!blocked ? onCancel : undefined}
+          className={`cancel-button ${blocked ? "button-disabled" : ""}`}
+          disabled={blocked}
+        >
+          <span>❌</span>
+          <span>{blocked ? "Processing..." : "Cancel"}</span>
+        </button>
+        <button
+          onClick={!blocked ? onConfirm : undefined}
+          className={`confirm-button ${blocked ? "button-disabled" : ""}`}
+          disabled={blocked}
+        >
+          <span>✅</span>
+          <span>{blocked ? "Processing..." : "Confirm"}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
   return (
     <ErrorBoundary>
-      <div className="main">
-        {/* Blocking overlay when confirmation is active */}
-        {isConfirmationActive && <div className="blocking-overlay"></div>}
-
-        <div className="main-con">
+      <div className="app-layout">
+        <div className="app-container">
           <Sidebar userEmail={savedEmail} />
-          <div className="right-side">
-            <div className="right-p">
-              <nav className="main-head">
-                <div className="main-title">
-                  <li className="profile">
-                    <p className="title-head">Direct Number Enrichment</p>
-                    <li className="credits-main1">
-                      <h5 className="credits">
-                        <img
-                          src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
-                          alt="credits"
-                          className="credits-icon"
-                        />
+          <div className="app-main-content">
+            <div className="app-content-wrapper">
+              <nav className="app-header">
+                <div className="app-header-content">
+                  <div className="app-header-left">
+                    <h1 className="app-title">Direct Number Enrichment</h1>
+                  </div>
+                  <div className="app-header-right">
+                    <div className="credits-display">
+                      <img
+                        src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
+                        alt="credits"
+                        className="credits-icon"
+                      />
+                      <span className="credits-text">
                         Credits: {credits !== null ? credits : "Loading..."}
-                      </h5>
-                    </li>
-                  </li>
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </nav>
 
-              <section>
-                <div className="main-body0">
-                  <div className="main-body1">
-                    <div className="left">
-                      <div className="upload-section">
+              <section className="app-body">
+                <div className="upload-section-container">
+                  <div className="upload-section-wrapper">
+                    <div className="upload-section-content">
+                      <div className="file-upload-area">
                         <div className="file-upload-group">
                           <label
                             htmlFor="file-input"
                             className={`file-upload-label ${
-                              showConfirmation ? "disabled" : ""
+                              showConfirmation ? "file-upload-disabled" : ""
                             }`}
                           >
-                            <FileSpreadsheet className="file-icon" />
-                            <span>
+                            <FileSpreadsheet className="file-upload-icon" />
+                            <span className="file-upload-text">
                               {file ? file.name : "Choose Excel File"}
                             </span>
                           </label>
@@ -759,15 +768,15 @@ function BulkLookup() {
                                 setFile(e.target.files[0]);
                               }
                             }}
-                            className="file-input"
+                            className="file-upload-input"
                             disabled={showConfirmation || isConfirmationActive}
                             required
                           />
                           <button
                             onClick={handleUpload}
-                            className={`upload-btn ${
-                              showConfirmation || !file || isConfirmationActive
-                                ? "disabled"
+                            className={`upload-button ${
+                              showConfirmation || !file || isConfirming
+                                ? "upload-button-disabled"
                                 : ""
                             }`}
                             disabled={
@@ -777,199 +786,263 @@ function BulkLookup() {
                               credits < creditCost ||
                               loading ||
                               showConfirmation ||
-                              isConfirmationActive
+                              isConfirmationActive ||
+                              isConfirming
                             }
                           >
                             {loading ? (
-                              <Loader2 className="animate-spin h-4 w-4" />
+                              <Loader2 className="upload-button-loader" />
                             ) : (
                               "Upload File"
                             )}
                           </button>
                         </div>
                         {!file && (
-                          <p className="file-required-text">
+                          <p className="file-required-message">
                             * Please select a file to proceed
                           </p>
                         )}
                       </div>
 
+                      {isConfirming && (
+                        <div className="processing-overlay">
+                          <div className="processing-spinner">
+                            <Loader2 className="spinner-icon" />
+                            <p>Processing your upload...</p>
+                            <div className="warning-message">
+            <div className="warning-icon">⚠️</div>
+            <div className="warning-text">
+              You have a file processing. If you refresh, you may lose data and need to wait 5 minutes to upload again.
+            </div>
+          </div>
+                          </div>
+                        </div>
+                      )}
+
                       {showConfirmation && pendingUpload && (
-                        <PendingUploadAlert
+                        <UploadConfirmationDialog
+                          pendingUpload={pendingUpload}
                           onConfirm={confirmUpload}
                           onCancel={cancelUpload}
-                          pendingUpload={pendingUpload}
-                          currentCredits={credits}
+                          isConfirming={isConfirming}
+                          isProcessingReload={isProcessingReload}
                         />
                       )}
 
                       {uploadedData.length > 0 && !showConfirmation && (
-                        <div className="history-table">
-                          <h3 className="section-title">Your Uploaded Files</h3>
-                          <p>
-                            <strong>Cost per link:</strong> {creditCost} credits
-                          </p>
+                        <div className="data-section">
+                          <div className="data-section-header">
+                            <h3 className="data-section-title">
+                              Your Uploaded Files
+                            </h3>
+                            <p className="data-section-info">
+                              <strong>Cost per link:</strong> {creditCost}{" "}
+                              credits
+                            </p>
+                          </div>
 
                           {loading ? (
                             <div className="loading-state">
-                              <Loader2 className="animate-spin h-8 w-8 text-blue-500" />
-                              <p className="text-gray-600 mt-2">
-                                Loading data...
-                              </p>
+                              <Loader2 className="loading-spinner" />
+                              <p className="loading-text">Loading data...</p>
                             </div>
                           ) : currentEntries.length > 0 ? (
                             <>
-                              <div className="table-container">
-                                <table className="link-data-table">
-                                  <thead>
-                                    <tr>
-                                      <th>
-                                        <div className="flex items-center gap-1">
-                                          <Hash className="h-4 w-4" />
-                                        </div>
-                                      </th>
-                                      <SortableHeader sortKey="uniqueId">
-                                        <Database className="h-4 w-4" />
-                                      </SortableHeader>
-                                      <SortableHeader sortKey="fileName">
-                                        <FileSpreadsheet className="h-4 w-4" />
-                                      </SortableHeader>
-                                      <SortableHeader sortKey="totallink">
-                                        <LinkIcon className="h-4 w-4" />
-                                      </SortableHeader>
-                                      <SortableHeader sortKey="matchCount">
-                                        <Users className="h-4 w-4" />
-                                      </SortableHeader>
-                                      <SortableHeader sortKey="status">
-                                        <Star className="h-4 w-4" />
-                                      </SortableHeader>
-                                      <SortableHeader sortKey="date">
-                                        <Calendar className="h-4 w-4" />
-                                      </SortableHeader>
-                                      <th>
-                                        <div className="flex items-center gap-1">
-                                          <FaCoins className="h-4 w-4 text-yellow-500" />
-                                        </div>
-                                      </th>
-                                      <th>
-                                        <div className="flex items-center gap-1">
-                                          <Download className="h-4 w-4" />
-                                        </div>
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {currentEntries.map(
-                                      ([uniqueId, group], idx) => {
-                                        const first = group[0] || {};
-                                        const status = getGroupStatus(group);
+                              <div className="data-table-container">
+                                <div className="data-table-wrapper">
+                                  <table className="data-table">
+                                    <thead className="data-table-header">
+                                      <tr>
+                                        <th className="data-table-header-cell">
+                                          <div className="data-table-header-content">
+                                            <Hash className="table-icon" />
+                                          </div>
+                                        </th>
+                                        <SortableHeader sortKey="uniqueId">
+                                          <Database className="table-icon" />
+                                          <span className="table-header-text">
+                                            ID
+                                          </span>
+                                        </SortableHeader>
+                                        <SortableHeader sortKey="fileName">
+                                          <FileSpreadsheet className="table-icon" />
+                                          <span className="table-header-text">
+                                            File
+                                          </span>
+                                        </SortableHeader>
+                                        <SortableHeader sortKey="totallink">
+                                          <LinkIcon className="table-icon" />
+                                          <span className="table-header-text">
+                                            Links
+                                          </span>
+                                        </SortableHeader>
+                                        <SortableHeader sortKey="matchCount">
+                                          <Users className="table-icon" />
+                                          <span className="table-header-text">
+                                            Matches
+                                          </span>
+                                        </SortableHeader>
+                                        <SortableHeader sortKey="status">
+                                          <Star className="table-icon" />
+                                          <span className="table-header-text">
+                                            Status
+                                          </span>
+                                        </SortableHeader>
+                                        <SortableHeader sortKey="date">
+                                          <Calendar className="table-icon" />
+                                          <span className="table-header-text">
+                                            Date
+                                          </span>
+                                        </SortableHeader>
+                                        <th className="data-table-header-cell">
+                                          <div className="data-table-header-content">
+                                            <FaCoins className="table-icon table-icon-credits" />
+                                            <span className="table-header-text">
+                                              Credits
+                                            </span>
+                                          </div>
+                                        </th>
+                                        <th className="data-table-header-cell">
+                                          <div className="data-table-header-content">
+                                            <Download className="table-icon" />
+                                            <span className="table-header-text">
+                                              Download
+                                            </span>
+                                          </div>
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="data-table-body">
+                                      {currentEntries.map(
+                                        ([uniqueId, group], idx) => {
+                                          const first = group[0] || {};
+                                          const status = getGroupStatus(group);
 
-                                        return (
-                                          <tr key={idx}>
-                                            <td>{indexOfFirstRow + idx + 1}</td>
-                                            <td className="font-mono text-sm">
-                                              {uniqueId}
-                                            </td>
-                                            <td>
-                                              <div className="flex items-center gap-2">
-                                                <FileSpreadsheet className="h-4 w-4 text-blue-500" />
-                                                <span className="truncate max-w-[180px]">
-                                                  {first.fileName || "Unknown"}
-                                                </span>
-                                              </div>
-                                            </td>
-                                            <td>{first.totallink || 0}</td>
-                                            <td>{first.matchCount || 0}</td>
-                                            <td>
-                                              <div
-                                                className={`status-badge ${
-                                                  status === "pending"
-                                                    ? "pending"
+                                          return (
+                                            <tr
+                                              key={idx}
+                                              className="data-table-row"
+                                            >
+                                              <td className="data-table-cell">
+                                                {indexOfFirstRow + idx + 1}
+                                              </td>
+                                              <td className="data-table-cell data-table-cell-id">
+                                                {uniqueId}
+                                              </td>
+                                              <td className="data-table-cell">
+                                                <div className="data-table-file-info">
+                                                  <FileSpreadsheet className="data-table-file-icon" />
+                                                  <span className="data-table-file-name">
+                                                    {first.fileName ||
+                                                      "Unknown"}
+                                                  </span>
+                                                </div>
+                                              </td>
+                                              <td className="data-table-cell">
+                                                {first.totallink || 0}
+                                              </td>
+                                              <td className="data-table-cell">
+                                                {first.matchCount || 0}
+                                              </td>
+                                              <td className="data-table-cell">
+                                                <div
+                                                  className={`status-badge ${
+                                                    status === "pending"
+                                                      ? "status-badge-pending"
+                                                      : status === "completed"
+                                                      ? "status-badge-completed"
+                                                      : "status-badge-incomplete"
+                                                  }`}
+                                                >
+                                                  {status === "pending"
+                                                    ? "Pending"
                                                     : status === "completed"
-                                                    ? "completed"
-                                                    : "incompleted"
-                                                }`}
-                                              >
-                                                {status === "pending"
-                                                  ? "Pending"
-                                                  : status === "completed"
-                                                  ? "Completed"
-                                                  : "Incomplete"}
-                                              </div>
-                                            </td>
-                                            <td>{formatDate(first.date)}</td>
-                                            <td>
-                                              <div className="flex items-center gap-1">
-                                                <FaCoins className="text-yellow-500" />
-                                                <span>
-                                                  {first.creditDeducted || 0}
-                                                </span>
-                                              </div>
-                                            </td>
-                                            <td>
-                                              <button
-                                                onClick={() =>
-                                                  downloadGroupedEntry(group)
-                                                }
-                                                className="download-btn"
-                                              >
-                                                <Download className="h-4 w-4" />
-                                                <span className="hidden md:inline">
-                                                  Download
-                                                </span>
-                                              </button>
-                                            </td>
-                                          </tr>
-                                        );
-                                      }
-                                    )}
-                                  </tbody>
-                                </table>
+                                                    ? "Completed"
+                                                    : "Incomplete"}
+                                                </div>
+                                              </td>
+                                              <td className="data-table-cell">
+                                                {formatDate(first.date)}
+                                              </td>
+                                              <td className="data-table-cell">
+                                                <div className="data-table-credits">
+                                                  <FaCoins className="data-table-credits-icon" />
+                                                  <span>
+                                                    {first.creditDeducted || 0}
+                                                  </span>
+                                                </div>
+                                              </td>
+                                              <td className="data-table-cell">
+                                                <button
+                                                  onClick={() =>
+                                                    downloadGroupedEntry(group)
+                                                  }
+                                                  className="download-button"
+                                                >
+                                                  <Download className="download-button-icon" />
+                                                  <span className="download-button-text">
+                                                    Download
+                                                  </span>
+                                                </button>
+                                              </td>
+                                            </tr>
+                                          );
+                                        }
+                                      )}
+                                    </tbody>
+                                  </table>
+                                </div>
                               </div>
 
                               {sortedGroupedEntries.length > rowsPerPage && (
-                                <div className="pagination-controls">
+                                <div className="pagination-container">
                                   <button
                                     onClick={prevPage}
                                     disabled={currentPage === 1}
-                                    className={`pagination-btn ${
-                                      currentPage === 1 ? "disabled" : ""
+                                    className={`pagination-button ${
+                                      currentPage === 1
+                                        ? "pagination-button-disabled"
+                                        : ""
                                     }`}
                                   >
-                                    <ChevronLeft className="h-4 w-4" />
+                                    <ChevronLeft className="pagination-icon" />
                                   </button>
 
-                                  {Array.from(
-                                    { length: totalPages },
-                                    (_, i) => i + 1
-                                  ).map((number) => (
-                                    <button
-                                      key={number}
-                                      onClick={() => paginate(number)}
-                                      className={`pagination-btn ${
-                                        currentPage === number ? "active" : ""
-                                      }`}
-                                    >
-                                      {number}
-                                    </button>
-                                  ))}
+                                  <div className="pagination-numbers">
+                                    {Array.from(
+                                      { length: totalPages },
+                                      (_, i) => i + 1
+                                    ).map((number) => (
+                                      <button
+                                        key={number}
+                                        onClick={() => paginate(number)}
+                                        className={`pagination-number ${
+                                          currentPage === number
+                                            ? "pagination-number-active"
+                                            : ""
+                                        }`}
+                                      >
+                                        {number}
+                                      </button>
+                                    ))}
+                                  </div>
 
                                   <button
                                     onClick={nextPage}
                                     disabled={currentPage === totalPages}
-                                    className={`pagination-btn ${
+                                    className={`pagination-button ${
                                       currentPage === totalPages
-                                        ? "disabled"
+                                        ? "pagination-button-disabled"
                                         : ""
                                     }`}
                                   >
-                                    <ChevronRight className="h-4 w-4" />
+                                    <ChevronRight className="pagination-icon" />
                                   </button>
                                 </div>
                               )}
                             </>
                           ) : (
-                            <div className="no-data">
+                            <div className="no-data-state">
                               No statistics found matching your search.
                             </div>
                           )}
@@ -980,7 +1053,11 @@ function BulkLookup() {
                 </div>
               </section>
 
-              <ToastContainer position="top-center" autoClose={5000} />
+              <ToastContainer
+                position="top-center"
+                autoClose={5000}
+                className="toast-container-custom"
+              />
             </div>
           </div>
         </div>
