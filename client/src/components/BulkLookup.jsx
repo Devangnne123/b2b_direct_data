@@ -353,7 +353,7 @@ if (processingCheck.data.isProcessing) {
         return;
       }
 
-      if (res.data.message === "Max 1000 links allowed") {
+      if (res.data.message === "Max 5000 links allowed") {
         toast.error(res.data.message);
         return;
       }
@@ -450,9 +450,30 @@ const confirmUpload = async () => {
     setIsConfirmationActive(false);
     setShouldRefresh(true);
 
-  } catch (err) {
-    console.error(err);
-    toast.error(err.response?.data?.message || "Failed to confirm upload");
+  } catch (error) {
+  // Automatic cleanup for specific error cases
+  if (error.response && 
+      (error.response.data.message === 'Insufficient credits' || 
+       error.response.data.message === 'User not found')) {
+    
+    try {
+     cancelUpload();
+
+      // 3. Show user feedback
+      console.error('Validation failed - cleaned up:', error.response.data.message);
+      toast.error(`Processing stopped: ${error.response.data.message}`);
+
+    } catch (cleanupError) {
+      console.error('Cleanup failed:', cleanupError);
+      alert('Validation failed but cleanup encountered an error. Please contact support.');
+    }
+    
+  } else {
+    // Handle other types of errors
+    console.error('Processing error:', error);
+    alert('An unexpected error occurred during processing');
+  }
+
 
     // Ensure processing status is reset even on error
     try {

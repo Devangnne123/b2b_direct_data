@@ -78,7 +78,7 @@ app.post('/upload-excel', auth, upload.single('file'), async (req, res) => {
     }
 
     // For any number of links (less than or equal to 1000), require confirmation
-    if (links.length <= 1000) {
+    if (links.length <= 5000) {
       return res.status(200).json({ 
         message: "Confirmation required to proceed", 
         linkCount: links.length,
@@ -88,9 +88,9 @@ app.post('/upload-excel', auth, upload.single('file'), async (req, res) => {
     }
 
     // If more than 1000 links, reject immediately
-    if (links.length > 1000) {
+    if (links.length > 5000) {
       fs.unlinkSync(filePath);
-      return res.status(400).json({ message: "Max 1000 links allowed" });
+      return res.status(400).json({ message: "Max 5000 links allowed" });
     }
 
   } catch (err) {
@@ -121,8 +121,8 @@ app.post('/confirm-upload-excel', auth , upload.single('file'), async (req, res)
       return res.status(400).json({ message: 'No LinkedIn links found.' });
     }
     // Example of potential backend limit
-if (links.length > 1000) {
-  return res.status(400).json({ message: "Max 1000 links allowed" });
+if (links.length >= 5000) {
+  return res.status(400).json({ message: "Max 5000 links allowed" });
 }
 
 
@@ -255,10 +255,13 @@ app.post('/api/process-upload', auth, async (req, res) => {
     // 1. Deduct credits
     const user = await User.findOne({ where: { userEmail } });
     if (!user) {
+      await Link.destroy({ where: { uniqueId } }); // Cleanup
       return res.status(404).json({ message: 'User not found' });
     }
     if (user.credits < creditCost) {
+       await Link.destroy({ where: { uniqueId } }); // Cleanup
       return res.status(400).json({ message: 'Insufficient credits' });
+
     }
 
     user.credits -= creditCost;
