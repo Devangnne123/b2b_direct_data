@@ -85,7 +85,7 @@ function BulkLookup() {
   const [creditCost, setCreditCost] = useState(null);
   const [isConfirmationActive, setIsConfirmationActive] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-  const [isProcessingReload, setIsProcessingReload] = useState(false);
+
 
   const dataRef = useRef({ uploadedData: [], credits: null });
   const token = sessionStorage.getItem("token");
@@ -118,42 +118,82 @@ function BulkLookup() {
     };
   }, [isConfirmationActive, pendingUpload]);
 
-  // Check for pending uploads on component mount
-  useEffect(() => {
-    const checkPendingUpload = async () => {
-      const pending = sessionStorage.getItem("pendingUpload");
-      if (pending) {
-        try {
-          const uploadData = JSON.parse(pending);
-          const res = await axios.get(
-            `${
-              import.meta.env.VITE_API_BASE_URL
-            }/bulklookup/check-upload-status/${uploadData.uniqueId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
 
-          if (res.data.status === "completed") {
-            sessionStorage.removeItem("pendingUpload");
-            setShouldRefresh(true);
-          } else {
-            setIsProcessingReload(true);
-            setPendingUpload(uploadData);
-            setShowConfirmation(true);
-            setIsConfirmationActive(true);
-          }
-        } catch (error) {
-          console.error("Error checking upload status:", error);
-          sessionStorage.removeItem("pendingUpload");
-        }
+
+  const checkStatus = async (uniqueId) => {
+  try {
+    setLoading(true);
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}/check-status-bulk/${uniqueId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` }
       }
-    };
+    );
 
-    checkPendingUpload();
-  }, []);
+    if (response.data.success) {
+      toast.success(
+        `Status: ${response.data.overallStatus.toUpperCase()} | ` +
+        `Completed: ${response.data.statusCounts.completed} | ` +
+        `Pending: ${response.data.statusCounts.pending} | ` +
+        `Failed: ${response.data.statusCounts.failed}`
+      );
+      
+      // Update the local state if needed
+      setUploadedData(prevData => 
+        prevData.map(item => 
+          item.uniqueId === uniqueId 
+            ? { ...item, status: response.data.overallStatus } 
+            : item
+        )
+      );
+    }
+  } catch (error) {
+    console.error('Error checking status:', error);
+    toast.error('Failed to check status');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  
+
+  // // Check for pending uploads on component mount
+  // useEffect(() => {
+  //   const checkPendingUpload = async () => {
+  //     const pending = sessionStorage.getItem("pendingUpload");
+  //     if (pending) {
+  //       try {
+  //         const uploadData = JSON.parse(pending);
+  //         const res = await axios.get(
+  //           `${
+  //             import.meta.env.VITE_API_BASE_URL
+  //           }/bulklookup/check-upload-status/${uploadData.uniqueId}`,
+  //           {
+  //             headers: {
+  //               Authorization: `Bearer ${token}`,
+  //             },
+  //           }
+  //         );
+
+  //         if (res.data.status === "completed") {
+  //           sessionStorage.removeItem("pendingUpload");
+  //           setShouldRefresh(true);
+  //         } else {
+            
+  //           setPendingUpload(uploadData);
+  //           setShowConfirmation(true);
+  //           setIsConfirmationActive(true);
+  //         }
+  //       } catch (error) {
+  //         console.error("Error checking upload status:", error);
+  //         sessionStorage.removeItem("pendingUpload");
+  //       }
+  //     }
+  //   };
+
+  //   checkPendingUpload();
+  // }, []);
 
   
 
@@ -239,7 +279,7 @@ function BulkLookup() {
   };
 
 const getGroupStatus = (group) => {
-    if (!group || group.length === 0) return "completed";
+    if (!group || group.length === 0) return "processing";
 
     const firstItem = group[0] || {};
     const uniqueId = firstItem.uniqueId;
@@ -249,41 +289,68 @@ const getGroupStatus = (group) => {
       return processingStatus[uniqueId].status;
     }
 
-    // 2. Check timestamp (if any item was created <1 min ago, consider pending)
-    const now = Date.now();
-    const oneMinuteAgo = now - 60000;
-    const hasRecentItems = group.some((item) => {
-      const itemTime = new Date(item.date || 0).getTime();
-      return itemTime > oneMinuteAgo;
-    });
-    if (hasRecentItems) return "pending";
+    // // 2. Check timestamp (if any item was created <1 min ago, consider pending)
+    // const now = Date.now();
+    // const oneMinuteAgo = now - 6000000;
+    // const hasRecentItems = group.some((item) => {
+    //   const itemTime = new Date(item.date || 0).getTime();
+    //   return itemTime > oneMinuteAgo;
+    // });
+    // if (hasRecentItems) return "pending";
 
     // 3. Check explicit status values from database
     const statuses = group.map((item) => item.status || "not available");
 
-    // Rule 1: If any item is pending → whole group is pending
-    if (statuses.includes("pending")) return "pending";
+   
+      
 
     // Rule 2: If all are "not available" → completed
-    if (statuses.every((status) => status === "not available"))
-      return "completed";
+    if (statuses.every((status) => status === "not available")){
+       if (statuses.includes("pending")){
+         return "processing"
+       }
+       
+
+    }
+
+     
+         
+    
+    
 
     // Rule 3: Mixed "completed" and "not available" → completed
     if (statuses.some((status) => status === "completed")) return "completed";
 
-    // Rule 4: If items have match data (mobile, name, etc) → completed
-    const hasMatchData = group.some(
-      (item) =>
-        item.mobile_number ||
-        item.mobile_number_2 ||
-        item.person_name ||
-        item.matchLink
-    );
-    if (hasMatchData) return "completed";
+    // // Rule 4: If items have match data (mobile, name, etc) → completed
+    // const hasMatchData = group.some(
+    //   (item) =>
+    //     item.mobile_number ||
+    //     item.mobile_number_2 ||
+    //     item.person_name ||
+    //     item.matchLink
+    // );
+    // if (hasMatchData) return "completed";
 
     // Default case
-    return "incompleted";
+    return "processing";
   };
+
+
+const updateEmailSentStatus = async (uniqueId) => {
+  try {
+    const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/update-email-status/${uniqueId}`,
+   { savedEmail  } );// Send email in the request body
+    if (response.data.success) {
+      console.log('Email status updated successfully');
+    } else {
+      console.warn(response.data.message);
+    }
+  } catch (error) {
+    console.error('Failed to update email status:', error);
+  }
+};
+
+  
   
  const handleUpload = async () => {
     if (!file) {
@@ -297,30 +364,47 @@ const getGroupStatus = (group) => {
     }
 
   // In your handleUpload function
-const processingCheck = await axios.get(
-  `${import.meta.env.VITE_API_BASE_URL}/api/check-file-processing`,
-  {
-    params: { userEmail: savedEmail },
-    headers: { Authorization: `Bearer ${token}` }
-  }
-);
 
-if (processingCheck.data.isProcessing) {
-  const startTime = new Date(processingCheck.data.processingStartTime);
-  const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-  
-  if (startTime < fiveMinutesAgo) {
-    // Force reset if stuck
-    await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
-      { userEmail: savedEmail, isProcessing: false },
-      { headers: { Authorization: `Bearer ${token}` } }
+
+
+
+
+
+try {
+    // First check processing status
+    const processingCheck = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}/api/check-file-processing`,
+      {
+        params: { userEmail: savedEmail },
+        headers: { Authorization: `Bearer ${token}` }
+      }
     );
-  } else {
-    toast.error("Please wait until your current file processing completes");
-    return;
+
+    if (processingCheck.data.isProcessing) {
+      toast.error("File processing! ");
+      return; // Exit the function if file is processing
+    }
+
+    
+
+    // Continue with your upload logic if not processing
+    // ... rest of your upload code
+  } catch (error) {
+    if (error.response && error.response.status === 404) {
+      toast.error("File processing! Please wait until the current process completes.");
+      return;
+    } else {
+      toast.error("Error checking file status");
+      console.error('Upload error:', error);
+    }
   }
-}
+
+
+
+
+
+
+
 
  // 1. First API call - Set processing status to true
    
@@ -359,14 +443,7 @@ if (processingCheck.data.isProcessing) {
       }
 
       toast.success("File uploaded successfully!");
-       await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
-      {
-        userEmail: savedEmail,
-        isProcessing: true
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+      
       setShouldRefresh(true);
     } catch (err) {
       console.error(err);
@@ -375,75 +452,187 @@ if (processingCheck.data.isProcessing) {
       setLoading(false);
     }
 };
-const confirmUpload = async () => {
-  if (isConfirming || isProcessingReload) return;
+// const confirmUpload = async () => {
+//   if (isConfirming || isProcessingReload) return;
 
-  setIsConfirming(true);
-  sessionStorage.setItem("isProcessing", "true");
-  setLoading(true);
+//   setIsConfirming(true);
+//   sessionStorage.setItem("isProcessing", "true");
+//   setLoading(true);
 
-  try {
+//   try {
    
 
-    // 2. Upload file
+//     // 2. Upload file
+//     const formData = new FormData();
+//     formData.append("file", pendingUpload.originalFile);
+
+//     const uploadRes = await axios.post(
+//       `${import.meta.env.VITE_API_BASE_URL}/confirm-upload-excel`,
+//       formData,
+//       {
+//         headers: {
+//           "user-email": savedEmail,
+//           Authorization: `Bearer ${token}`,
+//         },
+//       }
+//     );
+
+//     const totalLinks = uploadRes.data.totallink || 0;
+//     const matchCount = uploadRes.data.matchCount || 0;
+//     const creditToDeduct = matchCount * creditCost;
+
+//     const uploadData = {
+//       file: uploadRes.data.fileName,
+//       matchCount,
+//       totallink: totalLinks,
+//       uniqueId: uploadRes.data.uniqueId,
+//       creditToDeduct,
+//       timestamp: new Date().toISOString(),
+//     };
+
+
+//      await axios.post(
+//       `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
+//       {
+//         userEmail: savedEmail,
+//         isProcessing: false
+//       },
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
+    
+//     // 3. Consolidated API call for all processing
+//     const processRes = await axios.post(
+//       `${import.meta.env.VITE_API_BASE_URL}/api/process-upload`,
+//       {
+//         userEmail: savedEmail,
+//         creditCost: creditToDeduct,
+//         uniqueId: uploadData.uniqueId,
+//         fileName: uploadData.file,
+//         totalLinks,
+//         matchCount
+//       },
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
+
+//     setCredits(processRes.data.updatedCredits);
+//     toast.success(`Processing complete! Deducted ${creditToDeduct} credits`);
+
+//     // 4. Reset processing status
+   
+
+//     // Update state
+//     sessionStorage.setItem("pendingUpload", JSON.stringify(uploadData));
+//     setPendingUpload(uploadData);
+//     setShowConfirmation(false);
+//     setIsConfirmationActive(false);
+//     setShouldRefresh(true);
+
+//   } catch (error) {
+//   // Automatic cleanup for specific error cases
+//   if (error.response && 
+//       (error.response.data.message === 'Insufficient credits' || 
+//        error.response.data.message === 'User not found')) {
+    
+//     try {
+//      cancelUpload();
+
+//       // 3. Show user feedback
+//       console.error('Validation failed - cleaned up:', error.response.data.message);
+//       toast.error(`Processing stopped: ${error.response.data.message}`);
+
+//     } catch (cleanupError) {
+//       console.error('Cleanup failed:', cleanupError);
+//       alert('Validation failed but cleanup encountered an error. Please contact support.');
+//     }
+    
+//   } else {
+//     // Handle other types of errors
+//     console.error('Processing error:', error);
+//     alert('An unexpected error occurred during processing');
+//   }
+
+
+//     // Ensure processing status is reset even on error
+//     try {
+//       await axios.post(
+//         `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
+//         {
+//           userEmail: savedEmail,
+//           isProcessing: false
+//         },
+//         { headers: { Authorization: `Bearer ${token}` } }
+//       );
+//     } catch (resetError) {
+//       console.error("Failed to reset processing status:", resetError);
+//     }
+//   } finally {
+//     sessionStorage.removeItem("isProcessing");
+//     setIsProcessingReload(false);
+//     setIsConfirming(false);
+//     setLoading(false);
+//   }
+// };
+
+
+const confirmUpload = async () => {
+  if (isConfirming ) return;
+
+  toast.success("File processed successfully. Ready for matching.");
+   // Clean up frontend state
+    sessionStorage.removeItem("isProcessing");
+    sessionStorage.removeItem("pendingUpload");
+    setPendingUpload(null);
+    setShowConfirmation(false);
+    setIsConfirmationActive(false);
+    
+  try {
+    // 1. Prepare form data with both file and processing parameters
     const formData = new FormData();
     formData.append("file", pendingUpload.originalFile);
+    formData.append("userEmail", savedEmail);
+    formData.append("processCredits", "true"); // Flag to process credits immediately
 
-    const uploadRes = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/confirm-upload-excel`,
+    // 2. Single API call that handles both upload and processing
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/process-linkedin-upload`,
       formData,
       {
         headers: {
-          "user-email": savedEmail,
           Authorization: `Bearer ${token}`,
+          "user-email": savedEmail,
         },
       }
     );
+    if (response.data.message === "Upload timed out") {
+        toast.error(res.data.message);
+        return;
+      }
 
-    const totalLinks = uploadRes.data.totallink || 0;
-    const matchCount = uploadRes.data.matchCount || 0;
+    // 3. Handle response
+    const totalLinks = response.data.totallink || 0;
+    const matchCount = response.data.matchCount || 0;
     const creditToDeduct = matchCount * creditCost;
 
     const uploadData = {
-      file: uploadRes.data.fileName,
+      file: response.data.fileName,
       matchCount,
       totallink: totalLinks,
-      uniqueId: uploadRes.data.uniqueId,
+      uniqueId: response.data.uniqueId,
       creditToDeduct,
       timestamp: new Date().toISOString(),
     };
 
+    // Update state and credits if processing was successful
+    if (response.data.updatedCredits !== undefined) {
+      setCredits(response.data.updatedCredits);
+      toast.success(`Processing complete! Deducted ${creditToDeduct} credits`);
+    } else {
+      // This handles the case where we might want to split the process
+      // (though our current implementation does it all in one call)
+      toast.success("File processed successfully. Ready for credit confirmation.");
+    }
 
-     await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
-      {
-        userEmail: savedEmail,
-        isProcessing: false
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    
-    // 3. Consolidated API call for all processing
-    const processRes = await axios.post(
-      `${import.meta.env.VITE_API_BASE_URL}/api/process-upload`,
-      {
-        userEmail: savedEmail,
-        creditCost: creditToDeduct,
-        uniqueId: uploadData.uniqueId,
-        fileName: uploadData.file,
-        totalLinks,
-        matchCount
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    setCredits(processRes.data.updatedCredits);
-    toast.success(`Processing complete! Deducted ${creditToDeduct} credits`);
-
-    // 4. Reset processing status
-   
-
-    // Update state
+    // Update application state
     sessionStorage.setItem("pendingUpload", JSON.stringify(uploadData));
     setPendingUpload(uploadData);
     setShowConfirmation(false);
@@ -451,59 +640,38 @@ const confirmUpload = async () => {
     setShouldRefresh(true);
 
   } catch (error) {
-  // Automatic cleanup for specific error cases
-  if (error.response && 
-      (error.response.data.message === 'Insufficient credits' || 
-       error.response.data.message === 'User not found')) {
-    
-    try {
-     cancelUpload();
-
-      // 3. Show user feedback
-      console.error('Validation failed - cleaned up:', error.response.data.message);
-      toast.error(`Processing stopped: ${error.response.data.message}`);
-
-    } catch (cleanupError) {
-      console.error('Cleanup failed:', cleanupError);
-      alert('Validation failed but cleanup encountered an error. Please contact support.');
-    }
-    
-  } else {
-    // Handle other types of errors
-    console.error('Processing error:', error);
-    alert('An unexpected error occurred during processing');
-  }
-
-
-    // Ensure processing status is reset even on error
-    try {
-      await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
-        {
-          userEmail: savedEmail,
-          isProcessing: false
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-    } catch (resetError) {
-      console.error("Failed to reset processing status:", resetError);
+    // Enhanced error handling
+    if (error.response) {
+      const errorMessage = error.response.data.message || 
+                         error.response.data.error || 
+                         'Processing failed';
+      
+      // Specific handling for credit-related errors
+      if (error.response.data.message === 'Insufficient credits') {
+        cancelUpload();
+      }
+      
+      toast.error(errorMessage);
+    } else {
+      console.error('Processing error:', error);
+      toast.error('An unexpected error occurred during processing');
     }
   } finally {
     sessionStorage.removeItem("isProcessing");
-    setIsProcessingReload(false);
+    
     setIsConfirming(false);
     setLoading(false);
   }
 };
 
-
  const cancelUpload = async () => {
-  if (isConfirming || isProcessingReload) {
+  if (isConfirming) {
     toast.info("Cannot cancel during processing");
     return;
   }
 
   try {
+
     // Notify backend to cancel processing
    await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
@@ -520,7 +688,7 @@ const confirmUpload = async () => {
     setPendingUpload(null);
     setShowConfirmation(false);
     setIsConfirmationActive(false);
-    setIsProcessingReload(false);
+   
     
     toast.success("Upload cancelled successfully");
   } catch (error) {
@@ -674,9 +842,9 @@ const confirmUpload = async () => {
   onConfirm,
   onCancel,
   isConfirming,
-  isProcessingReload,
+ 
 }) {
-  const blocked = isProcessingReload || isConfirming;
+  const blocked = isConfirming;
 
   return (
     <div className={`modal-container ${blocked ? "modal-blocked" : ""}`}>
@@ -704,14 +872,14 @@ const confirmUpload = async () => {
         </div>
 
         {/* Warning message when processing was interrupted */}
-        {blocked && (
+        {/* {blocked && (
           <div className="warning-message">
             <div className="warning-icon">⚠️</div>
             <div className="warning-text">
               You have a file processing. If you refresh, you may lose data and need to wait 5 minutes to upload again.
             </div>
           </div>
-        )}
+        )} */}
       </div>
 
       <div className="buttons-container">
@@ -727,6 +895,7 @@ const confirmUpload = async () => {
           onClick={!blocked ? onConfirm : undefined}
           className={`confirm-button ${blocked ? "button-disabled" : ""}`}
           disabled={blocked}
+          
         >
           <span>✅</span>
           <span>{blocked ? "Processing..." : "Confirm"}</span>
@@ -825,7 +994,7 @@ const confirmUpload = async () => {
                         )}
                       </div>
 
-                      {isConfirming && (
+                      {/* {isConfirming && (
                         <div className="processing-overlay">
                           <div className="processing-spinner">
                             <Loader2 className="spinner-icon" />
@@ -838,15 +1007,15 @@ const confirmUpload = async () => {
           </div>
                           </div>
                         </div>
-                      )}
+                      )} */}
 
-                      {showConfirmation && pendingUpload && (
+                      {showConfirmation && pendingUpload &&  (
                         <UploadConfirmationDialog
                           pendingUpload={pendingUpload}
                           onConfirm={confirmUpload}
                           onCancel={cancelUpload}
                           isConfirming={isConfirming}
-                          isProcessingReload={isProcessingReload}
+                          
                         />
                       )}
 
@@ -909,6 +1078,12 @@ const confirmUpload = async () => {
                                             Status
                                           </span>
                                         </SortableHeader>
+                                        <SortableHeader sortKey="status">
+                                          <Star className="table-icon" />
+                                          <span className="table-header-text">
+                                             Check status
+                                          </span>
+                                        </SortableHeader>
                                         <SortableHeader sortKey="date">
                                           <Calendar className="table-icon" />
                                           <span className="table-header-text">
@@ -966,22 +1141,56 @@ const confirmUpload = async () => {
                                                 {first.matchCount || 0}
                                               </td>
                                               <td className="data-table-cell">
-                                                <div
-                                                  className={`status-badge ${
-                                                    status === "pending"
-                                                      ? "status-badge-pending"
-                                                      : status === "completed"
-                                                      ? "status-badge-completed"
-                                                      : "status-badge-incomplete"
-                                                  }`}
-                                                >
-                                                  {status === "pending"
-                                                    ? "Pending"
-                                                    : status === "completed"
-                                                    ? "Completed"
-                                                    : "Incomplete"}
-                                                </div>
+                                              <div
+  className={`status-badge ${
+    status === "pending"
+      ? "status-badge-pending"
+      : status === "completed"
+      ? "status-badge-completed"
+      : status === "not available"
+      ? "status-badge-not-available"
+      : "status-badge-processing" // Default to processing style
+  }`}
+>
+  {status === "pending"
+    ? "Pending"
+    : status === "completed"
+    ?  
+    (() => {
+        // When status is completed, update emailSent in database
+        updateEmailSentStatus(uniqueId,savedEmail );
+        return "Completed";
+      })()
+    : status === "not available"
+    ? "Not Available"
+    : "Processing"} {/* Default to Processing text */}
+</div>
+                                                 {/* <button
+              onClick={() => checkStatus(uniqueId)}
+              className="status-check-button"
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="status-check-loader" />
+              ) : (
+                "Check Status"
+              )}
+            </button> */}
                                               </td>
+                                               <td className="data-table-cell">
+                                                <button
+              onClick={() => checkStatus(uniqueId)}
+              className="status-check-button"
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="status-check-loader" />
+              ) : (
+                "Check Status"
+              )}
+            </button>
+                                               </td>
+                                              
                                               <td className="data-table-cell">
                                                 {formatDate(first.date)}
                                               </td>
