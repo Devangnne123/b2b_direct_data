@@ -628,7 +628,7 @@ app.post('/process-linkedin-upload', auth, upload.single('file'), async (req, re
     // Initialize variables
     let uniqueId, links = [];
     const processCredits = req.body.processCredits === 'true';
-    const BATCH_SIZE = 20; // Process 20 links at a time when checking database
+    const BATCH_SIZE = 300; // Process 20 links at a time when checking database
 
     // Process file if present
     if (req.file) {
@@ -1371,86 +1371,212 @@ app.post('/api/set-file-processing', async (req, res) => {
 
 const cron = require('node-cron');
   
-cron.schedule('*/2 * * * * ', async () => {
+// cron.schedule('*/2 * * * * ', async () => {
+//   try {
+//     console.log('🔄 Cron Job: Syncing TempLinkMobile ➝ Link...');
+
+//     // Fetch all records from TempLinkMobile table
+//     const tempRecords = await TempLinkMobile.findAll();
+
+//     for (const temp of tempRecords) {
+//       const {
+//         id, // required to delete
+//         uniqueId,
+//         linkedin_link_id,
+//         mobile_number,
+//         mobile_number_2,
+//         person_name,
+//         person_location
+//       } = temp;
+
+//       // Skip if linkedin_link_id or uniqueId is missing
+//       if (!linkedin_link_id || !uniqueId) {
+//         console.log(`⚠️ Skipping record: Missing linkedin_link_id or uniqueId`);
+//         continue;
+//       }
+
+//       // Find matching Link record
+//       const linkRecord = await Link.findOne({
+//         where: {
+//           linkedin_link_id,
+//           uniqueId,
+//         }
+//       });
+
+//       if (!linkRecord) {
+//         console.log(`⚠️ No Link found for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId}`);
+//         continue;
+//       }
+// let status;
+
+// if (
+//   (mobile_number === null || mobile_number === "N/A") &&
+//   (mobile_number_2 === null || mobile_number_2 === "N/A")
+// ) {
+//   status = "pending";
+// } else {
+//   status = "completed";
+// }
+
+//       // Prepare data for update
+//       const updateData = {
+//         mobile_number,
+//         mobile_number_2,
+//         person_name,
+//         person_location,
+//         status,
+//       };
+
+//       const [updated] = await Link.update(updateData, {
+//         where: {
+//           linkedin_link_id,
+//           uniqueId,
+//         },
+//       });
+
+//       if (updated > 0) {
+//         console.log(`✅ Link updated for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId} | Status: ${status}`);
+
+//         // ✅ If status is completed, delete from TempLinkMobile
+//         if (status === 'completed') {
+//           await TempLinkMobile.destroy({ where: { id } });
+//           console.log(`🗑️ Deleted TempLinkMobile record with id: ${id}`);
+//         }
+//       }
+//     }
+
+//     console.log('✅ Sync complete.\n');
+//   } catch (err) {
+//     console.error('❌ Error during sync:', err);
+//   }
+// });
+cron.schedule('*/3 * * * *', async () => {
+  console.log('\n🔄 Starting TempLinkMobile to Link sync job...');
+
   try {
-    console.log('🔄 Cron Job: Syncing TempLinkMobile ➝ Link...');
+    // Verify database connection first
+    await sequelize.authenticate();
+    
+    // Process records in batches to prevent memory issues
+    let offset = 0;
+    const batchSize = 300;
+    let hasMoreRecords = true;
+    let processedCount = 0;
+    let skippedCount = 0;
+    let deletedCount = 0;
 
-    // Fetch all records from TempLinkMobile table
-    const tempRecords = await TempLinkMobile.findAll();
+    while (hasMoreRecords) {
+      const tempRecords = await TempLinkMobile.findAll({
+        limit: batchSize,
+        offset: offset,
+       
+      });
 
-    for (const temp of tempRecords) {
-      const {
-        id, // required to delete
-        uniqueId,
-        linkedin_link_id,
-        mobile_number,
-        mobile_number_2,
-        person_name,
-        person_location
-      } = temp;
-
-      // Skip if linkedin_link_id or uniqueId is missing
-      if (!linkedin_link_id || !uniqueId) {
-        console.log(`⚠️ Skipping record: Missing linkedin_link_id or uniqueId`);
+      if (tempRecords.length === 0) {
+        hasMoreRecords = false;
         continue;
       }
 
-      // Find matching Link record
-      const linkRecord = await Link.findOne({
-        where: {
-          linkedin_link_id,
-          uniqueId,
+      for (const temp of tempRecords) {
+        let transaction;
+        try {
+          transaction = await sequelize.transaction();
+
+          const {
+            id,
+            uniqueId,
+            linkedin_link_id,
+            mobile_number,
+            mobile_number_2,
+            person_name,
+            person_location
+          } = temp;
+
+          // Skip if required fields are missing
+          if (!linkedin_link_id || !uniqueId) {
+            console.log(`⚠️ Skipping record ${id}: Missing linkedin_link_id or uniqueId`);
+            skippedCount++;
+            await transaction.commit();
+            continue;
+          }
+
+          // Find matching Link record
+          const linkRecord = await Link.findOne({
+            where: { linkedin_link_id, uniqueId },
+            transaction
+          });
+
+          if (!linkRecord) {
+            console.log(`⚠️ No Link found for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId}`);
+            skippedCount++;
+            await transaction.commit();
+            continue;
+          }
+
+          // Determine status
+          let status = "pending";
+          if (!(
+            (mobile_number === null || mobile_number === "N/A") &&
+            (mobile_number_2 === null || mobile_number_2 === "N/A")
+          )) {
+            status = "completed";
+          }
+
+          // Update Link record
+          const [updated] = await Link.update({
+            mobile_number,
+            mobile_number_2,
+            person_name,
+            person_location,
+            status,
+            
+          }, {
+            where: { linkedin_link_id, uniqueId },
+            transaction
+          });
+
+          if (updated > 0) {
+            processedCount++;
+            console.log(`✓ Updated Link for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId} | Status: ${status}`);
+
+            // Delete from TempLinkMobile if completed
+            if (status === 'completed') {
+              await TempLinkMobile.destroy({ 
+                where: { id },
+                transaction
+              });
+              deletedCount++;
+              console.log(`🗑️ Deleted TempLinkMobile record ${id}`);
+            }
+          }
+
+          await transaction.commit();
+          
+          // Small delay between operations
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+        } catch (recordError) {
+          if (transaction) await transaction.rollback();
+          console.error(`⚠️ Error processing record ${temp.id}:`, recordError.message);
+          continue;
         }
-      });
-
-      if (!linkRecord) {
-        console.log(`⚠️ No Link found for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId}`);
-        continue;
       }
-let status;
 
-if (
-  (mobile_number === null || mobile_number === "N/A") &&
-  (mobile_number_2 === null || mobile_number_2 === "N/A")
-) {
-  status = "pending";
-} else {
-  status = "completed";
-}
-
-      // Prepare data for update
-      const updateData = {
-        mobile_number,
-        mobile_number_2,
-        person_name,
-        person_location,
-        status,
-      };
-
-      const [updated] = await Link.update(updateData, {
-        where: {
-          linkedin_link_id,
-          uniqueId,
-        },
-      });
-
-      if (updated > 0) {
-        console.log(`✅ Link updated for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId} | Status: ${status}`);
-
-        // ✅ If status is completed, delete from TempLinkMobile
-        if (status === 'completed') {
-          await TempLinkMobile.destroy({ where: { id } });
-          console.log(`🗑️ Deleted TempLinkMobile record with id: ${id}`);
-        }
-      }
+      offset += batchSize;
     }
 
-    console.log('✅ Sync complete.\n');
-  } catch (err) {
-    console.error('❌ Error during sync:', err);
+    console.log(`✅ Sync completed successfully. Stats:
+      - Processed: ${processedCount}
+      - Skipped: ${skippedCount}
+      - Deleted: ${deletedCount}
+    `);
+
+  } catch (jobError) {
+    console.error('❌ Error in sync job:', jobError);
   }
 });
 
+console.log('⏰ TempLinkMobile sync job scheduled to run every 2 minutes');
 
 // const cron = require('node-cron');
 
