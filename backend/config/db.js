@@ -13,7 +13,26 @@ const sequelize = new Sequelize('postgres', 'postgres', 'admin==88', {
       rejectUnauthorized: false, // Use true in production with a valid cert
     },
   },
+  //   pool: {
+  //   max: 20,            // Increased from default 5
+  //   min: 0,
+  //   acquire: 30000,     // 30 seconds acquire timeout
+  //   idle: 10000,        // 10 seconds idle timeout
+  //   evict: 10000        // How often to check for idle connections
+  // },
+  // retry: {
+  //   max: 3,             // Retry up to 3 times
+  //   match: [
+  //     /ConnectionError/,
+  //     /ConnectionTimedOutError/,
+  //     /TimeoutError/,
+  //     /SequelizeConnectionError/,
+  //     /SequelizeConnectionRefusedError/,
+  //     /SequelizeConnectionAcquireTimeoutError/
+  //   ]
+  // }
 });
+
 
 
 const connectDB = async () => {
