@@ -357,7 +357,7 @@ const updateEmailSentStatus = async (uniqueId) => {
       toast.error("Please choose a file to upload first");
       return;
     }
-
+  
     if (creditCost === null) {
       toast.error("Please refresh your browser");
       return;
@@ -421,9 +421,16 @@ try {
           headers: {
             "user-email": savedEmail,
             Authorization: `Bearer ${token}`,
+              "credit-cost": creditCost,  // Add credit cost to headers
+             "user-credits": credits      // Add user's credits to headers
           },
         }
       );
+
+      if (creditCost * res.data.linkCount === credits){
+      toast.error("Insufficient credits");
+      return;
+    }
 
       if (res.data.requiresConfirmation) {
         setPendingUpload({
@@ -441,6 +448,8 @@ try {
         toast.error(res.data.message);
         return;
       }
+        
+
 
       toast.success("File uploaded successfully!");
       

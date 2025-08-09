@@ -62,6 +62,10 @@ app.post('/upload-excel', auth, upload.single('file'), async (req, res) => {
     const email = req.headers['user-email'];
     if (!email) return res.status(400).json({ error: "Email required" });
 
+    // Get credit information from headers
+    const creditCost = parseFloat(req.headers['credit-cost']);
+    const userCredits = parseFloat(req.headers['user-credits']);
+
     const filePath = req.file.path;
     const workbook = xlsx.readFile(filePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -78,6 +82,15 @@ app.post('/upload-excel', auth, upload.single('file'), async (req, res) => {
       return res.status(400).json({ message: 'No LinkedIn links found.' });
     }
 
+     // Check if user has enough credits
+    const requiredCredits = creditCost * links.length;
+    if (userCredits < requiredCredits) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ 
+        message: `Insufficient credits. You need ${requiredCredits} but only have ${userCredits}` 
+      });
+    }
+
     // For any number of links (less than or equal to 1000), require confirmation
     if (links.length <= 5000) {
       return res.status(200).json({ 
@@ -88,11 +101,14 @@ app.post('/upload-excel', auth, upload.single('file'), async (req, res) => {
       });
     }
 
+  
+
     // If more than 1000 links, reject immediately
     if (links.length > 5000) {
       fs.unlinkSync(filePath);
       return res.status(400).json({ message: "Max 5000 links allowed" });
     }
+      
 
   } catch (err) {
     console.error('Upload error:', err);
@@ -1872,6 +1888,31 @@ app.put('/api/update-email-status/:uniqueId', async (req, res) => {
   }
 });
 
+
+
+
+
+
+cron.schedule('*/5 * * * *', async () => {
+  try {
+    const staleUsers = await User.findAll({
+      where: {
+        isProcessingFile: true,
+        processingStartTime: {
+          [Op.lt]: new Date(new Date() - 10 * 60 * 1000) // older than 5 mins
+        }
+      }
+    });
+    
+    for (const user of staleUsers) {
+      await user.update({ isProcessingFile: false, processingStartTime: null });
+      
+      
+    }
+  } catch (error) {
+    console.error('Error in processing cleanup job:', error);
+  }
+});
 
 
 
