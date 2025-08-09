@@ -85,6 +85,7 @@ function BulkLookup() {
   const [creditCost, setCreditCost] = useState(null);
   const [isConfirmationActive, setIsConfirmationActive] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const fileInputRef = useRef(null); // Ref for the file input
 
 
   const dataRef = useRef({ uploadedData: [], credits: null });
@@ -353,6 +354,7 @@ const updateEmailSentStatus = async (uniqueId) => {
   
   
  const handleUpload = async () => {
+  
     if (!file) {
       toast.error("Please choose a file to upload first");
       return;
@@ -410,6 +412,7 @@ try {
    
 
     setLoading(true);
+    setFile(null); 
     const formData = new FormData();
     formData.append("file", file);
 
@@ -620,7 +623,7 @@ const confirmUpload = async () => {
     // 3. Handle response
     const totalLinks = response.data.totallink || 0;
     const matchCount = response.data.matchCount || 0;
-    const creditToDeduct = matchCount * creditCost;
+   const creditToDeduct = response.data.tempRecordsCreated * creditCost;
 
     const uploadData = {
       file: response.data.fileName,
@@ -978,6 +981,7 @@ const confirmUpload = async () => {
                                 ? "upload-button-disabled"
                                 : ""
                             }`}
+                            
                             disabled={
                               !file ||
                               !savedEmail ||
