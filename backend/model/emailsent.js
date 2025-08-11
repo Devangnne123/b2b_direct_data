@@ -8,13 +8,18 @@ const emailsent = sequelize.define('emailsent', {
   },
    email: {
     type: DataTypes.TEXT,
-    allowNull: false
+    allowNull: true
   },
   emailSent: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
     allowNull: true,
+  },status: {
+    type: DataTypes.STRING,
+    allowNull: true,        // or true if you want to allow null values
+    defaultValue: 'pending', // ✅ sets default value to 'pending'
   }
+  
 
 
   }, {

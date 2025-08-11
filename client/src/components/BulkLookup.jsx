@@ -337,19 +337,7 @@ const getGroupStatus = (group) => {
   };
 
 
-const updateEmailSentStatus = async (uniqueId) => {
-  try {
-    const response = await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/update-email-status/${uniqueId}`,
-   { savedEmail  } );// Send email in the request body
-    if (response.data.success) {
-      console.log('Email status updated successfully');
-    } else {
-      console.warn(response.data.message);
-    }
-  } catch (error) {
-    console.error('Failed to update email status:', error);
-  }
-};
+
 
   
   
@@ -1091,12 +1079,7 @@ const confirmUpload = async () => {
                                             Status
                                           </span>
                                         </SortableHeader>
-                                        <SortableHeader sortKey="status">
-                                          <Star className="table-icon" />
-                                          <span className="table-header-text">
-                                             Check status
-                                          </span>
-                                        </SortableHeader>
+                                       
                                         <SortableHeader sortKey="date">
                                           <Calendar className="table-icon" />
                                           <span className="table-header-text">
@@ -1151,33 +1134,29 @@ const confirmUpload = async () => {
                                                 {first.totallink || 0}
                                               </td>
                                               <td className="data-table-cell">
-                                                {first.matchCount || 0}
+                                                {first.matchedCount || 0}
                                               </td>
                                               <td className="data-table-cell">
                                               <div
   className={`status-badge ${
-    status === "pending"
+    first.final_status === "pending"
       ? "status-badge-pending"
-      : status === "completed"
+      : first.final_status === "completed"
       ? "status-badge-completed"
-      : status === "not available"
+      : first.final_status === "not available"
       ? "status-badge-not-available"
-      : "status-badge-processing" // Default to processing style
+      : "status-badge-processing" // Default
   }`}
 >
-  {status === "pending"
+  {first.final_status === "pending"
     ? "Pending"
-    : status === "completed"
-    ?  
-    (() => {
-        // When status is completed, update emailSent in database
-        updateEmailSentStatus(uniqueId,savedEmail );
-        return "Completed";
-      })()
-    : status === "not available"
+    : first.final_status === "completed"
+    ? "Completed"
+    : first.final_status === "not available"
     ? "Not Available"
-    : "Processing"} {/* Default to Processing text */}
+    : "Processing"}
 </div>
+
                                                  {/* <button
               onClick={() => checkStatus(uniqueId)}
               className="status-check-button"
@@ -1190,19 +1169,7 @@ const confirmUpload = async () => {
               )}
             </button> */}
                                               </td>
-                                               <td className="data-table-cell">
-                                                <button
-              onClick={() => checkStatus(uniqueId)}
-              className="status-check-button"
-              disabled={loading}
-            >
-              {loading ? (
-                <Loader2 className="status-check-loader" />
-              ) : (
-                "Check Status"
-              )}
-            </button>
-                                               </td>
+                                               
                                               
                                               <td className="data-table-cell">
                                                 {formatDate(first.date)}

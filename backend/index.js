@@ -239,7 +239,7 @@ app.post('/upload-excel', auth, upload.single('file'), async (req, res) => {
 //     for (const link of matchedLinks) {
 //       await TempLinkMobile.create({
 //         uniqueId: link.uniqueId,
-//         matchLink: link.matchLink,
+//         matchLink: link.matchLink,a
 //         linkedin_link_id: link.linkedin_link_id
 //       });
 //     }
@@ -689,7 +689,7 @@ app.post('/process-linkedin-upload', auth, upload.single('file'), async (req, re
           remark = 'ok';
         }
 
-        let cleanedLink = link;
+        let cleanedLink
         if (remark === 'ok') {
           cleanedLink = link
             .replace(/^(https?:\/\/)?(www\.)?/i, '')
@@ -706,64 +706,73 @@ app.post('/process-linkedin-upload', auth, upload.single('file'), async (req, re
           totallink: links.length,
           clean_link: cleanedLink,
           remark,
+          
           fileName: req.file.originalname,
           
         });
+        
       }
+
+      await emailsent.create({
+          uniqueId,
+          email
+     });
 
       // Second pass: Process potential matches in batches of 20
-      let offset = 0;
-      while (true) {
-        // Get batch of 20 pending links
-        const batch = await Link.findAll({
-          where: { 
-            uniqueId,
-            email,
-           
-          },
-          limit: BATCH_SIZE,
-          offset: offset,
-          order: [['id', 'ASC']]
-        });
+let offset = 0;
+while (true) {
+  // Get batch of 20 pending links
+  const batch = await Link.findAll({
+    where: { 
+      uniqueId,
+      email,
+    },
+    limit: BATCH_SIZE,
+    offset: offset,
+    order: [['id', 'ASC']]
+  });
 
-        if (batch.length === 0) break;
+  if (batch.length === 0) break;
 
-        // Check matches for this batch
-        const cleanLinks = batch.map(item => item.clean_link);
-        const matchedRecords = await MasterUrl.findAll({
-          where: { 
-            clean_linkedin_link: { [Op.in]: cleanLinks }
-          },
-          attributes: ['linkedin_link_id', 'clean_linkedin_link'],
-        });
+  // Filter out null/undefined clean_link values
+  const cleanLinks = batch.map(item => item.clean_link).filter(link => link);
 
-        // Create a map for quick lookup
-        const matchMap = new Map();
-        matchedRecords.forEach(record => {
-          matchMap.set(record.clean_linkedin_link, record.linkedin_link_id);
-        });
+  // Only proceed with MasterUrl lookup if we have valid cleanLinks
+  if (cleanLinks.length > 0) {
+    const matchedRecords = await MasterUrl.findAll({
+      where: { 
+        clean_linkedin_link: { [Op.in]: cleanLinks }
+      },
+      attributes: ['linkedin_link_id', 'clean_linkedin_link'],
+    });
 
-        // Update matched links
-        for (const link of batch) {
-          const linkedinLinkId = matchMap.get(link.clean_link);
-          if (linkedinLinkId) {
-            await Link.update({
-              matchLink: link.clean_link,
-              linkedin_link_id: linkedinLinkId,
-              
-              matchCount: ++matchCount
-            }, { where: { id: link.id } });
-          } else {
-            await Link.update({
-              
-            }, { where: { id: link.id } });
-          }
-        }
+    // Create a map for quick lookup
+    const matchMap = new Map();
+    matchedRecords.forEach(record => {
+      matchMap.set(record.clean_linkedin_link, record.linkedin_link_id);
+    });
 
-        offset += BATCH_SIZE;
-      }
+    // Update only links with non-null clean_link values
+    for (const link of batch) {
+      if (link.clean_link) {  // Only process if clean_link exists
+        const linkedinLinkId = matchMap.get(link.clean_link);
+        if (linkedinLinkId) {
+          await Link.update({
+            matchLink: link.clean_link,
+            linkedin_link_id: linkedinLinkId,
+            matchCount: ++matchCount
+          }, { where: { id: link.id } });
+        } 
+    }
+  } 
+  }
+  offset += BATCH_SIZE;
+}
 
-      fs.unlinkSync(filePath);
+// File cleanup
+
+  fs.unlinkSync(filePath);
+
     }
 
     // Process credits if requested (only after all processing is complete)
@@ -775,16 +784,27 @@ app.post('/process-linkedin-upload', auth, upload.single('file'), async (req, re
         return res.status(404).json({ message: 'User not found' });
       }
 
-      // Get total matched count
-      const totalMatches = await Link.count({
-        where: { 
-          uniqueId,
-          email: email,
-          
-        }
-      });
 
-      const creditCost = totalMatches * user.creditCostPerLink;
+      // Get count of actually matched links (where linkedin_link_id exists)
+const matchedCount = await Link.count({
+  where: { 
+    uniqueId,
+    email: email,
+    linkedin_link_id: { [Op.ne]: null } // Only count successfully matched links
+  }
+});
+
+      await Link.update(
+        {
+          matchedCount: matchedCount,
+        
+        },
+        { where: { uniqueId } }
+      );
+
+     
+
+      const creditCost = matchedCount * user.creditCostPerLink;
       if (user.credits < creditCost) {
         await Link.destroy({ where: { uniqueId } });
         await setProcessingFalse(email);
@@ -808,6 +828,7 @@ app.post('/process-linkedin-upload', auth, upload.single('file'), async (req, re
         where: { 
           uniqueId,
           email: email,
+          linkedin_link_id: { [Op.ne]: null }
           
         }
       });
@@ -838,7 +859,7 @@ app.post('/process-linkedin-upload', auth, upload.single('file'), async (req, re
                 <h3 style="margin-top: 0; color: #1f2937;">Upload Details</h3>
                 <p><strong>File Name:</strong> ${req.file?.originalname || 'Unknown'}</p>
                 <p><strong>Total Links Processed:</strong> ${links.length}</p>
-                <p><strong>Total Matches Found:</strong> ${totalMatches}</p>
+                <p><strong>Total Matches Found:</strong> ${matchedCount}</p>
                 <p><strong>Credits Deducted:</strong> ${creditCost}</p>
               </div>
               
@@ -861,12 +882,12 @@ app.post('/process-linkedin-upload', auth, upload.single('file'), async (req, re
         uniqueId,
         fileName: req.file?.originalname,
         totallink: links.length,
-        totalMatches,
+        matchedCount:matchedCount,
         updatedCredits: user.credits,
         tempRecordsCreated: matchedLinks.length
       });
     }
-
+    
     // Return response for file processing without credit deduction
     await setProcessingFalse(email);
     return res.json({
@@ -1466,7 +1487,7 @@ const cron = require('node-cron');
 //     console.error('❌ Error during sync:', err);
 //   }
 // });
-cron.schedule('*/3 * * * *', async () => {
+cron.schedule('*/1 * * * *', async () => {
   console.log('\n🔄 Starting TempLinkMobile to Link sync job...');
 
   try {
@@ -1506,6 +1527,7 @@ cron.schedule('*/3 * * * *', async () => {
             mobile_number_2,
             person_name,
             person_location
+            
           } = temp;
 
           // Skip if required fields are missing
@@ -1544,7 +1566,8 @@ cron.schedule('*/3 * * * *', async () => {
             mobile_number_2,
             person_name,
             person_location,
-            status,
+            status
+            
             
           }, {
             where: { linkedin_link_id, uniqueId },
@@ -1580,6 +1603,8 @@ cron.schedule('*/3 * * * *', async () => {
 
       offset += batchSize;
     }
+
+    await checkAndUpdateEmailStatus()
 
     console.log(`✅ Sync completed successfully. Stats:
       - Processed: ${processedCount}
@@ -1751,142 +1776,142 @@ console.log('⏰ TempLinkMobile sync job scheduled to run every 2 minutes');
 
 
 
-app.get('/check-status-bulk/:uniqueId', async (req, res) => {
-  try {
-    const { uniqueId } = req.params;
+// app.get('/check-status-bulk/:uniqueId', async (req, res) => {
+//   try {
+//     const { uniqueId } = req.params;
 
-    // Find all records with the given uniqueId
-    const records = await Link.findAll({
-      where: { uniqueId },
-      attributes: ['status'] // Only fetch the final_status field
-    });
+//     // Find all records with the given uniqueId
+//     const records = await Link.findAll({
+//       where: { uniqueId },
+//       attributes: ['status'] // Only fetch the final_status field
+//     });
 
-    if (records.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'No records found with the provided uniqueId'
-      });
-    }
+//     if (records.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'No records found with the provided uniqueId'
+//       });
+//     }
 
-    // Count records by status
-    const statusCounts = {
-      pending: 0,
-      completed: 0,
-      notAvailable: 0
-    };
+//     // Count records by status
+//     const statusCounts = {
+//       pending: 0,
+//       completed: 0,
+//       notAvailable: 0
+//     };
 
-    records.forEach(record => {
-      const status = record.status.toLowerCase();
-      if (status === 'pending') {
-        statusCounts.pending++;
-      } else if (status === 'completed') {
-        statusCounts.completed++;
-      } else if (status === 'not available') {
-        statusCounts.notAvailable++;
-      }
-    });
+//     records.forEach(record => {
+//       const status = record.status.toLowerCase();
+//       if (status === 'pending') {
+//         statusCounts.pending++;
+//       } else if (status === 'completed') {
+//         statusCounts.completed++;
+//       } else if (status === 'not available') {
+//         statusCounts.notAvailable++;
+//       }
+//     });
 
-    // Determine overall status
-    let overallStatus;
-    if (statusCounts.pending > 0) {
-      overallStatus = 'pending';
-    } else if (statusCounts.completed > 0 || statusCounts.notAvailable > 0) {
-      overallStatus = 'completed';
-    } else {
-      overallStatus = 'unknown'; // fallback for other cases
-    }
+//     // Determine overall status
+//     let overallStatus;
+//     if (statusCounts.pending > 0) {
+//       overallStatus = 'pending';
+//     } else if (statusCounts.completed > 0 || statusCounts.notAvailable > 0) {
+//       overallStatus = 'completed';
+//     } else {
+//       overallStatus = 'unknown'; // fallback for other cases
+//     }
 
-    res.json({
-      success: true,
-      uniqueId,
-      totalRecords: records.length,
-      statusCounts,
-      overallStatus
-    });
+//     res.json({
+//       success: true,
+//       uniqueId,
+//       totalRecords: records.length,
+//       statusCounts,
+//       overallStatus
+//     });
 
-  } catch (error) {
-    console.error('Error checking status:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error.message
-    });
-  }
-});
+//   } catch (error) {
+//     console.error('Error checking status:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Internal server error',
+//       error: error.message
+//     });
+//   }
+// });
 
 
 
-app.put('/api/update-email-status/:uniqueId', async (req, res) => {
-  try {
-    const { uniqueId } = req.params;
-    const { savedEmail } = req.body;
+// app.put('/api/update-email-status/:uniqueId', async (req, res) => {
+//   try {
+//     const { uniqueId } = req.params;
+//     const { savedEmail } = req.body;
 
-    // First check if an email has already been sent for this uniqueId
-    const existingRecord = await emailsent.findOne({
-      where: { uniqueId }
-    });
+//     // First check if an email has already been sent for this uniqueId
+//     const existingRecord = await emailsent.findOne({
+//       where: { uniqueId }
+//     });
 
-    if (existingRecord) {
-      // If record exists and email was already sent, return without sending again
-      if (existingRecord.emailSent === true) {
-        console.log(`Email already sent for ${uniqueId} to ${savedEmail}`);
-        return res.status(200).json({ message: 'Email already sent' });
-      }
+//     if (existingRecord) {
+//       // If record exists and email was already sent, return without sending again
+//       if (existingRecord.emailSent === true) {
+//         console.log(`Email already sent for ${uniqueId} to ${savedEmail}`);
+//         return res.status(200).json({ message: 'Email already sent' });
+//       }
       
-      // If record exists but email wasn't sent, update it
-      await emailsent.update(
-        { emailSent: true, email: savedEmail },
-        { where: { uniqueId } }
-      );
-    } else {
-      // If no record exists, create a new one
-      await emailsent.create({
-        uniqueId,
-        email: savedEmail,
-        emailSent: true
-      });
-    }
+//       // If record exists but email wasn't sent, update it
+//       await emailsent.update(
+//         { emailSent: true, email: savedEmail },
+//         { where: { uniqueId } }
+//       );
+//     } else {
+//       // If no record exists, create a new one
+//       await emailsent.create({
+//         uniqueId,
+//         email: savedEmail,
+//         emailSent: true
+//       });
+//     }
 
-    // Now send the email
-    try {
-      const mailOptions = {
-        from: '"B2B Direct Number Enrichment System" <b2bdirectdata@gmail.com>',
-        to: savedEmail,
-        subject: `B2B Direct Number Enrichment System Completed - ${uniqueId}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #2563eb;"> B2B Direct Number Enrichment System Completed </h2>
-            <p>All enrichment processes for ${uniqueId} have been completed.</p>
+//     // Now send the email
+//     try {
+//       const mailOptions = {
+//         from: '"B2B Direct Number Enrichment System" <b2bdirectdata@gmail.com>',
+//         to: savedEmail,
+//         subject: `B2B Direct Number Enrichment System Completed - ${uniqueId}`,
+//         html: `
+//           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//             <h2 style="color: #2563eb;"> B2B Direct Number Enrichment System Completed </h2>
+//             <p>All enrichment processes for ${uniqueId} have been completed.</p>
             
-            <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-              <h3 style="margin-top: 0; color: #1f2937;">Direct Number Enrichment</h3>
+//             <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+//               <h3 style="margin-top: 0; color: #1f2937;">Direct Number Enrichment</h3>
              
-              <p><strong>file UniqueId</strong> ${uniqueId}</p>
-            </div>
+//               <p><strong>file UniqueId</strong> ${uniqueId}</p>
+//             </div>
             
-            <p>All results are now available for download.</p>
-            <p>Team,<br/>B2B Direct Data</p>
-          </div>
-        `
-      };
+//             <p>All results are now available for download.</p>
+//             <p>Team,<br/>B2B Direct Data</p>
+//           </div>
+//         `
+//       };
 
-      await transporter.sendMail(mailOptions);
-      console.log(`Completion email sent for ${uniqueId} to ${savedEmail}`);
-      return res.status(200).json({ message: 'Email sent successfully' });
-    } catch (emailError) {
-      console.error('Failed to send completion email:', emailError);
-      // If email fails, update the record to mark as not sent
-      await emailsent.update(
-        { emailSent: false },
-        { where: { uniqueId } }
-      );
-      return res.status(500).json({ error: 'Failed to send email' });
-    }
-  } catch (error) {
-    console.error('Error in update-email-status:', error);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
+//       await transporter.sendMail(mailOptions);
+//       console.log(`Completion email sent for ${uniqueId} to ${savedEmail}`);
+//       return res.status(200).json({ message: 'Email sent successfully' });
+//     } catch (emailError) {
+//       console.error('Failed to send completion email:', emailError);
+//       // If email fails, update the record to mark as not sent
+//       await emailsent.update(
+//         { emailSent: false },
+//         { where: { uniqueId } }
+//       );
+//       return res.status(500).json({ error: 'Failed to send email' });
+//     }
+//   } catch (error) {
+//     console.error('Error in update-email-status:', error);
+//     return res.status(500).json({ error: 'Internal server error' });
+//   }
+// });
 
 
 
@@ -1913,6 +1938,104 @@ cron.schedule('*/5 * * * *', async () => {
     console.error('Error in processing cleanup job:', error);
   }
 });
+
+
+
+
+
+async function checkAndUpdateEmailStatus() {
+  console.log('⏳ Cron Job: Checking matchLink status...');
+
+  try {
+    // Step 1: Get all uniqueIds in emailsent with pending status
+    const pendingUniqueIds = await emailsent.findAll({
+      where: { status: 'pending' },
+      attributes: ['uniqueId'],
+      group: ['uniqueId']
+    });
+
+    for (const record of pendingUniqueIds) {
+      const uniqueId = record.uniqueId;
+
+      // Step 2: Get all Link rows for this uniqueId where matchLink is not null
+      const matchedLinks = await Link.findAll({
+        where: {
+          uniqueId,
+          matchLink: { [Op.ne]: null }
+        },
+        attributes: ['status']
+      });
+
+      if (matchedLinks.length === 0) {
+        console.log(`⚠️ No matchLink found for ${uniqueId}, skipping...`);
+        continue;
+      }
+
+      // Step 3: Check if any of the matched links are still pending
+      const hasPending = matchedLinks.some(link => link.status === 'pending');
+
+      if (hasPending) {
+        console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
+        continue;
+      }
+
+      // Step 4: If none are pending, update emailsent status to completed
+      await emailsent.update(
+        { status: 'completed' },
+        { where: { uniqueId } }
+      );
+      await Link.update(
+        { final_status: 'completed' },
+        { where: { uniqueId } }
+      );
+
+      console.log(`✅ ${uniqueId} marked as completed in emailsent`);
+
+      // Step 5: Get email address for this uniqueId
+      const emailRecord = await emailsent.findOne({
+        where: { uniqueId },
+        attributes: ['email']
+      });
+
+      if (!emailRecord || !emailRecord.email) {
+        console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
+        continue;
+      }
+
+      const email = emailRecord.email;
+
+      // Step 6: Send the email
+      try {
+        const mailOptions = {
+          from: '"B2B Direct Number Enrichment System" <b2bdirectdata@gmail.com>',
+          to: email,
+          subject: `B2B Direct Number Enrichment System Completed - ${uniqueId}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #2563eb;">B2B Direct Number Enrichment System Completed</h2>
+              <p>All enrichment processes for ${uniqueId} have been completed.</p>
+              
+              <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <h3 style="margin-top: 0; color: #1f2937;">Direct Number Enrichment</h3>
+                <p><strong>File UniqueId:</strong> ${uniqueId}</p>
+              </div>
+              
+              <p>All results are now available for download.</p>
+              <p>Team,<br/>B2B Direct Data</p>
+            </div>
+          `
+        };
+
+        await transporter.sendMail(mailOptions);
+        console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
+      } catch (err) {
+        console.error(`❌ Failed to send email for ${uniqueId}:`, err);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error in cron job:', error);
+  }
+}
 
 
 

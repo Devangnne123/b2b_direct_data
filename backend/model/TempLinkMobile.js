@@ -33,6 +33,11 @@ const TempLinkMobile = sequelize.define('TempLinkMobile', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+    status: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'Pending',
+  },
 }, {
   tableName: 'web_direct_number_temp',
   timestamps: false,

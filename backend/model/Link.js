@@ -35,6 +35,10 @@ const Link = sequelize.define('Link', {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
+  matchedCount: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
   remark: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -79,6 +83,10 @@ status: {
   type: DataTypes.STRING,
   allowNull: true,        // or true if you want to allow null values
   defaultValue: 'not available', // ✅ sets default value to 'pending'
+},final_status: {
+  type: DataTypes.STRING,
+  allowNull: true,        // or true if you want to allow null values
+  defaultValue: 'pending', // ✅ sets default value to 'pending'
 }
 
 
