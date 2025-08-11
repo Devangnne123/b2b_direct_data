@@ -1487,7 +1487,7 @@ const cron = require('node-cron');
 //     console.error('❌ Error during sync:', err);
 //   }
 // });
-cron.schedule('*/1 * * * *', async () => {
+cron.schedule('*/3 * * * *', async () => {
   console.log('\n🔄 Starting TempLinkMobile to Link sync job...');
 
   try {
@@ -1971,71 +1971,75 @@ async function checkAndUpdateEmailStatus() {
         continue;
       }
 
-      // Step 3: Check if any of the matched links are still pending
-      const hasPending = matchedLinks.some(link => link.status === 'pending');
+      // Step 3: Check if all matched links are pending or completed
+      const hasPending = matchedLinks.every(link => link.status === 'pending');
+      const hasCompleted = matchedLinks.every(link => link.status === 'completed');
 
       if (hasPending) {
         console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
         continue;
       }
 
-      // Step 4: If none are pending, update emailsent status to completed
-      await emailsent.update(
-        { status: 'completed' },
-        { where: { uniqueId } }
-      );
-      await Link.update(
-        { final_status: 'completed' },
-        { where: { uniqueId } }
-      );
+      if (hasCompleted) {
+        // Step 4: If none are pending, update emailsent status to completed
+        await emailsent.update(
+          { status: 'completed' },
+          { where: { uniqueId } }
+        );
+        await Link.update(
+          { final_status: 'completed' },
+          { where: { uniqueId } }
+        );
 
-      console.log(`✅ ${uniqueId} marked as completed in emailsent`);
+        console.log(`✅ ${uniqueId} marked as completed in emailsent`);
 
-      // Step 5: Get email address for this uniqueId
-      const emailRecord = await emailsent.findOne({
-        where: { uniqueId },
-        attributes: ['email']
-      });
+        // Step 5: Get email address for this uniqueId
+        const emailRecord = await emailsent.findOne({
+          where: { uniqueId },
+          attributes: ['email']
+        });
 
-      if (!emailRecord || !emailRecord.email) {
-        console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
-        continue;
-      }
+        if (!emailRecord || !emailRecord.email) {
+          console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
+          continue;
+        }
 
-      const email = emailRecord.email;
+        const email = emailRecord.email;
 
-      // Step 6: Send the email
-      try {
-        const mailOptions = {
-          from: '"B2B Direct Number Enrichment System" <b2bdirectdata@gmail.com>',
-          to: email,
-          subject: `B2B Direct Number Enrichment System Completed - ${uniqueId}`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #2563eb;">B2B Direct Number Enrichment System Completed</h2>
-              <p>All enrichment processes for ${uniqueId} have been completed.</p>
-              
-              <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                <h3 style="margin-top: 0; color: #1f2937;">Direct Number Enrichment</h3>
-                <p><strong>File UniqueId:</strong> ${uniqueId}</p>
+        // Step 6: Send the email
+        try {
+          const mailOptions = {
+            from: '"B2B Direct Number Enrichment System" <b2bdirectdata@gmail.com>',
+            to: email,
+            subject: `B2B Direct Number Enrichment System Completed - ${uniqueId}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #2563eb;">B2B Direct Number Enrichment System Completed</h2>
+                <p>All enrichment processes for ${uniqueId} have been completed.</p>
+                
+                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                  <h3 style="margin-top: 0; color: #1f2937;">Direct Number Enrichment</h3>
+                  <p><strong>File UniqueId:</strong> ${uniqueId}</p>
+                </div>
+                
+                <p>All results are now available for download.</p>
+                <p>Team,<br/>B2B Direct Data</p>
               </div>
-              
-              <p>All results are now available for download.</p>
-              <p>Team,<br/>B2B Direct Data</p>
-            </div>
-          `
-        };
+            `
+          };
 
-        await transporter.sendMail(mailOptions);
-        console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
-      } catch (err) {
-        console.error(`❌ Failed to send email for ${uniqueId}:`, err);
+          await transporter.sendMail(mailOptions);
+          console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
+        } catch (err) {
+          console.error(`❌ Failed to send email for ${uniqueId}:`, err);
+        }
       }
     }
   } catch (error) {
     console.error('❌ Error in cron job:', error);
   }
 }
+
 
 
 
