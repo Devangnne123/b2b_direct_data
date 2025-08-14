@@ -29,7 +29,7 @@ router.post("/auto-login", userController.autoLogin);
 router.post("/force-logout", userController.forceLogout);
 router.post("/signup", userController.addUser);
 
-router.post("/getAllAdmin",apiKeyAuth,auth, userController.getAllAdmin);
+router.post("/getAllAdmin",auth, userController.getAllAdmin);
 router.post("/reset-pass", userController.resetPassword);
 router.patch('/update-credit-cost', userController.updateCreditCost);
 router.patch('/update-credit-cost_v', userController.updateCreditCost_V);

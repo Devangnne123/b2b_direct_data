@@ -2585,6 +2585,11 @@ app.post('/upload-excel-verification',auth, upload.single('file'), async (req, r
     const email = req.headers['user-email'];
     if (!email) return res.status(400).json({ error: "Email required" });
 
+
+    // Get credit information from headers
+    const creditCost = parseFloat(req.headers['credit-cost']);
+    const userCredits = parseFloat(req.headers['user-credits']);
+
     const filePath = req.file.path;
     const workbook = xlsx.readFile(filePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -2599,17 +2604,465 @@ app.post('/upload-excel-verification',auth, upload.single('file'), async (req, r
       fs.unlinkSync(filePath);
       return res.status(400).json({ message: 'No LinkedIn links found.' });
     }
+
+     // Check if user has enough credits
+    const requiredCredits = creditCost * links.length;
+    if (userCredits < requiredCredits) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ 
+        message: `Insufficient credits. You need ${requiredCredits} but only have ${userCredits}` 
+      });
+    }
+
+     // For any number of links (less than or equal to 1000), require confirmation
+    if (links.length < 10000) {
+      return res.status(200).json({ 
+        message: "Confirmation required to proceed", 
+        linkCount: links.length,
+        requiresConfirmation: true,
+        fileName: req.file.originalname
+      });
+    }
+
+
     if (links.length > 10000) {
+       fs.unlinkSync(filePath);
   return res.status(400).json({ message: "Max 10 links allowed" });
 }
 
+  } catch (err) {
+    console.error('Upload error:', err);
+    if (req.file?.path) fs.unlinkSync(req.file.path);
+    res.status(500).json({ error: 'Upload failed', details: err.message });
+  }
+});
 
-    const uniqueId = uuidv4();
-    let pendingCount = 0; // Initialize pending count
 
+// app.post('/con-upload-excel-verification',auth, upload.single('file'), async (req, res) => {
+//   try {
+//     const email = req.headers['user-email'];
+//     if (!email) return res.status(400).json({ error: "Email required" });
+
+    
+//      // Set processing status to true at the start
+//     await axios.post(
+//       `${process.env.VITE_API_BASE_URL}/api/set-file-processing`,
+//       { userEmail: email, isProcessing: true }
+//     );
+
+//         // Initialize variables
+    
+//     let uniqueId, links = [];
+//     const processCredits = req.body.processCredits === 'true';
+//     const BATCH_SIZE = 300; // Process 20 links at a time when checking database
+
+//     if (req.file) {
+//     const filePath = req.file.path;
+//     const workbook = xlsx.readFile(filePath);
+//     const sheet = workbook.Sheets[workbook.SheetNames[0]];
+//     const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+//      links = rows.flat().filter(cell =>
+//       typeof cell === 'string' &&
+//       cell.toLowerCase().includes('linkedin.com')
+//     );
+
+//     if (links.length === 0) {
+//       fs.unlinkSync(filePath);
+//       await setProcessingFalse(email);
+//       return res.status(400).json({ message: 'No LinkedIn links found.' });
+//     }
+//     if (links.length > 10000) {
+//        fs.unlinkSync(filePath);
+//       await setProcessingFalse(email);
+//   return res.status(400).json({ message: "Max 10 links allowed" });
+// }
+
+
+//      uniqueId = uuidv4();
+//     let pendingCount = 0; // Initialize pending count
+
+//     const categorizedLinks = links.map(link => {
+//       let remark;
+     
+//       if (/linkedin\.com\/(sales\/lead|sales\/people)\/ACw|ACo|acw|acw/i.test(link)) {
+//         remark = 'Sales Navigator Link';
+//       } else if (/linkedin\.com\/(in)\/(ACw|ACo|acw)([^a-z0-9]|$)/i.test(link)) {
+//         remark = 'Sales Navigator Link';
+//       } else if (/linkedin\.com\/company/i.test(link)) {
+//         remark = 'Company Link';
+//       } else if (/linkedin\.com\/pub\//i.test(link)) {
+//         remark = 'This page doesn’t exist';
+//       } else if (!/linkedin\.com\/in\//i.test(link)) {
+//         remark = 'Junk Link';
+//       } else if (/linkedin\.com\/in\/[^\/]{1,4}$/i.test(link)) {
+//         remark = 'Invalid Profile Link';
+//       } else {
+//         remark = 'pending';
+//         pendingCount++; // Increment pending count
+//       }
+
+//       return {
+//         uniqueId,
+//         email,
+//         link,
+//         totallink: links.length,
+//         clean_link: link,
+//         remark,
+//         fileName: req.file.originalname,
+//         pendingCount // Include pending count in each record (optional)
+//       };
+//     });
+
+//     // Save to database
+//     await VerificationUpload.bulkCreate(categorizedLinks);
+//     fs.unlinkSync(filePath);
+
+//     res.json({
+//       message: 'Links categorized successfully',
+//       uniqueId,
+//       fileName: req.file.originalname,
+//       totalLinks: links.length,
+//       pendingCount, // Send pending count in response
+//       categorizedLinks: categorizedLinks.map(l => ({
+//         link: l.link,
+//         remark: l.remark
+//       })),
+//       date: new Date().toISOString(),
+//       nextStep: 'confirm'
+//     });
+
+//   } catch (err) {
+//     console.error('Upload error:', err);
+//     if (req.file?.path) fs.unlinkSync(req.file.path);
+//     res.status(500).json({ error: 'Upload failed', details: err.message });
+//   }
+// });
+
+
+// const VerificationTemp = require('./model/verification_temp');
+
+// app.post('/process-matching/:uniqueId', async (req, res) => {
+//   try {
+//     const { uniqueId } = req.params;
+//     const email = req.headers['user-email'];
+
+//     if (!email) return res.status(400).json({ error: "Email required" });
+
+//     const pendingLinks = await VerificationUpload.findAll({
+//       where: { uniqueId, email, remark: 'pending' }
+//     });
+
+//     let insertedCount = 0;
+//     let updatedCount = 0;
+
+//     for (const linkRecord of pendingLinks) {
+//       let cleanedLink = linkRecord.link
+//         .trim()
+//         .replace(/^(https?:\/\/)?(www\.)?/i, 'https://www.') // ensure https://www.
+//         .replace(/linkedin\.com\/+in\/+/i, 'linkedin.com/in/') // normalize /in/
+//         .toLowerCase();
+
+//       // Remove trailing slashes before appending details
+//       cleanedLink = cleanedLink.replace(/\/+$/, '');
+
+//       // Ensure it ends with /details/experience/
+//       if (!cleanedLink.includes('/details/experience/')) {
+//         cleanedLink = `${cleanedLink}/details/experience/`;
+//       }
+
+//       // Update the clean_link in verification_upload table
+//       await VerificationUpload.update(
+//         { clean_link: cleanedLink },
+//         { where: { id: linkRecord.id } }
+//       );
+//       updatedCount++;
+
+//       // Insert into temp table including the link_id
+//       await VerificationTemp.create({
+//         uniqueId,
+//         clean_linkedin_link: cleanedLink,
+//         link_id: linkRecord.link_id, // Add this line to include the link_id
+//         remark: 'pending',
+//         // Add all the additional fields from verification_upload
+//         full_name: linkRecord.full_name,
+//         head_title: linkRecord.head_title,
+//         head_location: linkRecord.head_location,
+//         title_1: linkRecord.title_1,
+//         company_1: linkRecord.company_1,
+//         company_link_1: linkRecord.company_link_1,
+//         exp_duration: linkRecord.exp_duration,
+//         exp_location: linkRecord.exp_location,
+//         job_type: linkRecord.job_type,
+//         title_2: linkRecord.title_2,
+//         company_2: linkRecord.company_2,
+//         company_link_2: linkRecord.company_link_2,
+//         exp_duration_2: linkRecord.exp_duration_2,
+//         exp_location_2: linkRecord.exp_location_2,
+//         job_type_2: linkRecord.job_type_2,
+//         final_remarks: linkRecord.final_remarks,
+//         list_contacts_id: linkRecord.list_contacts_id,
+//         url_id: linkRecord.url_id
+//       });
+
+//       insertedCount++;
+//     }
+
+//     res.json({
+//       message: 'Processed and updated links successfully',
+//       uniqueId,
+//       insertedCount,
+//       updatedCount,
+//       totalPending: pendingLinks.length,
+//       status: 'success'
+//     });
+
+//   } catch (err) {
+//     console.error('Processing error:', err);
+//     res.status(500).json({ 
+//       error: 'Processing failed', 
+//       details: err.message,
+//       status: 'error'
+//     });
+//   }
+// });
+
+const VerificationTemp = require('./model/verification_temp');
+
+// app.post('/con-upload-excel-verification', auth, upload.single('file'), async (req, res) => {
+//   try {
+//     const email = req.headers['user-email'];
+//     if (!email) return res.status(400).json({ error: "Email required" });
+
+//     // Set processing status to true at the start
+//     await axios.post(
+//       `${process.env.VITE_API_BASE_URL}/api/set-file-processing`,
+//       { userEmail: email, isProcessing: true }
+//     );
+
+//     // Initialize variables
+//     let uniqueId, links = [];
+//     const processCredits = req.body.processCredits === 'true';
+//     const BATCH_SIZE = 300;
+
+//     if (req.file) {
+//       const filePath = req.file.path;
+//       const workbook = xlsx.readFile(filePath);
+//       const sheet = workbook.Sheets[workbook.SheetNames[0]];
+//       const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+//       links = rows.flat().filter(cell =>
+//         typeof cell === 'string' &&
+//         cell.toLowerCase().includes('linkedin.com')
+//       );
+
+//       if (links.length === 0) {
+//         fs.unlinkSync(filePath);
+//         await setProcessingFalse(email);
+//         return res.status(400).json({ message: 'No LinkedIn links found.' });
+//       }
+//       if (links.length > 10000) {
+//         fs.unlinkSync(filePath);
+//         await setProcessingFalse(email);
+//         return res.status(400).json({ message: "Max 10,000 links allowed" });
+//       }
+
+//       uniqueId = uuidv4();
+//       let pendingCount = 0;
+
+//       // Step 1: Categorize links
+//       const categorizedLinks = links.map(link => {
+//         let remark;
+        
+//         if (/linkedin\.com\/(sales\/lead|sales\/people)\/ACw|ACo|acw|acw/i.test(link)) {
+//           remark = 'Sales Navigator Link';
+//         } else if (/linkedin\.com\/(in)\/(ACw|ACo|acw)([^a-z0-9]|$)/i.test(link)) {
+//           remark = 'Sales Navigator Link';
+//         } else if (/linkedin\.com\/company/i.test(link)) {
+//           remark = 'Company Link';
+//         } else if (/linkedin\.com\/pub\//i.test(link)) {
+//           remark = "This page doesn't exist";
+//         } else if (!/linkedin\.com\/in\//i.test(link)) {
+//           remark = 'Junk Link';
+//         } else if (/linkedin\.com\/in\/[^\/]{1,4}$/i.test(link)) {
+//           remark = 'Invalid Profile Link';
+//         } else {
+//           remark = 'pending';
+//           pendingCount++;
+//         }
+
+//         return {
+//           uniqueId,
+//           email,
+//           link,
+//           totallink: links.length,
+//           clean_link: link,
+//           remark,
+//           fileName: req.file.originalname,
+//           pendingCount
+//         };
+//       });
+
+//       // Save to database
+//       await VerificationUpload.bulkCreate(categorizedLinks);
+//       fs.unlinkSync(filePath);
+
+//       // Step 2: Process pending links if processCredits is true
+//       if (processCredits && pendingCount > 0) {
+//         const pendingLinks = await VerificationUpload.findAll({
+//           where: { uniqueId, email, remark: 'pending' }
+//         });
+
+//         let insertedCount = 0;
+//         let updatedCount = 0;
+
+//         for (const linkRecord of pendingLinks) {
+//           let cleanedLink = linkRecord.link
+//             .trim()
+//             .replace(/^(https?:\/\/)?(www\.)?/i, 'https://www.')
+//             .replace(/linkedin\.com\/+in\/+/i, 'linkedin.com/in/')
+//             .toLowerCase();
+
+//           cleanedLink = cleanedLink.replace(/\/+$/, '');
+
+//           if (!cleanedLink.includes('/details/experience/')) {
+//             cleanedLink = `${cleanedLink}/details/experience/`;
+//           }
+
+//           // Update the clean_link in verification_upload table
+//           await VerificationUpload.update(
+//             { clean_link: cleanedLink },
+//             { where: { id: linkRecord.id } }
+//           );
+//           updatedCount++;
+
+//           // Insert into temp table including the link_id
+//           await VerificationTemp.create({
+//             uniqueId,
+//             clean_linkedin_link: cleanedLink,
+//             link_id: linkRecord.link_id,
+//             remark: 'pending',
+//             full_name: linkRecord.full_name,
+//             head_title: linkRecord.head_title,
+//             head_location: linkRecord.head_location,
+//             title_1: linkRecord.title_1,
+//             company_1: linkRecord.company_1,
+//             company_link_1: linkRecord.company_link_1,
+//             exp_duration: linkRecord.exp_duration,
+//             exp_location: linkRecord.exp_location,
+//             job_type: linkRecord.job_type,
+//             title_2: linkRecord.title_2,
+//             company_2: linkRecord.company_2,
+//             company_link_2: linkRecord.company_link_2,
+//             exp_duration_2: linkRecord.exp_duration_2,
+//             exp_location_2: linkRecord.exp_location_2,
+//             job_type_2: linkRecord.job_type_2,
+//             final_remarks: linkRecord.final_remarks,
+//             list_contacts_id: linkRecord.list_contacts_id,
+//             url_id: linkRecord.url_id
+//           });
+
+//           insertedCount++;
+//         }
+
+//         return res.json({
+//           message: 'File processed and links matched successfully',
+//           uniqueId,
+//           fileName: req.file.originalname,
+//           totalLinks: links.length,
+//           pendingCount,
+//           insertedCount,
+//           updatedCount,
+//           categorizedLinks: categorizedLinks.map(l => ({
+//             link: l.link,
+//             remark: l.remark
+//           })),
+//           date: new Date().toISOString(),
+//           status: 'complete'
+//         });
+//       }
+
+//       return res.json({
+//         message: 'Links categorized successfully',
+//         uniqueId,
+//         fileName: req.file.originalname,
+//         totalLinks: links.length,
+//         pendingCount,
+//         categorizedLinks: categorizedLinks.map(l => ({
+//           link: l.link,
+//           remark: l.remark
+//         })),
+//         date: new Date().toISOString(),
+//         nextStep: processCredits ? 'complete' : 'confirm',
+//         status: 'categorized'
+//       });
+//     }
+
+//     return res.status(400).json({ error: 'No file uploaded' });
+//   } catch (err) {
+//     console.error('Upload error:', err);
+//     if (req.file?.path) fs.unlinkSync(req.file.path);
+//     await setProcessingFalse(email);
+//     res.status(500).json({ error: 'Upload failed', details: err.message });
+//   }
+// });
+
+
+
+app.post('/con-upload-excel-verification', auth, upload.single('file'), async (req, res) => {
+  let email;
+  try {
+    email = req.headers['user-email'];
+    if (!email) return res.status(400).json({ error: "Email required" });
+
+    
+
+    // Set processing status to true at the start
+    await setProcessingStatus1(email, true);
+
+    // Initialize variables
+    let uniqueId, links = [];
+    const processCredits = req.body.processCredits === 'true';
+    const BATCH_SIZE = 300;
+
+    if (!req.file) {
+      await setProcessingStatus1(email, false);
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const filePath = req.file.path;
+    let workbook, sheet, rows;
+
+    try {
+      workbook = xlsx.readFile(filePath);
+      sheet = workbook.Sheets[workbook.SheetNames[0]];
+      rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+    } catch (err) {
+      await cleanup(filePath, email);
+      return res.status(400).json({ message: 'Invalid Excel file format' });
+    }
+
+    links = rows.flat().filter(cell =>
+      typeof cell === 'string' &&
+      cell.toLowerCase().includes('linkedin.com')
+    );
+
+    if (links.length === 0) {
+      await cleanup(filePath, email);
+      return res.status(400).json({ message: 'No LinkedIn links found.' });
+    }
+    if (links.length > 10000) {
+      await cleanup(filePath, email);
+      return res.status(400).json({ message: "Max 10,000 links allowed" });
+    }
+
+    uniqueId = uuidv4();
+    let pendingCount = 0;
+
+    // Step 1: Categorize links
     const categorizedLinks = links.map(link => {
       let remark;
-     
+      
       if (/linkedin\.com\/(sales\/lead|sales\/people)\/ACw|ACo|acw|acw/i.test(link)) {
         remark = 'Sales Navigator Link';
       } else if (/linkedin\.com\/(in)\/(ACw|ACo|acw)([^a-z0-9]|$)/i.test(link)) {
@@ -2617,14 +3070,14 @@ app.post('/upload-excel-verification',auth, upload.single('file'), async (req, r
       } else if (/linkedin\.com\/company/i.test(link)) {
         remark = 'Company Link';
       } else if (/linkedin\.com\/pub\//i.test(link)) {
-        remark = 'This page doesn’t exist';
+        remark = "This page doesn't exist";
       } else if (!/linkedin\.com\/in\//i.test(link)) {
         remark = 'Junk Link';
       } else if (/linkedin\.com\/in\/[^\/]{1,4}$/i.test(link)) {
         remark = 'Invalid Profile Link';
       } else {
         remark = 'pending';
-        pendingCount++; // Increment pending count
+        pendingCount++;
       }
 
       return {
@@ -2635,128 +3088,281 @@ app.post('/upload-excel-verification',auth, upload.single('file'), async (req, r
         clean_link: link,
         remark,
         fileName: req.file.originalname,
-        pendingCount // Include pending count in each record (optional)
+        pendingCount
       };
     });
 
     // Save to database
     await VerificationUpload.bulkCreate(categorizedLinks);
-    fs.unlinkSync(filePath);
+    
+    // Always clean up the file after processing
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (err) {
+      console.error('Error deleting file:', err);
+    }
 
-    res.json({
+   
+
+    // Step 2: Process pending links if processCredits is true
+    if (processCredits && pendingCount > 0) {
+      // First check if user has enough credits
+      const user = await User.findOne({ where: { userEmail: email } });
+
+       const creditsToDeduct = pendingCount * user.creditCostPerLink_V;
+      if (!user) {
+        await VerificationUpload.destroy({ where: { uniqueId } });
+        await setProcessingStatus1(email, false);
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      if (user.credits < creditsToDeduct) {
+        await VerificationUpload.destroy({ where: { uniqueId } });
+        await setProcessingStatus1(email, false);
+        return res.status(400).json({ 
+          message: 'Insufficient credits',
+          requiredCredits: creditsToDeduct,
+          currentCredits: user.credits
+        });
+      }
+      
+      // Deduct credits after successful processing
+      user.credits = user.credits - creditsToDeduct; // Ensure we don't get NaN
+      await user.save();
+
+      // Update all VerificationUpload records with credits info
+      await VerificationUpload.update(
+        { 
+          creditsUsed: creditsToDeduct,
+          remainingCredits: user.credits 
+        },
+        { where: { uniqueId } }
+      );
+
+      // Process the pending links
+      const pendingLinks = await VerificationUpload.findAll({
+        where: { uniqueId, email, remark: 'pending' }
+      });
+
+      let insertedCount = 0;
+      let updatedCount = 0;
+
+      for (const linkRecord of pendingLinks) {
+        let cleanedLink = linkRecord.link
+          .trim()
+          .replace(/^(https?:\/\/)?(www\.)?/i, 'https://www.')
+          .replace(/linkedin\.com\/+in\/+/i, 'linkedin.com/in/')
+          .toLowerCase();
+
+        cleanedLink = cleanedLink.replace(/\/+$/, '');
+
+        if (!cleanedLink.includes('/details/experience/')) {
+          cleanedLink = `${cleanedLink}/details/experience/`;
+        }
+
+        // Update the clean_link in verification_upload table
+        await VerificationUpload.update(
+          { clean_link: cleanedLink },
+          { where: { id: linkRecord.id } }
+        );
+        updatedCount++;
+
+
+
+        // Insert into temp table
+        await VerificationTemp.create({
+          uniqueId,
+          clean_linkedin_link: cleanedLink,
+          link_id: linkRecord.link_id,
+          remark: 'pending',
+          full_name: linkRecord.full_name,
+          head_title: linkRecord.head_title,
+          head_location: linkRecord.head_location,
+          title_1: linkRecord.title_1,
+          company_1: linkRecord.company_1,
+          company_link_1: linkRecord.company_link_1,
+          exp_duration: linkRecord.exp_duration,
+          exp_location: linkRecord.exp_location,
+          job_type: linkRecord.job_type,
+          title_2: linkRecord.title_2,
+          company_2: linkRecord.company_2,
+          company_link_2: linkRecord.company_link_2,
+          exp_duration_2: linkRecord.exp_duration_2,
+          exp_location_2: linkRecord.exp_location_2,
+          job_type_2: linkRecord.job_type_2,
+          final_remarks: linkRecord.final_remarks,
+          list_contacts_id: linkRecord.list_contacts_id,
+          url_id: linkRecord.url_id
+        });
+
+        insertedCount++;
+      }
+
+
+      await setProcessingStatus1(email, false);
+       
+
+      try {
+    // Validate recipient email
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid recipient email address'
+      });
+    }
+
+    const mailOptions = {
+      from: `"B2B Full Details" <b2bdirectdata@gmail.com>`,
+      to: email,
+      subject: `Please Start Full Details`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Link Uploaded. Please Start Full Details</h2>
+          
+          <p><strong>Total Links:</strong> ${links.length}</p>
+          
+          <p>Team,<br/>B2B Direct Data</p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Email sent to ${email}`, info.messageId);
+    res.json({ success: true, messageId: info.messageId });
+  } catch (error) {
+    console.error(`Error sending to ${email}:`, error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message,
+      details: 'Failed to send confirmation email'
+    });
+  }
+
+      return res.json({
+        message: 'File processed, links matched, and credits deducted successfully',
+        uniqueId,
+        fileName: req.file.originalname,
+        totalLinks: links.length,
+        pendingCount,
+        insertedCount,
+        updatedCount,
+        creditsDeducted: creditsToDeduct,
+        updatedCredits: user.credits,
+        categorizedLinks: categorizedLinks.map(l => ({
+          link: l.link,
+          remark: l.remark
+        })),
+        date: new Date().toISOString(),
+        status: 'complete'
+      });
+    }
+
+    await setProcessingStatus1(email, false);
+    return res.json({
       message: 'Links categorized successfully',
       uniqueId,
       fileName: req.file.originalname,
       totalLinks: links.length,
-      pendingCount, // Send pending count in response
+      pendingCount,
+      
       categorizedLinks: categorizedLinks.map(l => ({
         link: l.link,
         remark: l.remark
       })),
       date: new Date().toISOString(),
-      nextStep: 'confirm'
+      nextStep: processCredits ? 'complete' : 'confirm',
+      status: 'categorized'
     });
 
   } catch (err) {
     console.error('Upload error:', err);
-    if (req.file?.path) fs.unlinkSync(req.file.path);
-    res.status(500).json({ error: 'Upload failed', details: err.message });
+    if (req.file?.path) {
+      try {
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+      } catch (unlinkErr) {
+        console.error('Error deleting file:', unlinkErr);
+      }
+    }
+    await setProcessingStatus1(email, false);
+  
   }
 });
 
-
-const VerificationTemp = require('./model/verification_temp');
-
-app.post('/process-matching/:uniqueId', async (req, res) => {
+// Helper functions
+async function setProcessingStatus1(email, isProcessing) {
   try {
-    const { uniqueId } = req.params;
-    const email = req.headers['user-email'];
+    await axios.post(
+      `${process.env.VITE_API_BASE_URL}/api/set-file-processing1`,
+      { userEmail: email, isProcessing }
+    );
+  } catch (error) {
+    console.error('Error setting processing status:', error);
+  }
+}
 
-    if (!email) return res.status(400).json({ error: "Email required" });
+async function cleanup(filePath, email) {
+  try {
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (err) {
+    console.error('Error cleaning up file:', err);
+  }
+  await setProcessingStatus1(email, false);
+}
 
-    const pendingLinks = await VerificationUpload.findAll({
-      where: { uniqueId, email, remark: 'pending' }
-    });
 
-    let insertedCount = 0;
-    let updatedCount = 0;
 
-    for (const linkRecord of pendingLinks) {
-      let cleanedLink = linkRecord.link
-        .trim()
-        .replace(/^(https?:\/\/)?(www\.)?/i, 'https://www.') // ensure https://www.
-        .replace(/linkedin\.com\/+in\/+/i, 'linkedin.com/in/') // normalize /in/
-        .toLowerCase();
 
-      // Remove trailing slashes before appending details
-      cleanedLink = cleanedLink.replace(/\/+$/, '');
+// Add these routes to your Express server
 
-      // Ensure it ends with /details/experience/
-      if (!cleanedLink.includes('/details/experience/')) {
-        cleanedLink = `${cleanedLink}/details/experience/`;
-      }
-
-      // Update the clean_link in verification_upload table
-      await VerificationUpload.update(
-        { clean_link: cleanedLink },
-        { where: { id: linkRecord.id } }
-      );
-      updatedCount++;
-
-      // Insert into temp table including the link_id
-      await VerificationTemp.create({
-        uniqueId,
-        clean_linkedin_link: cleanedLink,
-        link_id: linkRecord.link_id, // Add this line to include the link_id
-        remark: 'pending',
-        // Add all the additional fields from verification_upload
-        full_name: linkRecord.full_name,
-        head_title: linkRecord.head_title,
-        head_location: linkRecord.head_location,
-        title_1: linkRecord.title_1,
-        company_1: linkRecord.company_1,
-        company_link_1: linkRecord.company_link_1,
-        exp_duration: linkRecord.exp_duration,
-        exp_location: linkRecord.exp_location,
-        job_type: linkRecord.job_type,
-        title_2: linkRecord.title_2,
-        company_2: linkRecord.company_2,
-        company_link_2: linkRecord.company_link_2,
-        exp_duration_2: linkRecord.exp_duration_2,
-        exp_location_2: linkRecord.exp_location_2,
-        job_type_2: linkRecord.job_type_2,
-        final_remarks: linkRecord.final_remarks,
-        list_contacts_id: linkRecord.list_contacts_id,
-        url_id: linkRecord.url_id
-      });
-
-      insertedCount++;
+// Check file processing status
+app.get('/api/check-file-processing1',auth, async (req, res) => {
+  try {
+    const { userEmail } = req.query;
+    const user = await User.findOne({ where: { userEmail } });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (user.isProcessingFile1 === true){
+  
+        return res.status(404).json({ message: 'File is currently being processed' });
     }
 
-    res.json({
-      message: 'Processed and updated links successfully',
-      uniqueId,
-      insertedCount,
-      updatedCount,
-      totalPending: pendingLinks.length,
-      status: 'success'
-    });
-
-  } catch (err) {
-    console.error('Processing error:', err);
-    res.status(500).json({ 
-      error: 'Processing failed', 
-      details: err.message,
-      status: 'error'
-    });
+    res.json({ isProcessing: user.isProcessingFile1 });
+  } catch (error) {
+    console.error('Error checking file processing status:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
+// In your set-file-processing endpoint
+app.post('/api/set-file-processing1', async (req, res) => {
+  try {
+    const { userEmail, isProcessing } = req.body;
+    const user = await User.findOne({ where: { userEmail } });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
+    const updateData = {
+      isProcessingFile1: isProcessing,
+      processingStartTime1: isProcessing ? new Date() : null
+    };
 
-
-
-
-
+    await user.update(updateData);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error setting file processing status:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 
 
@@ -3086,7 +3692,8 @@ app.post('/sync-temp-to-main/:uniqueId', async (req, res) => {
 
       // FORCE STATUS UPDATE
       if (shouldMarkCompleted) {
-        updateData.status = 'Completed'; // Note the capital 'C' to match your model
+        updateData.status = 'Completed'; 
+       // Note the capital 'C' to match your model
       }
 
       // Update main table
@@ -3234,37 +3841,37 @@ app.post('/sync-temp-to-main/:uniqueId', async (req, res) => {
 // });
 
 
-// // Scheduled sync job
-// function setupScheduledSync() {
-//   cron.schedule('*/30 * * * * *', async () => {
-//     try {
-//       console.log('Running scheduled sync from temp to main table...');
+// Scheduled sync job
+function setupScheduledSync() {
+  cron.schedule('*/3 * * * *', async () => {
+    try {
+      console.log('Running scheduled sync from temp to main table...');
       
-//       const uniqueIds = await VerificationTemp.findAll({
-//         attributes: ['uniqueId'],
-//         group: ['uniqueId'],
-//         raw: true
-//       });
+      const uniqueIds = await VerificationTemp.findAll({
+        attributes: ['uniqueId'],
+        group: ['uniqueId'],
+        raw: true
+      });
 
-//       for (const { uniqueId } of uniqueIds) {
-//         try {
-//           const response = await axios.post(
-//             `${process.env.VITE_API_BASE_URL}/sync-temp-to-main/${uniqueId}`
-//           );
-//           console.log(`Sync completed for ${uniqueId}:`, response.data);
-//         } catch (err) {
-//           console.error(`Error syncing ${uniqueId}:`, err.message);
-//         }
-//       }
-//     } catch (error) {
-//       console.error('Scheduled job error:', error);
-//     }
-//   });
+      for (const { uniqueId } of uniqueIds) {
+        try {
+          const response = await axios.post(
+            `${process.env.VITE_API_BASE_URL}/sync-temp-to-main/${uniqueId}`
+          );
+          console.log(`Sync completed for ${uniqueId}:`, response.data);
+        } catch (err) {
+          console.error(`Error syncing ${uniqueId}:`, err.message);
+        }
+      }
+    } catch (error) {
+      console.error('Scheduled job error:', error);
+    }
+  });
 
-//   console.log('Scheduled sync job initialized');
-// }
+  console.log('Scheduled sync job initialized');
+}
 
-// setupScheduledSync();
+setupScheduledSync();
 
 
 // Add this route for deducting credits
@@ -3316,12 +3923,18 @@ app.post('/api/deduct-credits', async (req, res) => {
 /////////////////////verfication company////////////
 
 const VerificationUpload_com = require('./model/verification_upload_com');
+const VerificationTemp_com = require('./model/verification_temp_com');
 
 
 app.post('/upload-excel-verification-com',auth, upload.single('file'), async (req, res) => {
   try {
     const email = req.headers['user-email'];
     if (!email) return res.status(400).json({ error: "Email required" });
+
+
+    // Get credit information from headers
+    const creditCost = parseFloat(req.headers['credit-cost']);
+    const userCredits = parseFloat(req.headers['user-credits']);
 
     const filePath = req.file.path;
     const workbook = xlsx.readFile(filePath);
@@ -3338,11 +3951,87 @@ app.post('/upload-excel-verification-com',auth, upload.single('file'), async (re
       return res.status(400).json({ message: 'No LinkedIn links found.' });
     }
 
-       if (links.length > 10000) {
+     // Check if user has enough credits
+    const requiredCredits = creditCost * links.length;
+    if (userCredits < requiredCredits) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ 
+        message: `Insufficient credits. You need ${requiredCredits} but only have ${userCredits}` 
+      });
+    }
+
+     // For any number of links (less than or equal to 1000), require confirmation
+    if (links.length < 10000) {
+      return res.status(200).json({ 
+        message: "Confirmation required to proceed", 
+        linkCount: links.length,
+        requiresConfirmation: true,
+        fileName: req.file.originalname
+      });
+    }
+
+
+    if (links.length > 10000) {
+       fs.unlinkSync(filePath);
   return res.status(400).json({ message: "Max 10 links allowed" });
 }
 
-    const uniqueId = uuidv4();
+  } catch (err) {
+    console.error('Upload error:', err);
+    if (req.file?.path) fs.unlinkSync(req.file.path);
+    res.status(500).json({ error: 'Upload failed', details: err.message });
+  }
+});
+
+
+app.post('/con-upload-excel-verification-com',auth, upload.single('file'), async (req, res) => {
+  try {
+    const email = req.headers['user-email'];
+    if (!email) return res.status(400).json({ error: "Email required" });
+
+
+    // Set processing status to true at the start
+    await setProcessingStatus2(email, true);
+
+     // Initialize variables
+    let uniqueId, links = [];
+    const processCredits = req.body.processCredits === 'true';
+    const BATCH_SIZE = 300;
+
+
+
+    if (!req.file) {
+      await setProcessingStatus2(email, false);
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const filePath = req.file.path;
+     let workbook, sheet, rows;
+ try {
+      workbook = xlsx.readFile(filePath);
+      sheet = workbook.Sheets[workbook.SheetNames[0]];
+      rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+    } catch (err) {
+      await cleanup(filePath, email);
+      return res.status(400).json({ message: 'Invalid Excel file format' });
+    }
+
+     links = rows.flat().filter(cell =>
+      typeof cell === 'string' &&
+      cell.toLowerCase().includes('linkedin.com')
+    );
+
+    if (links.length === 0) {
+       await cleanup(filePath, email);
+      return res.status(400).json({ message: 'No LinkedIn links found.' });
+    }
+
+       if (links.length > 10000) {
+         await cleanup(filePath, email);
+  return res.status(400).json({ message: "Max 10 links allowed" });
+}
+
+     uniqueId = uuidv4();
     let pendingCount = 0;
 
     const categorizedLinks = links.map(link => {
@@ -3396,48 +4085,58 @@ app.post('/upload-excel-verification-com',auth, upload.single('file'), async (re
 
     // Save to database
     await VerificationUpload_com.bulkCreate(categorizedLinks);
-    fs.unlinkSync(filePath);
-
-    res.json({
-      message: 'Links categorized successfully',
-      uniqueId,
-      fileName: req.file.originalname,
-      totalLinks: links.length,
-      pendingCount,
-       
-      categorizedLinks: categorizedLinks.map(l => ({
-        link: l.link,
-        clean_link: l.clean_link,
-        remark: l.remark
-      })),
-      date: new Date().toISOString(),
-      nextStep: 'confirm'
-    });
-
-  } catch (err) {
-    console.error('Upload error:', err);
-    if (req.file?.path) fs.unlinkSync(req.file.path);
-    res.status(500).json({ error: 'Upload failed', details: err.message });
-  }
-});
+     // Always clean up the file after processing
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (err) {
+      console.error('Error deleting file:', err);
+    }
 
 
 
-const VerificationTemp_com = require('./model/verification_temp_com');
+       // Step 2: Process pending links if processCredits is true
+    if (processCredits && pendingCount > 0) {
+      // First check if user has enough credits
+      const user = await User.findOne({ where: { userEmail: email } });
 
-app.post('/process-matching-com/:uniqueId', async (req, res) => {
-  try {
-    const { uniqueId } = req.params;
-    const email = req.headers['user-email'];
+       const creditsToDeduct = pendingCount * user.creditCostPerLink_C;
+      if (!user) {
+        await VerificationUpload_com.destroy({ where: { uniqueId } });
+        await setProcessingStatus2(email, false);
+        return res.status(404).json({ message: 'User not found' });
+      }
 
-    if (!email) return res.status(400).json({ error: "Email required" });
+      if (user.credits < creditsToDeduct) {
+        await VerificationUpload_com.destroy({ where: { uniqueId } });
+        await setProcessingStatus2(email, false);
+        return res.status(400).json({ 
+          message: 'Insufficient credits',
+          requiredCredits: creditsToDeduct,
+          currentCredits: user.credits
+        });
+      }
+       // Deduct credits after successful processing
+      user.credits = user.credits - creditsToDeduct; // Ensure we don't get NaN
+      await user.save();
 
-    // Get pending links for this batch
+      // Update all VerificationUpload records with credits info
+      await VerificationUpload_com.update(
+        { 
+          creditsUsed: creditsToDeduct,
+          remainingCredits: user.credits 
+        },
+        { where: { uniqueId } }
+      );
+// Get pending links for this batch
     const pendingLinks = await VerificationUpload_com.findAll({
       where: { uniqueId, email, remark: 'pending' }
     });
 
-    let processedCount = 0;
+     let insertedCount = 0;
+      let updatedCount = 0;
+    
 
     // Process each link
     for (const linkRecord of pendingLinks) {
@@ -3446,6 +4145,7 @@ app.post('/process-matching-com/:uniqueId', async (req, res) => {
         { clean_link: linkRecord.clean_link },
         { where: { id: linkRecord.id } }
       );
+       updatedCount++;
 
       // Insert into verification_temp table
       await VerificationTemp_com.create({
@@ -3473,24 +4173,208 @@ app.post('/process-matching-com/:uniqueId', async (req, res) => {
       company_id: linkRecord.company_id || null
       });
 
-      processedCount++;
+      insertedCount++;
     }
 
-    res.json({
-      message: 'Processed and updated links successfully',
+
+   
+
+      
+
+      await setProcessingStatus2(email, false);
+
+
+
+    return res.json({
+        message: 'File processed, links matched, and credits deducted successfully',
+        uniqueId,
+        fileName: req.file.originalname,
+        totalLinks: links.length,
+        pendingCount,
+        insertedCount,
+        updatedCount,
+        creditsDeducted: creditsToDeduct,
+        updatedCredits: user.credits,
+        categorizedLinks: categorizedLinks.map(l => ({
+          link: l.link,
+          remark: l.remark
+        })),
+        date: new Date().toISOString(),
+        status: 'complete'
+      });
+    }
+
+    await setProcessingStatus2(email, false);
+    return res.json({
+      message: 'Links categorized successfully',
       uniqueId,
-      processedCount,
-      totalPending: pendingLinks.length
+      fileName: req.file.originalname,
+      totalLinks: links.length,
+      pendingCount,
+      creditsRequired: pendingCount * creditCost,
+      categorizedLinks: categorizedLinks.map(l => ({
+        link: l.link,
+        remark: l.remark
+      })),
+      date: new Date().toISOString(),
+      nextStep: processCredits ? 'complete' : 'confirm',
+      status: 'categorized'
     });
 
   } catch (err) {
-    console.error('Processing error:', err);
-    res.status(500).json({ 
-      error: 'Processing failed', 
-      details: err.message
-    });
+    console.error('Upload error:', err);
+    if (req.file?.path) {
+      try {
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+      } catch (unlinkErr) {
+        console.error('Error deleting file:', unlinkErr);
+      }
+    }
+    await setProcessingStatus2(email, false);
+  
   }
 });
+
+// Helper functions
+async function setProcessingStatus2(email, isProcessing) {
+  try {
+    await axios.post(
+      `${process.env.VITE_API_BASE_URL}/api/set-file-processing2`,
+      { userEmail: email, isProcessing }
+    );
+  } catch (error) {
+    console.error('Error setting processing status:', error);
+  }
+}
+
+async function cleanup(filePath, email) {
+  try {
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (err) {
+    console.error('Error cleaning up file:', err);
+  }
+  await setProcessingStatus2(email, false);
+}
+
+
+
+
+// Check file processing status
+app.get('/api/check-file-processing2',auth, async (req, res) => {
+  try {
+    const { userEmail } = req.query;
+    const user = await User.findOne({ where: { userEmail } });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (user.isProcessingFile2 === true){
+  
+        return res.status(404).json({ message: 'File is currently being processed' });
+    }
+
+    res.json({ isProcessing: user.isProcessingFile2 });
+  } catch (error) {
+    console.error('Error checking file processing status:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+// In your set-file-processing endpoint
+app.post('/api/set-file-processing2', async (req, res) => {
+  try {
+    const { userEmail, isProcessing } = req.body;
+    const user = await User.findOne({ where: { userEmail } });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const updateData = {
+      isProcessingFile2: isProcessing,
+      processingStartTime2: isProcessing ? new Date() : null
+    };
+
+    await user.update(updateData);
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error setting file processing status:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+
+// app.post('/process-matching-com/:uniqueId', async (req, res) => {
+//   try {
+//     const { uniqueId } = req.params;
+//     const email = req.headers['user-email'];
+
+//     if (!email) return res.status(400).json({ error: "Email required" });
+
+//     // Get pending links for this batch
+//     const pendingLinks = await VerificationUpload_com.findAll({
+//       where: { uniqueId, email, remark: 'pending' }
+//     });
+
+//     let processedCount = 0;
+
+//     // Process each link
+//     for (const linkRecord of pendingLinks) {
+//       // Update verification_upload table
+//       await VerificationUpload_com.update(
+//         { clean_link: linkRecord.clean_link },
+//         { where: { id: linkRecord.id } }
+//       );
+
+//       // Insert into verification_temp table
+//       await VerificationTemp_com.create({
+//         uniqueId,
+//         clean_linkedin_link: linkRecord.clean_link,
+//         link_id: linkRecord.link_id,
+//         remark: 'pending',
+//        company_name:linkRecord.company_name,
+//       company_url: linkRecord.company_url || null,
+//       company_headquater: linkRecord.company_headquater || null,
+//       company_industry: linkRecord.company_industry || null,
+//       company_size: linkRecord.company_size || null,
+//       employee_count: linkRecord.employee_count || null,
+//       year_founded: linkRecord.year_founded || null,
+//       company_speciality: linkRecord.company_speciality || null,
+//       linkedin_url: linkRecord.linkedin_url || null,
+//       company_stock_name: linkRecord.company_stock_name || null,
+//       verified_page_date: linkRecord.verified_page_date || null,
+//       phone_number: linkRecord.phone_number || null,
+//       company_followers: linkRecord.company_followers || null,
+//       location_total: linkRecord.location_total || null,
+//       overview: linkRecord.overview || null,
+//       visit_website: linkRecord.visit_website || null,
+//       final_remarks: linkRecord.final_remarks || null,
+//       company_id: linkRecord.company_id || null
+//       });
+
+//       processedCount++;
+//     }
+
+//     res.json({
+//       message: 'Processed and updated links successfully',
+//       uniqueId,
+//       processedCount,
+//       totalPending: pendingLinks.length
+//     });
+
+//   } catch (err) {
+//     console.error('Processing error:', err);
+//     res.status(500).json({ 
+//       error: 'Processing failed', 
+//       details: err.message
+//     });
+//   }
+// });
 
 
 
@@ -3736,8 +4620,10 @@ app.post('/sync-temp-to-main-com/:uniqueId', async (req, res) => {
 
       // FORCE STATUS UPDATE
       if (shouldMarkCompleted) {
-        updateData.status = 'Completed'; // Make sure this matches your model enum
+        updateData.status = 'Completed';
+        updateData.final_status = 'Completed'; // Make sure this matches your model enum
       }
+      
 
       // Update main table
       const [updated] = await VerificationUpload_com.update(updateData, {
@@ -3882,13 +4768,47 @@ app.post('/sync-temp-to-main-com/:uniqueId', async (req, res) => {
 // });
 
 
-// Scheduled sync job
-// function setupScheduledSyncCom() {
-//   cron.schedule('*/30 * * * * *', async () => {
-//     try {
-//       console.log('Running scheduled sync from temp to main table...');
+//Scheduled sync job
+function setupScheduledSyncCom() {
+  cron.schedule('*/3 * * * *', async () => {
+    try {
+      console.log('Running scheduled sync from temp to main table...');
       
-//       const uniqueIds = await VerificationTemp_com.findAll({
+      const uniqueIds = await VerificationTemp_com.findAll({
+        attributes: ['uniqueId'],
+        group: ['uniqueId'],
+        raw: true
+      });
+
+      for (const { uniqueId } of uniqueIds) {
+        try {
+          const response = await axios.post(
+            `${process.env.VITE_API_BASE_URL}/sync-temp-to-main-com/${uniqueId}`
+          );
+          console.log(`Sync completed for ${uniqueId}:`, response.data);
+        } catch (err) {
+          console.error(`Error syncing ${uniqueId}:`, err.message);
+        }
+      }
+    } catch (error) {
+      console.error('Scheduled job error:', error);
+    }
+  });
+
+  console.log('Scheduled sync job initialized');
+}
+
+setupScheduledSyncCom();
+
+
+// // Scheduled status check job
+// function setupStatusCheckJob() {
+//   cron.schedule('*/1 * * * *', async () => { // Every 2 minutes
+//     try {
+//       console.log('Running periodic status check for all uniqueIds...');
+      
+//       // Get all uniqueIds from VerificationUpload table
+//       const uniqueIds = await VerificationUpload.findAll({
 //         attributes: ['uniqueId'],
 //         group: ['uniqueId'],
 //         raw: true
@@ -3896,23 +4816,102 @@ app.post('/sync-temp-to-main-com/:uniqueId', async (req, res) => {
 
 //       for (const { uniqueId } of uniqueIds) {
 //         try {
-//           const response = await axios.post(
-//             `${process.env.VITE_API_BASE_URL}/sync-temp-to-main-com/${uniqueId}`
-//           );
-//           console.log(`Sync completed for ${uniqueId}:`, response.data);
+//           // Call your status check endpoint internally
+//           const records = await VerificationUpload.findAll({
+//             where: { uniqueId },
+//             attributes: ['id', 'status', 'remark', 'final_status']
+//           });
+
+//           let updatedCount = 0;
+          
+//           // Process each record
+//           for (const record of records) {
+//             if (record.remark && record.remark !== 'pending' && record.final_status !== 'Completed') {
+//               await VerificationUpload.update(
+//                 { status: 'Completed', final_status : 'Completed' },
+//                 { where: { id: record.id } }
+//               );
+//               updatedCount++;
+//             }
+//           }
+
+//           console.log(`Status check completed for ${uniqueId}: ${updatedCount} records updated`);
+
 //         } catch (err) {
-//           console.error(`Error syncing ${uniqueId}:`, err.message);
+//           console.error(`Error processing ${uniqueId}:`, err.message);
 //         }
 //       }
+
+//       console.log('Periodic status check completed');
 //     } catch (error) {
-//       console.error('Scheduled job error:', error);
+//       console.error('Status check job error:', error);
 //     }
 //   });
 
-//   console.log('Scheduled sync job initialized');
+//   console.log('Status check job initialized (runs every 2 minutes)');
 // }
 
-// setupScheduledSyncCom();
+
+     // Your existing sync job
+// New status check job
+
+
+
+
+
+// Scheduled status check job
+function setupStatusCheckJob() {
+  cron.schedule('*/3 * * * *', async () => { // Every 2 minutes
+    try {
+      console.log('Running periodic status check for all uniqueIds...');
+      
+      // Get all uniqueIds from VerificationUpload table
+      const uniqueIds = await VerificationUpload.findAll({
+        attributes: ['uniqueId'],
+        group: ['uniqueId'],
+        raw: true
+      });
+
+      for (const { uniqueId } of uniqueIds) {
+        try {
+          // Call your status check endpoint internally
+          const records = await VerificationUpload.findAll({
+            where: { uniqueId },
+            attributes: ['id', 'status', 'remark', 'final_status']
+          });
+
+          let updatedCount = 0;
+          
+          // Process each record
+          for (const record of records) {
+            if (record.remark && record.remark !== 'pending' && record.final_status !== 'Completed') {
+              await VerificationUpload.update(
+                { final_status: 'Completed',status: 'Completed' },
+                { where: { id: record.id } }
+              );
+              updatedCount++;
+            }
+          }
+
+          console.log(`Status check completed for ${uniqueId}: ${updatedCount} records updated`);
+
+        } catch (err) {
+          console.error(`Error processing ${uniqueId}:`, err.message);
+        }
+      }
+
+      console.log('Periodic status check completed');
+    } catch (error) {
+      console.error('Status check job error:', error);
+    }
+  });
+
+  console.log('Status check job initialized (runs every 2 minutes)');
+}
+
+// Initialize both jobs
+ // Your existing sync job
+  setupStatusCheckJob();   // New status check job
 
 
 
@@ -3922,18 +4921,69 @@ app.post('/sync-temp-to-main-com/:uniqueId', async (req, res) => {
 
 
 
+// Scheduled status check job
+function setupStatusCheckJobCom() {
+  cron.schedule('*/3 * * * *', async () => { // Every 2 minutes
+    try {
+      console.log('Running periodic status check for all uniqueIds...');
+      
+      // Get all uniqueIds from VerificationUpload table
+      const uniqueIds = await VerificationUpload_com.findAll({
+        attributes: ['uniqueId'],
+        group: ['uniqueId'],
+        raw: true
+      });
+
+      for (const { uniqueId } of uniqueIds) {
+        try {
+          // Call your status check endpoint internally
+          const records = await VerificationUpload_com.findAll({
+            where: { uniqueId },
+            attributes: ['id', 'status', 'remark', 'final_status']
+          });
+
+          let updatedCount = 0;
+          
+          // Process each record
+          for (const record of records) {
+            if (record.remark && record.remark !== 'pending' && record.final_status !== 'Completed') {
+              await VerificationUpload_com.update(
+                { final_status: 'Completed',status: 'Completed' },
+                { where: { id: record.id } }
+              );
+              updatedCount++;
+            }
+          }
+
+          console.log(`Status check completed for ${uniqueId}: ${updatedCount} records updated`);
+
+        } catch (err) {
+          console.error(`Error processing ${uniqueId}:`, err.message);
+        }
+      }
+
+      console.log('Periodic status check completed');
+    } catch (error) {
+      console.error('Status check job error:', error);
+    }
+  });
+
+  console.log('Status check job initialized (runs every 2 minutes)');
+}
+
+// Initialize both jobs
+ // Your existing sync job
+  setupStatusCheckJobCom();   // New status check job
 
 
-
-
-app.get('/check-status/:uniqueId', async (req, res) => {
+app.post('/check-status-link/:uniqueId', async (req, res) => {
   try {
     const { uniqueId } = req.params;
 
     // Find all records with the given uniqueId
-    const records = await VerificationUpload_com.findAll({
+    const records = await VerificationUpload.findAll({
       where: { uniqueId },
-      attributes: ['final_status'] // Only fetch the final_status field
+      attributes: ['status'] // Only fetch the final_status field
     });
 
     if (records.length === 0) {
@@ -3944,15 +4994,15 @@ app.get('/check-status/:uniqueId', async (req, res) => {
     }
 
     // Check if all records have final_status as 'completed'
-    const allCompleted = records.every(record => record.final_status === 'Completed');
+    const allCompleted = records.every(record => record.status === 'Completed');
 
     res.json({
       success: true,
       uniqueId,
       totalRecords: records.length,
-      completedRecords: records.filter(r => r.final_status === 'Completed').length,
+      completedRecords: records.filter(r => r.status === 'Completed').length,
       allCompleted,
-      status: allCompleted ? 'completed' : 'pending'  
+      status: allCompleted ? 'completed' : 'pending'
     });
 
   } catch (error) {
@@ -3966,15 +5016,14 @@ app.get('/check-status/:uniqueId', async (req, res) => {
 });
 
 
-
-app.post('/check-status-link/:uniqueId', async (req, res) => {
+app.post('/check-status-link_com/:uniqueId', async (req, res) => {
   try {
     const { uniqueId } = req.params;
 
     // Find all records with the given uniqueId
-    const records = await VerificationUpload.findAll({
+    const records = await VerificationUpload_com.findAll({
       where: { uniqueId },
-      attributes: ['final_status'] // Only fetch the final_status field
+      attributes: ['status'] // Only fetch the final_status field
     });
 
     if (records.length === 0) {
@@ -3985,13 +5034,13 @@ app.post('/check-status-link/:uniqueId', async (req, res) => {
     }
 
     // Check if all records have final_status as 'completed'
-    const allCompleted = records.every(record => record.final_status === 'Completed');
+    const allCompleted = records.every(record => record.status === 'Completed');
 
     res.json({
       success: true,
       uniqueId,
       totalRecords: records.length,
-      completedRecords: records.filter(r => r.final_status === 'Completed').length,
+      completedRecords: records.filter(r => r.status === 'Completed').length,
       allCompleted,
       status: allCompleted ? 'completed' : 'pending'
     });

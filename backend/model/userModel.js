@@ -147,7 +147,21 @@ creditCostPerLink_C: {
 },processingTimeoutId: {
   type: DataTypes.STRING,
   allowNull: true
-}
+},  isProcessingFile1: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: false,
+  allowNull: false
+},processingStartTime1: {
+  type: DataTypes.DATE,
+  allowNull: true
+}, isProcessingFile2: {
+  type: DataTypes.BOOLEAN,
+  defaultValue: false,
+  allowNull: false
+},processingStartTime2: {
+  type: DataTypes.DATE,
+  allowNull: true
+},
 }, {
  
   timestamps: true,

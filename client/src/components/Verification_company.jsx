@@ -64,8 +64,10 @@ function Verification_company() {
   const [pendingUpload, setPendingUpload] = useState(null);
   const [statusCheckData, setStatusCheckData] = useState(null);
   const [isConfirmationActive, setIsConfirmationActive] = useState(false);
+  const [shouldRefresh, setShouldRefresh] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  
   const dataRef = useRef({ categorizedLinks: [], credits: null });
-
   const token = sessionStorage.getItem('token');
 
   useEffect(() => {
@@ -79,7 +81,7 @@ function Verification_company() {
 
     const handlePopState = () => {
       if (isConfirmationActive && pendingUpload) {
-        cancelProcessing();
+        cancelUpload();
       }
     };
 
@@ -92,22 +94,6 @@ function Verification_company() {
     };
   }, [isConfirmationActive, pendingUpload]);
 
-  // Restore pending upload on component mount
-  useEffect(() => {
-    const savedUpload = sessionStorage.getItem('pendingVerificationUpload');
-    if (savedUpload) {
-      try {
-        const parsed = JSON.parse(savedUpload);
-        setPendingUpload(parsed);
-        setShowConfirmation(true);
-        setIsConfirmationActive(true);
-      } catch (e) {
-        sessionStorage.removeItem('pendingVerificationUpload');
-      }
-    }
-  }, []);
-
-  // Auto-set email from session storage
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
     if (user && user.email) {
@@ -118,7 +104,6 @@ function Verification_company() {
     }
   }, []);
 
-  // Fetch credits when email changes
   useEffect(() => {
     const fetchCredits = async () => {
       if (!savedEmail || savedEmail === "Guest") return;
@@ -137,21 +122,19 @@ function Verification_company() {
     };
 
     fetchCredits();
-  }, [savedEmail]);
+  }, [savedEmail, shouldRefresh]);
 
   const fetchCreditCost = async (email) => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/getAllAdmin`, {
-        headers: { "Authorization": `Bearer ${token}`, 'X-API-Key': process.env.REACT_APP_API_KEY }
-      });
-      if (response.data && response.data.users) {
-        const adminUser = response.data.users.find(
-          (user) => user.userEmail === email  
-        );
-        if (adminUser) {
-          setCreditCost(adminUser.creditCostPerLink_C || 3);
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/users/credits/${email}`,
+        {
+          headers: { 
+            "Authorization": `Bearer ${token}` 
+          }
         }
-      }
+      );
+      setCreditCost(response.data.creditscost || 3);
     } catch (error) {
       console.error("Error fetching admin credit cost:", error);
     }
@@ -165,7 +148,6 @@ function Verification_company() {
         headers: { "user-email": savedEmail, "Authorization": `Bearer ${token}` },
       });
 
-      // Ensure response.data is an array before mapping
       const responseData = Array.isArray(response.data) ? response.data : 
                           (response.data.links || response.data.data || []);
 
@@ -178,11 +160,10 @@ function Verification_company() {
         creditDeducted: item.creditDeducted || (item.matchCount || 0) * creditCost
       }));
 
-      // Check status for all pending/processing batches in background
       transformedData
-        .filter(item => item.final_status !== 'completed')
+        .filter(item => item.status !== 'completed')
         .forEach(item => {
-          checkStatus(item.uniqueId, true); // true indicates background check
+          checkStatus(item.uniqueId, true);
         });
    
       if (JSON.stringify(transformedData) !== JSON.stringify(dataRef.current.categorizedLinks)) {
@@ -200,7 +181,6 @@ function Verification_company() {
       }
     } catch (error) {
       console.error("Silent refresh error:", error);
-      // Optionally set an empty array if the request fails
       setCategorizedLinks([]);
       dataRef.current.categorizedLinks = [];
     }
@@ -210,18 +190,18 @@ function Verification_company() {
     silentRefresh();
     const intervalId = setInterval(silentRefresh, 10000);
     return () => clearInterval(intervalId);
-  }, [savedEmail]);
+  }, [savedEmail, shouldRefresh]);
 
   const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
     try {
-      // Only show processing for manual checks
+
       if (!isBackgroundCheck) setLoading(true);
       
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/check-status/${uniqueId}`
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/check-status-link_com/${uniqueId}`
       );
 
-      // Silent update for background checks
+
       if (isBackgroundCheck) {
         setCategorizedLinks(prev => 
           prev.map(item => 
@@ -235,7 +215,7 @@ function Verification_company() {
         toast.success(`Status checked for ${uniqueId}`);
       }
 
-      // Handle completion logic silently
+
       if (response.data.status === 'completed' && !response.data.emailSent) {
         await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/send-completion-email-com`, {
           email: savedEmail,
@@ -244,7 +224,8 @@ function Verification_company() {
           completedRecords: response.data.completedRecords
         }, { headers: { "Authorization": `Bearer ${token}` } });
         
-        // Update state silently
+
+
         setCategorizedLinks(prev => 
           prev.map(item => 
             item.uniqueId === uniqueId 
@@ -283,174 +264,188 @@ function Verification_company() {
       toast.error('Please select a file');
       return;
     }
+    if (creditCost === null) {
+      toast.error("Please refresh your browser");
+      return;
+    }
+  
     if (!savedEmail || savedEmail === "Guest") {
       toast.error('Please login to upload files');
       return;
     }
-
-    const formData = new FormData();
-    formData.append('file', file);
-
+  
     try {
+      const processingCheck = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/check-file-processing2`,
+        {
+          params: { userEmail: savedEmail },
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+  
+      if (processingCheck.data.isProcessing) {
+        toast.error("File processing! ");
+        return;
+      }
+  
       setLoading(true);
-      setUploadProgress(0);
+      setFile(null); 
+      const formData = new FormData();
+      formData.append('file', file);
+  
       const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload-excel-verification-com`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'user-email': savedEmail,
-          "Authorization": `Bearer ${token}`
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / (progressEvent.total || 1)
-          );
-          setUploadProgress(percentCompleted);
+          "Authorization": `Bearer ${token}`,      
+          "credit-cost": creditCost,
+          "user-credits": credits
         }
       });
 
-      const uploadData = {
-        file: file.name,
-        totalLinks: response.data.categorizedLinks?.length || 0,
-        pendingCount: response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0,
-        uniqueId: response.data.uniqueId,
-        creditToDeduct: (response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0) * creditCost,
-        date: response.data.date || new Date().toISOString(),
-        final_status: response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0,
-        timestamp: new Date().toISOString(),
-      };
-
-      // Save to session storage
-      sessionStorage.setItem(
-        'pendingVerificationUpload', 
-        JSON.stringify(uploadData)
-      );
+      if (creditCost * response.data.linkCount > credits) {
+        toast.error("Insufficient credits");
+        return;
+      }
       
-      setPendingUpload(uploadData);
-      setShowConfirmation(true);
-      setIsConfirmationActive(true);
+      if (response.data.requiresConfirmation) {
+        setPendingUpload({
+          type: "normalConfirmation",
+          linkCount: response.data.linkCount,
+          file: response.data.fileName,
+          originalFile: file,
+        });
+        setShowConfirmation(true);
+        setIsConfirmationActive(true);
+        return;
+      }
+  
+      if (response.data.message === "Max 10000 links allowed") {
+        toast.error(response.data.message);
+        return;
+      }
       
-      setFile(null);
-      document.getElementById('file-input').value = '';
-    } catch (error) {
-      console.error('Upload error:', error);
-      const errorMessage = error.response?.data?.error || 
-                         error.response?.data?.message || 
-                         error.message || 
-                         'Upload failed. Please try again.';
-      toast.error(errorMessage);
-      setUploadProgress(0);
+      toast.success("File uploaded successfully!");
+      setShouldRefresh(prev => !prev);
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to upload file");
     } finally {
       setLoading(false);
     }
   };
 
-  const confirmProcessing = async () => {
-    if (!pendingUpload || !savedEmail) {
+  const confirmUpload = async () => {
+    if (isConfirming) return;
+   
+    if (!savedEmail) {
       toast.error('Missing required information');
       return;
     }
 
-    if (credits < pendingUpload.creditToDeduct) {
-      toast.error(`Not enough credits. You need ${pendingUpload.creditToDeduct} credits`);
-      return;
-    }
+    toast.success("File processed successfully. Ready for matching.");
+    sessionStorage.removeItem("isProcessing");
+    sessionStorage.removeItem("pendingUpload");
+    setPendingUpload(null);
+    setShowConfirmation(false);
+    setIsConfirmationActive(false);
 
-    setLoading(true);
     try {
-      // 1. Process the matching
+      const formData = new FormData();
+      formData.append("file", pendingUpload.originalFile);
+      formData.append("userEmail", savedEmail);
+      formData.append("processCredits", "true");
+
       const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/process-matching-com/${pendingUpload.uniqueId}`, 
-        {},
-        { headers: { 'user-email': savedEmail } }
-      );
-
-      // 2. Deduct credits
-      const creditRes = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/deduct-credits_v-com`,
+        `${import.meta.env.VITE_API_BASE_URL}/con-upload-excel-verification-com`, 
+        formData, 
         {
-          userEmail: savedEmail,
-          credits: pendingUpload.creditToDeduct,
-          uniqueId: pendingUpload.uniqueId
-        }, { headers: { "Authorization": `Bearer ${token}` } }
+          headers: {
+            'user-email': savedEmail,
+            "Authorization": `Bearer ${token}`
+          }
+        }
       );
 
-      setCredits(creditRes.data.updatedCredits);
-      toast.success(`Processed ${pendingUpload.pendingCount} links successfully! Deducted ${pendingUpload.creditToDeduct} credits`);
-
-      // 4. Send emails to all team members
-      const teamEmailsResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/get/team-emails`, { 
-        headers: { "Authorization": `Bearer ${token}` } 
-      });
-      const teamEmails = teamEmailsResponse.data.data || [];
-      
-      if (teamEmails.length > 0) {
-        const emailPromises = teamEmails.map(teamMember => 
-          axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/send-verification-confirmation/company`, {
-            email: teamMember.email,
-            uniqueId: pendingUpload.uniqueId,
-            totalLinks: pendingUpload.totalLinks,
-            pendingCount: pendingUpload.pendingCount,
-            creditCost: pendingUpload.creditToDeduct,
-            initiatedBy: savedEmail
-          }, { headers: { "Authorization": `Bearer ${token}` } }).catch(e => {
-            console.error(`Failed to send to ${teamMember.email}:`, e.response?.data || e.message);
-            return null;
-          })
-        );
-
-        await Promise.all(emailPromises);
-        console.log('Notifications sent to all team members');
+      if (response.data.message === "Upload timed out") {
+        toast.error(response.data.message);
+        return;
       }
 
-      silentRefresh();
-    } catch (error) {
-      console.error('Processing error:', error);
-      const errorMessage = error.response?.data?.error || 
-                         error.response?.data?.message || 
-                         error.message || 
-                         'Processing failed. Please try again.';
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
+      const totalLinks = response.data.categorizedLinks?.length || 0;
+      const pendingCount = response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0;
+      const creditToDeduct = pendingCount * creditCost;
+
+      const uploadData = {
+        file: response.data.fileName,
+        totalLinks: totalLinks,
+        pendingCount: pendingCount,
+        uniqueId: response.data.uniqueId,
+        creditToDeduct: creditToDeduct,
+        date: response.data.date || new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+      };
+
+      if (response.data.updatedCredits !== undefined) {
+        setCredits(response.data.updatedCredits);
+        toast.success(`Processing complete! Deducted ${creditToDeduct} credits`);
+      } else {
+        toast.success("File processed successfully. Ready for credit confirmation.");
+      }
+
+      sessionStorage.setItem("pendingUpload", JSON.stringify(uploadData));
+      setPendingUpload(uploadData);
       setShowConfirmation(false);
       setIsConfirmationActive(false);
-      setPendingUpload(null);
-      sessionStorage.removeItem('pendingVerificationUpload');
+      setShouldRefresh(prev => !prev);
+    } catch (error) {
+      if (error.response) {
+        const errorMessage = error.response.data.message || 
+                           error.response.data.error || 
+                           'Processing failed';
+        
+        if (error.response.data.message === 'Insufficient credits') {
+          cancelUpload();
+        }
+        
+        toast.error(errorMessage);
+      } else {
+        console.error('Processing error:', error);
+        toast.error('An unexpected error occurred during processing');
+      }
+    } finally {
+      sessionStorage.removeItem("isProcessing");
+      setIsConfirming(false);
+      setLoading(false);
     }
   };
 
-  const cancelProcessing = async () => {
-    if (!pendingUpload?.uniqueId) {
-      setShowConfirmation(false);
-      setPendingUpload(null);
-      setFile(null);
-      setIsConfirmationActive(false);
-      document.getElementById('file-input').value = '';
-      sessionStorage.removeItem('pendingVerificationUpload');
+  const cancelUpload = async () => {
+    if (isConfirming) {
+      toast.info("Cannot cancel during processing");
       return;
     }
-
+  
     try {
-      setLoading(true);
-      await axios.delete(
-        `${import.meta.env.VITE_API_BASE_URL}/api/delete-verification-uploads-com/${pendingUpload.uniqueId}`, { 
-          headers: { "Authorization": `Bearer ${token}` } 
-        }
+      await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
+        {
+          userEmail: savedEmail,
+          isProcessing: false
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      toast.success('Upload cancelled and data deleted');
-      silentRefresh();
-    } catch (error) {
-      console.error('Error cancelling upload:', error);
-      toast.error('Failed to cancel upload. Please try again.');
-    } finally {
-      setLoading(false);
+      sessionStorage.removeItem("isProcessing");
+      sessionStorage.removeItem("pendingUpload");
+      setPendingUpload(null);
       setShowConfirmation(false);
       setIsConfirmationActive(false);
-      setPendingUpload(null);
-      setFile(null);
-      document.getElementById('file-input').value = '';
-      sessionStorage.removeItem('pendingVerificationUpload');
+      
+      toast.success("Upload cancelled successfully");
+    } catch (error) {
+      console.error("Failed to cancel upload:", error);
+      toast.error("Failed to cancel upload");
     }
   };
 
@@ -568,7 +563,7 @@ function Verification_company() {
         'Locations': entry.location_total || 'N/A',
         'Overview': entry.overview || 'N/A',
         'Website': entry.visit_website || 'N/A',
-        'Final Remarks': entry.final_remaks || 'N/A',
+        'Final Remarks': entry.final_remarks || 'N/A',
         'Company ID': entry.company_id || 'N/A',
       }));
 
@@ -638,82 +633,73 @@ function Verification_company() {
     );
   };
 
-  function PendingUploadAlert({
-    onConfirm,
-    onCancel,
-    pendingUpload,
-    currentCredits,
-  }) {
-    const totalLinks = pendingUpload.totalLinks || 0;
-    const pendingCount = pendingUpload.pendingCount || 0;
-    const notFoundCount = totalLinks - pendingCount;
-    const creditsToDeduct = pendingUpload.creditToDeduct || 0;
-    const remainingCredits = currentCredits - creditsToDeduct;
+  function UploadConfirmationDialog({
+  pendingUpload,
+  onConfirm,
+  onCancel,
+  isConfirming,
+ 
+}) {
+  const blocked = isConfirming;
 
-    return (
-      <div className="modal-container">
-        <h3 className="modal-heading">Confirm Upload</h3>
-        <div className="modal-content-space">
-          <div className="horizontal-table">
-            <div className="horizontal-table-item">
-              <span className="horizontal-table-label">File</span>
-              <span className="horizontal-table-value">
-                📄 {pendingUpload.file}
-              </span>
-            </div>
+  return (
+    <div className={`modal-container ${blocked ? "modal-blocked" : ""}`}>
+      <h3 className="modal-heading">Confirm Upload</h3>
 
-            <div className="horizontal-table-item">
-              <span className="horizontal-table-label">Total Links</span>
-              <span className="horizontal-table-value">🔗 {totalLinks}</span>
-            </div>
-
-            <div className="horizontal-table-item">
-              <span className="horizontal-table-label">Pending Links</span>
-              <span className="horizontal-table-value text-warning">
-                ⏳ {pendingCount}
-              </span>
-            </div>
-
-            <div className="horizontal-table-item">
-              <span className="horizontal-table-label">Credits to Deduct</span>
-              <span className="horizontal-table-value">
-                💳 {creditsToDeduct} ({creditCost} per link)
-              </span>
-            </div>
-
-            <div className="horizontal-table-item">
-              <span className="horizontal-table-label">Remaining Credits</span>
-              <span className="horizontal-table-value">
-                🧮{" "}
-                <span
-                  className={
-                    remainingCredits < 0 ? "text-danger" : "text-success"
-                  }
-                >
-                  {remainingCredits}
-                </span>
-              </span>
-            </div>
+      <div className="modal-content-space">
+        <div className="horizontal-table">
+          <div className="horizontal-table-item">
+            <span className="horizontal-table-label">File</span>
+            <span className="horizontal-table-value">
+              📄 {pendingUpload.file}
+            </span>
+          </div>
+          <div className="horizontal-table-item">
+            <span className="horizontal-table-label">Links Found</span>
+            <span className="horizontal-table-value">
+              🔗 {pendingUpload.linkCount}
+            </span>
           </div>
         </div>
-        <div className="buttons-container">
-          <button onClick={onCancel} className="cancel-button">
-            <span>❌</span>
-            <span>Cancel Upload</span>
-          </button>
-          <button
-            onClick={onConfirm}
-            className="confirm-button"
-            disabled={remainingCredits < 0}
-            title={remainingCredits < 0 ? "Not enough credits" : ""}
-          >
-            <span>✅</span>
-            <span>Confirm & Process</span>
-          </button>
+
+        <div className="info-message">
+          Your file contains {pendingUpload.linkCount} LinkedIn links. Do you
+          want to proceed with processing?
         </div>
+
+        {/* Warning message when processing was interrupted */}
+        {/* {blocked && (
+          <div className="warning-message">
+            <div className="warning-icon">⚠️</div>
+            <div className="warning-text">
+              You have a file processing. If you refresh, you may lose data and need to wait 5 minutes to upload again.
+            </div>
+          </div>
+        )} */}
       </div>
-    );
-  }
+
+      <div className="buttons-container">
+        <button
+          onClick={!blocked ? onCancel : undefined}
+          className={`cancel-button ${blocked ? "button-disabled" : ""}`}
+          disabled={blocked}
+        >
+          <span>❌</span>
+          <span>{blocked ? "Processing..." : "Cancel"}</span>
+        </button>
+        <button
+          onClick={!blocked ? onConfirm : undefined}
+          className={`confirm-button ${blocked ? "button-disabled" : ""}`}
+          disabled={blocked}
+          
+        >
+          <span>✅</span>
+          <span>{blocked ? "Processing..." : "Confirm"}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
 
   return (
     <ErrorBoundary>
@@ -807,14 +793,16 @@ function Verification_company() {
                         )}
                       </div>
 
-                      {showConfirmation && pendingUpload && (
-                        <PendingUploadAlert
-                          onConfirm={confirmProcessing}
-                          onCancel={cancelProcessing}
+                      {showConfirmation && pendingUpload &&  (
+                        <UploadConfirmationDialog
                           pendingUpload={pendingUpload}
-                          currentCredits={credits}
+                          onConfirm={confirmUpload}
+                          onCancel={cancelUpload}
+                          isConfirming={isConfirming}
+                          
                         />
                       )}
+
 
                       {categorizedLinks.length > 0 && !showConfirmation && (
                         <div className="data-section">
@@ -935,7 +923,7 @@ function Verification_company() {
                                               <td className="data-table-cell">
                                                 <div className="data-table-credits">
                                                   <FaCoins className="data-table-credits-icon" />
-                                                  <span>{first.creditDeducted || 0}</span>
+                                                  <span>{first.creditsUsed || 0}</span>
                                                 </div>
                                               </td>
                                               <td className="data-table-cell">

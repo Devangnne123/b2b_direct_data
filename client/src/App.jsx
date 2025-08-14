@@ -253,7 +253,7 @@ function App() {
             <TempLinkMobileForm />
           </ProtectedRoute>
         } /> */}
-        {/* <Route path="/verfication_links" element={
+        <Route path="/verfication_links" element={
           <ProtectedRoute>
             <VerificationLinks />
           </ProtectedRoute>
@@ -262,7 +262,7 @@ function App() {
           <ProtectedRoute>
             <Verification_company />
           </ProtectedRoute>
-        } /> */}
+        } />
         <Route path="/Alladmincompanycredits" element={
           <ProtectedRoute >
             <Alladmincompanycredits />

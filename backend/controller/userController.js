@@ -512,14 +512,14 @@ exports.getUserCredits = async (req, res) => {
   try {
     const user = await User.findOne({
       where: { userEmail },
-      attributes: ["userEmail", "credits"],
+      attributes: ["userEmail", "credits","creditCostPerLink_C"],
     });
 
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
 
-    res.status(200).json({ success: true, credits: user.credits });
+    res.status(200).json({ success: true, credits: user.credits ,creditscost : user.creditCostPerLink_C});
   } catch (err) {
     console.error("Error fetching user credits:", err);
     res.status(500).json({ message: "Something went wrong.", error: err.message });

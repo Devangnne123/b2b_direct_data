@@ -120,16 +120,16 @@ function Sidebar() {
       icon: <FaUserPlus />,
       options: [{ name: "Bulk Lookup", path: "/bulk-lookup" }],
     },
-    // {
-    //   name: "Linkedin Contact Verification",
-    //   icon: <FaUserPlus />,
-    //   options: [{ name: "Upload contact Link", path: "/verfication_links" }],
-    // },
-    // {
-    //   name: "Linkedin Company Details",
-    //   icon: <FaUserPlus />,
-    //   options: [{ name: "Upload Company link", path: "/verfication_com" }],
-    // },
+    {
+      name: "Linkedin Contact Verification",
+      icon: <FaUserPlus />,
+      options: [{ name: "Upload contact Link", path: "/verfication_links" }],
+    },
+    {
+      name: "Linkedin Company Details",
+      icon: <FaUserPlus />,
+      options: [{ name: "Upload Company link", path: "/verfication_com" }],
+    },
     {
       name: "Settings",
       icon: <IoMdSettings />,
@@ -161,16 +161,16 @@ function Sidebar() {
       icon: <FaUserPlus />,
       options: [{ name: "Bulk Lookup", path: "/bulk-lookup" }],
     },
-    // {
-    //   name: "Linkedin Contact Verification",
-    //   icon: <FaUserPlus />,
-    //   options: [{ name: "Upload contact Link", path: "/verfication_links" }],
-    // },
-    // {
-    //   name: "Linkedin Company Details",
-    //   icon: <FaUserPlus />,
-    //   options: [{ name: "Upload Company link", path: "/verfication_com" }],
-    // },
+    {
+      name: "Linkedin Contact Verification",
+      icon: <FaUserPlus />,
+      options: [{ name: "Upload contact Link", path: "/verfication_links" }],
+    },
+    {
+      name: "Linkedin Company Details",
+      icon: <FaUserPlus />,
+      options: [{ name: "Upload Company link", path: "/verfication_com" }],
+    },
     {
       name: "Statistics",
       icon: <FaChartBar />,
