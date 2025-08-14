@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect ,useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { IoMdClose, IoMdEye, IoMdEyeOff } from "react-icons/io";
 import "../css/Auth.css";
@@ -44,6 +44,34 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
     const timer = setTimeout(checkActiveSession, 500);
     return () => clearTimeout(timer);
   }, [email]);
+
+
+  // Logout function (same as yours)
+    const handleLogout = useCallback(async () => {
+      const user = JSON.parse(localStorage.getItem("user") || sessionStorage.getItem("user"));
+      const token = sessionStorage.getItem("token");
+  
+      if (!user || !token) return;
+  
+      try {
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/logout`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({ email: user.email }),
+        });
+      } catch (error) {
+        console.error("Logout error:", error);
+      } finally {
+        // Clear storage and notify other tabs
+        localStorage.clear();
+        sessionStorage.clear();
+        localStorage.setItem("logout-event", Date.now().toString());
+        navigate("/");
+      }
+    }, [navigate]);
 
   const handleAutoLogin = async () => {
     setIsAutoLoggingIn(true);
@@ -107,6 +135,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
       const result = await response.json();
 
       if (response.ok) {
+        handleLogout();
         setSuccessMessage(result.message);
         setHasActiveSession(false);
         setShowForceLogout(false);
@@ -118,6 +147,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
       setErrorMessage("An error occurred. Please try again later.");
     } finally {
       setIsSubmitting(false);
+      
     }
   };
 
