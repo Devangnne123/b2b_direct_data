@@ -5233,7 +5233,7 @@ app.post('/con-upload-excel-verification-com', auth, upload.single('file'), asyn
           user.credits -= creditsToDeduct;
           await user.save();
 
-          await setProcessingFalse2(email);
+          await setProcessingFalse3(email);
 
           // Send completion email
           try {

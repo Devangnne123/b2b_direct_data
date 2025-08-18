@@ -14,9 +14,9 @@ const sequelize = new Sequelize('postgres', 'postgres', 'admin==88', {
     },
   },
     pool: {
-    max: 20,            // Increased from default 5
+    max: 60,           // Increased from default 5
     min: 0,
-    acquire: 30000,     // 30 seconds acquire timeout
+    acquire: 80000,     // 30 seconds acquire timeout
     idle: 10000,        // 10 seconds idle timeout
     evict: 10000        // How often to check for idle connections
   },
