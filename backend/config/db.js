@@ -28,7 +28,12 @@ const sequelize = new Sequelize('postgres', 'postgres', 'admin==88', {
       /TimeoutError/,
       /SequelizeConnectionError/,
       /SequelizeConnectionRefusedError/,
-      /SequelizeConnectionAcquireTimeoutError/
+      /SequelizeConnectionAcquireTimeoutError/,
+       Sequelize.ConnectionError,
+      Sequelize.ConnectionTimedOutError,
+      Sequelize.TimeoutError,
+      /Deadlock/i,
+      'SQLITE_BUSY'
     ]
   }
 });

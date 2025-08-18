@@ -171,14 +171,14 @@ function VerificationLinks() {
 
       // Handle completion logic silently
       if (response.data.status === 'completed' && !response.data.emailSent) {
-        await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/send-completion-email`, {
-          email: savedEmail,
-          uniqueId: uniqueId,
-          totalRecords: response.data.totalRecords,
-          completedRecords: response.data.completedRecords
-        },{
-          headers:{"Authorization": `Bearer ${token}`}
-        });
+        // await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/send-completion-email`, {
+        //   email: savedEmail,
+        //   uniqueId: uniqueId,
+        //   totalRecords: response.data.totalRecords,
+        //   completedRecords: response.data.completedRecords
+        // },{
+        //   headers:{"Authorization": `Bearer ${token}`}
+        // });
         
         // Update state silently
         setCategorizedLinks(prev => 
@@ -320,7 +320,7 @@ function VerificationLinks() {
       // setUploadProgress(0);
       const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload-excel-verification`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          
           'user-email': savedEmail,
           "Authorization": `Bearer ${token}`,      
           "credit-cost": creditCost,  // Add credit cost to headers
@@ -350,7 +350,7 @@ function VerificationLinks() {
                   return;
                 }
           
-                if (response.data.message === "Max 10000 links allowed") {
+                if (response.data.message === "Max 5,000 links allowed") {
                   toast.error(response.data.message);
                   return;
                 }
