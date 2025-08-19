@@ -203,12 +203,12 @@ function BulkLookup() {
       if (!savedEmail || savedEmail === "Guest") return;
 
       const [linksRes, creditsRes] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_API_BASE_URL}/bulklookup/get-links`, {
-          headers: {
-            "user-email": savedEmail,
-            Authorization: `Bearer ${token}`,
-          },
-        }),
+        // axios.get(`${import.meta.env.VITE_API_BASE_URL}/bulklookup/get-links`, {
+        //   headers: {
+        //     "user-email": savedEmail,
+        //     Authorization: `Bearer ${token}`,
+        //   },
+        // }),
         axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`,
           {
@@ -218,26 +218,26 @@ function BulkLookup() {
       ]);
 
       const now = Date.now();
-      const newData = linksRes.data || [];
+      // // const newData = linksRes.data || [];
 
-      // Preserve processing status for items that are still within 1 minute window
-      const updatedData = newData.map((item) => {
-        const itemTime = new Date(item.date || 0).getTime();
-        if (now - itemTime < 60000) {
+      // // Preserve processing status for items that are still within 1 minute window
+      // const updatedData = newData.map((item) => {
+      //   const itemTime = new Date(item.date || 0).getTime();
+      //   if (now - itemTime < 60000) {
 
-          return { ...item, status: "pending" };
-        }
-        return item;
-      });
+      //     return { ...item, status: "pending" };
+      //   }
+      //   return item;
+      // });
 
-      if (
-        JSON.stringify(updatedData) !==
-        JSON.stringify(dataRef.current.uploadedData)
-      ) {
-        setUploadedData(updatedData);
-        setFilteredData(updatedData);
-        dataRef.current.uploadedData = updatedData;
-      }
+      // if (
+      //   JSON.stringify(updatedData) !==
+      //   JSON.stringify(dataRef.current.uploadedData)
+      // ) {
+      //   setUploadedData(updatedData);
+      //   setFilteredData(updatedData);
+      //   dataRef.current.uploadedData = updatedData;
+      // }
 
       if (creditsRes.data.credits !== dataRef.current.credits) {
         setCredits(creditsRes.data.credits);

@@ -244,7 +244,7 @@ function VerificationLinks() {
 
   useEffect(() => {
     silentRefresh();
-    const intervalId = setInterval(silentRefresh, 10000);
+    const intervalId = setInterval(silentRefresh, 60000);
     return () => clearInterval(intervalId);
   }, [savedEmail]);
 

@@ -632,7 +632,7 @@ app.post('/upload-excel', auth, upload.single('file'), async (req, res) => {
 
 
 
-app.post('/process-linkedin-upload', auth, upload.single('file'), async (req, res) => {
+app.post('/process-linkedin-upload', upload.single('file'), async (req, res) => {
   try {
     const email = req.headers['user-email'] || req.body.userEmail;
     if (!email) return res.status(400).json({ error: "Email required" });
@@ -3318,7 +3318,7 @@ const VerificationTemp = require('./model/verification_temp');
 //   await setProcessingStatus1(email, false);
 // }
 
-app.post('/con-upload-excel-verification', auth, upload.single('file'), async (req, res) => {
+app.post('/con-upload-excel-verification', upload.single('file'), async (req, res) => {
   try {
     const email = req.headers['user-email'];
     if (!email) return res.status(400).json({ error: "Email required" });
@@ -3332,7 +3332,7 @@ app.post('/con-upload-excel-verification', auth, upload.single('file'), async (r
     // Initialize variables
     let uniqueId, links = [];
     const processCredits = req.body.processCredits === 'true';
-    const BATCH_SIZE = 200;
+    const BATCH_SIZE = 600;
 
     if (req.file) {
       const filePath = req.file.path;
@@ -3444,24 +3444,7 @@ app.post('/con-upload-excel-verification', auth, upload.single('file'), async (r
                 clean_linkedin_link: linkRecord.clean_link,
                 link_id: linkRecord.link_id,
                 remark: 'pending',
-                full_name: linkRecord.full_name,
-                head_title: linkRecord.head_title,
-                head_location: linkRecord.head_location,
-                title_1: linkRecord.title_1,
-                company_1: linkRecord.company_1,
-                company_link_1: linkRecord.company_link_1,
-                exp_duration: linkRecord.exp_duration,
-                exp_location: linkRecord.exp_location,
-                job_type: linkRecord.job_type,
-                title_2: linkRecord.title_2,
-                company_2: linkRecord.company_2,
-                company_link_2: linkRecord.company_link_2,
-                exp_duration_2: linkRecord.exp_duration_2,
-                exp_location_2: linkRecord.exp_location_2,
-                job_type_2: linkRecord.job_type_2,
-                final_remarks: linkRecord.final_remarks,
-                list_contacts_id: linkRecord.list_contacts_id,
-                url_id: linkRecord.url_id
+                
               });
               insertedCount++;
             }
@@ -3642,7 +3625,7 @@ app.post('/api/set-file-processing1', async (req, res) => {
 
 
 
-app.get('/get-verification-links',auth, async (req, res) => {
+app.get('/get-verification-links', async (req, res) => {
   try {
     const userEmail = req.headers['user-email'];
     
@@ -4052,9 +4035,9 @@ cron.schedule('*/3 * * * *', async () => {
       }
 
       for (const tempRecord of tempRecords) {
-        let transaction;
+      
         try {
-          transaction = await sequelize.transaction();
+         
 
           const tempData = tempRecord.get({ plain: true });
           
@@ -4106,7 +4089,7 @@ cron.schedule('*/3 * * * *', async () => {
               uniqueId: tempData.uniqueId,
               link_id: tempData.link_id
             },
-            transaction
+          
           });
 
           if (updated > 0) {
@@ -4116,7 +4099,7 @@ cron.schedule('*/3 * * * *', async () => {
             if (shouldMarkCompleted) {
               await VerificationTemp.destroy({
                 where: { id: tempData.id },
-                transaction
+               
               });
               markedCompletedCount++;
               deletedCount++;
@@ -4127,10 +4110,7 @@ cron.schedule('*/3 * * * *', async () => {
             console.log(`⚠️ No matching record found for link_id: ${tempData.link_id}`);
           }
 
-          await transaction.commit();
-          
-          // Small delay between operations
-          await new Promise(resolve => setTimeout(resolve, 100));
+      
           
         } catch (recordError) {
           // if (transaction) await transaction.rollback();
@@ -5065,7 +5045,7 @@ app.post('/con-upload-excel-verification-com', auth, upload.single('file'), asyn
     // Initialize variables
     let uniqueId, links = [];
     const processCredits = req.body.processCredits === 'true';
-    const BATCH_SIZE = 200;
+    const BATCH_SIZE = 600;
 
     if (req.file) {
       const filePath = req.file.path;
@@ -5174,24 +5154,7 @@ app.post('/con-upload-excel-verification-com', auth, upload.single('file'), asyn
                 clean_linkedin_link: linkRecord.clean_link,
                 link_id: linkRecord.link_id,
                 remark: 'pending',
-                company_name: linkRecord.company_name,
-                company_url: linkRecord.company_url || null,
-                company_headquater: linkRecord.company_headquater || null,
-                company_industry: linkRecord.company_industry || null,
-                company_size: linkRecord.company_size || null,
-                employee_count: linkRecord.employee_count || null,
-                year_founded: linkRecord.year_founded || null,
-                company_speciality: linkRecord.company_speciality || null,
-                linkedin_url: linkRecord.linkedin_url || null,
-                company_stock_name: linkRecord.company_stock_name || null,
-                verified_page_date: linkRecord.verified_page_date || null,
-                phone_number: linkRecord.phone_number || null,
-                company_followers: linkRecord.company_followers || null,
-                location_total: linkRecord.location_total || null,
-                overview: linkRecord.overview || null,
-                visit_website: linkRecord.visit_website || null,
-                final_remarks: linkRecord.final_remarks || null,
-                company_id: linkRecord.company_id || null
+
               });
               insertedCount++;
             }
@@ -5453,7 +5416,7 @@ app.post('/api/set-file-processing2', async (req, res) => {
 
 
 
-app.get('/get-verification-links-com',auth, async (req, res) => {
+app.get('/get-verification-links-com', async (req, res) => {
   try {
     const userEmail = req.headers['user-email'];
     
