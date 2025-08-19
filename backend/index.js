@@ -3430,13 +3430,13 @@ app.post('/con-upload-excel-verification', upload.single('file'), async (req, re
           if (batch.length === 0) break;
 
           for (const linkRecord of batch) {
-            if (linkRecord.clean_link) {
-              // Update verification_upload table
-              await VerificationUpload.update(
-                { clean_link: linkRecord.clean_link },
-                { where: { id: linkRecord.id } }
-              );
-              updatedCount++;
+            // if (linkRecord.clean_link) {
+            //   // Update verification_upload table
+            //   await VerificationUpload.update(
+            //     { clean_link: linkRecord.clean_link },
+            //     { where: { id: linkRecord.id } }
+            //   );
+            //   updatedCount++;
 
               // Insert into verification_temp table
               await VerificationTemp.create({
@@ -3447,7 +3447,7 @@ app.post('/con-upload-excel-verification', upload.single('file'), async (req, re
                 
               });
               insertedCount++;
-            }
+           
           }
 
           offset += BATCH_SIZE;
@@ -5140,13 +5140,13 @@ app.post('/con-upload-excel-verification-com', auth, upload.single('file'), asyn
           if (batch.length === 0) break;
 
           for (const linkRecord of batch) {
-            if (linkRecord.clean_link) {
-              // Update verification_upload table
-              await VerificationUpload_com.update(
-                { clean_link: linkRecord.clean_link },
-                { where: { id: linkRecord.id } }
-              );
-              updatedCount++;
+            // if (linkRecord.clean_link) {
+            //   // Update verification_upload table
+            //   await VerificationUpload_com.update(
+            //     { clean_link: linkRecord.clean_link },
+            //     { where: { id: linkRecord.id } }
+            //   );
+            //   updatedCount++;
 
               // Insert into verification_temp table
               await VerificationTemp_com.create({
@@ -5158,7 +5158,7 @@ app.post('/con-upload-excel-verification-com', auth, upload.single('file'), asyn
               });
               insertedCount++;
             }
-          }
+          
 
           offset += BATCH_SIZE;
         }
