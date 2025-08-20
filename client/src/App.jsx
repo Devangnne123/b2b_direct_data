@@ -257,11 +257,11 @@ function App() {
             <VerificationLinks />
           </ProtectedRoute>
         } />
-        <Route path="/verfication_com" element={
+        {/* <Route path="/verfication_com" element={
           <ProtectedRoute>
             <Verification_company />
           </ProtectedRoute>
-        } />
+        } /> */}
         <Route path="/Alladmincompanycredits" element={
           <ProtectedRoute >
             <Alladmincompanycredits />
