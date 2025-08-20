@@ -225,31 +225,5 @@ creditCostPerLink_C: {
   ]
 });
 
-// Safe index creation check
-(async () => {
-  try {
-    const queryInterface = sequelize.getQueryInterface();
-    const indexes = await queryInterface.showIndex('Users');
-
-    const requiredIndexes = [
-      'users_client_id_unique1',
-      'users_email_index',
-      'users_created_by_index',
-      'users_main_client_index'
-    ];
-
-    for (const indexName of requiredIndexes) {
-      if (!indexes.some(index => index.name === indexName)) {
-        await queryInterface.addIndex('Users', {
-          fields: [indexName.split('_').slice(1, -1).join('_')],
-          name: indexName
-        });
-        console.log(`Created index: ${indexName}`);
-      }
-    }
-  } catch (error) {
-    console.error('Index verification error:', error);
-  }
-})();
 
 module.exports = User;

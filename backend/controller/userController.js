@@ -639,44 +639,44 @@ exports.resetPassword = async (req, res) => {
 
 
 
-const { Op } = require('sequelize');
+// const { Op } = require('sequelize');
 
-async function getLinksReport() {
-  try {
-    const links = await Link.findAll({
-      attributes: [
-        'uniqueId',
-        [sequelize.fn('COUNT', sequelize.col('link')), 'linkCount'],
-        [sequelize.literal('FIRST(totallink)'), 'firstTotalLink'],
-        'matchLink',
-        'fileName',
-        [sequelize.literal('database()'), 'databaseName'],
-        'date',
-        'email',
-        [sequelize.fn('SUM', sequelize.col('creditDeducted')), 'totalCreditDeducted']
-      ],
-      group: ['uniqueId', 'matchLink', 'fileName', 'date', 'email'],
-      order: [['date', 'DESC']]
-    });
+// async function getLinksReport() {
+//   try {
+//     const links = await Link.findAll({
+//       attributes: [
+//         'uniqueId',
+//         [sequelize.fn('COUNT', sequelize.col('link')), 'linkCount'],
+//         [sequelize.literal('FIRST(totallink)'), 'firstTotalLink'],
+//         'matchLink',
+//         'fileName',
+//         [sequelize.literal('database()'), 'databaseName'],
+//         'date',
+//         'email',
+//         [sequelize.fn('SUM', sequelize.col('creditDeducted')), 'totalCreditDeducted']
+//       ],
+//       group: ['uniqueId', 'matchLink', 'fileName', 'date', 'email'],
+//       order: [['date', 'DESC']]
+//     });
 
-    return links.map(link => ({
-      uniqueId: link.uniqueId,
-      linkCount: link.get('linkCount'),
-      firstTotalLink: link.get('firstTotalLink'),
-      matchLink: link.matchLink,
-      fileName: link.fileName,
-      databaseName: link.get('databaseName'),
-      date: link.date,
-      email: link.email,
-      totalCreditDeducted: link.get('totalCreditDeducted') || 0
-    }));
-  } catch (error) {
-    console.error('Error fetching links report:', error);
-    throw error;
-  }
-}
+//     return links.map(link => ({
+//       uniqueId: link.uniqueId,
+//       linkCount: link.get('linkCount'),
+//       firstTotalLink: link.get('firstTotalLink'),
+//       matchLink: link.matchLink,
+//       fileName: link.fileName,
+//       databaseName: link.get('databaseName'),
+//       date: link.date,
+//       email: link.email,
+//       totalCreditDeducted: link.get('totalCreditDeducted') || 0
+//     }));
+//   } catch (error) {
+//     console.error('Error fetching links report:', error);
+//     throw error;
+//   }
+// }
 
-// Usage
-getLinksReport()
-  .then(report => console.log(report))
-  .catch(err => console.error(err));
+// // Usage
+// getLinksReport()
+//   .then(report => console.log(report))
+//   .catch(err => console.error(err));
