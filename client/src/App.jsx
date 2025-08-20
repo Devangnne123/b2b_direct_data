@@ -116,8 +116,7 @@ function App() {
     // Check every 5 minutes
     const statusCheckInterval = setInterval(checkActiveStatus,300000);
     
-    // Also check immediately on load
-    checkActiveStatus();
+    
 
     const handleStorageChange = (e) => {
       if (e.key === 'logout-event') {

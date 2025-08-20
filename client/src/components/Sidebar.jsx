@@ -47,39 +47,40 @@ function Sidebar() {
   
 
   // Logout function (same as yours)
-  const handleLogout = useCallback(async () => {
-    const user = JSON.parse(localStorage.getItem("user") || sessionStorage.getItem("user"));
-    const token = sessionStorage.getItem("token");
+// Logout function (without useCallback)
+const handleLogout = async () => {
+  const user = JSON.parse(localStorage.getItem("user") || sessionStorage.getItem("user") || "null");
+  const token = sessionStorage.getItem("token");
 
-    if (!user || !token) return;
+  if (!user || !token) return;
 
-    try {
-      await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/logout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ email: user.email }),
-      });
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      // Clear storage and notify other tabs
-      localStorage.clear();
-      sessionStorage.clear();
-      localStorage.setItem("logout-event", Date.now().toString());
-      navigate("/");
-    }
-  }, [navigate]);
+  try {
+    await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/logout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({ email: user.email }),
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
+  } finally {
+    // Clear storage and notify other tabs
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem("logout-event", Date.now().toString());
+    navigate("/");
+  }
+};
 
-  // Reset inactivity timer on user activity
-  const resetInactivityTimer = useCallback(() => {
-    clearTimeout(inactivityTimer);
-    inactivityTimer = setTimeout(() => {
-      handleLogout(); // Auto-logout after 24h 
-    }, 24 * 60 * 60 * 1000); //  in milliseconds 24 * 60 * 60 * 1000
-  }, [handleLogout]);
+
+const resetInactivityTimer = () => {
+  clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    handleLogout(); // Auto-logout after 24h 
+  }, 24 * 60 * 60 * 1000); // 24 hours in milliseconds
+};
 
   // Set up event listeners for user activity
   useEffect(() => {

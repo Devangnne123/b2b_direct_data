@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef,useCallback } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { ToastContainer, toast } from 'react-toastify';
@@ -187,7 +187,7 @@ function VerificationLinks() {
               ? { ...item, emailSent: true } 
               : item
           )
-        );
+        ); 
       }
     } catch (error) {
       if (!isBackgroundCheck) {
@@ -199,54 +199,118 @@ function VerificationLinks() {
     }
   };
 
-  const silentRefresh = async () => {
-    try {
-      if (!savedEmail || savedEmail === "Guest") return;
+  // const silentRefresh = async () => {
+  //   try {
+  //     if (!savedEmail || savedEmail === "Guest") return;
       
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/get-verification-links`, {
-        headers: { "user-email": savedEmail, "Authorization": `Bearer ${token}`},
-      });
+  //     const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/get-verification-links`, {
+  //       headers: { "user-email": savedEmail, "Authorization": `Bearer ${token}`},
+  //     });
 
-      // Transform the data
-      const transformedData = response.data.map(item => ({
-        ...item,
-        link: item.link || item.profileUrl || '',
-        remark: item.remark || 'pending',
-        matchLink: item.matchLink || null,
-        date: item.date || item.createdAt || new Date().toISOString(),
-        creditDeducted: item.creditDeducted || (item.matchCount || 0) * creditCost
-      }));
+  //     // Transform the data
+  //     const transformedData = response.data.map(item => ({
+  //       ...item,
+  //       link: item.link || item.profileUrl || '',
+  //       remark: item.remark || 'pending',
+  //       matchLink: item.matchLink || null,
+  //       date: item.date || item.createdAt || new Date().toISOString(),
+  //       creditDeducted: item.creditDeducted || (item.matchCount || 0) * creditCost
+  //     }));
 
-      // Check status for all pending/processing batches in background
-      transformedData
-        .filter(item => item.status !== 'completed')
-        .forEach(item => {
-          checkStatus(item.uniqueId, true); // true indicates background check
+  //     // Check status for all pending/processing batches in background
+  //     transformedData
+  //       .filter(item => item.status !== 'completed')
+  //       .forEach(item => {
+  //         checkStatus(item.uniqueId, true); // true indicates background check
+  //       });
+
+  //     if (JSON.stringify(transformedData) !== JSON.stringify(dataRef.current.categorizedLinks)) {
+  //       setCategorizedLinks(transformedData);
+  //       dataRef.current.categorizedLinks = transformedData;
+  //     }
+
+  //     // Refresh credits
+  //     const creditRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`, {
+  //       headers: { "Authorization": `Bearer ${token}` },
+  //     });
+  //     if (creditRes.data.credits !== dataRef.current.credits) {
+  //       setCredits(creditRes.data.credits);
+  //       dataRef.current.credits = creditRes.data.credits;
+  //     }
+  //   } catch (error) {
+  //     console.error("Silent refresh error:", error);
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   silentRefresh();
+  //   const intervalId = setInterval(silentRefresh, 60000);
+  //   return () => clearInterval(intervalId);
+  // }, [savedEmail]);
+
+    const silentRefresh = useCallback(async () => {
+      try {
+        if (!savedEmail || savedEmail === "Guest") return;
+  
+        const [linksRes, creditsRes] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API_BASE_URL}/get-verification-links`, {
+            headers: {
+              "user-email": savedEmail,
+              Authorization: `Bearer ${token}`,
+            },
+          }),
+          axios.get(
+            `${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          ),
+        ]);
+  
+        const now = Date.now();
+        const newData = linksRes.data || [];
+  
+        // Preserve processing status for items that are still within 1 minute window
+        const updatedData = newData.map((item) => {
+          const itemTime = new Date(item.date || 0).getTime();
+          if (now - itemTime < 60000) {
+  
+            return { ...item, status: "pending" };
+          }
+          return item;
         });
-
-      if (JSON.stringify(transformedData) !== JSON.stringify(dataRef.current.categorizedLinks)) {
-        setCategorizedLinks(transformedData);
-        dataRef.current.categorizedLinks = transformedData;
+  
+        if (
+          JSON.stringify(updatedData) !==
+          JSON.stringify(dataRef.current.categorizedLinks)
+        ) {
+          setCategorizedLinks(updatedData);
+          dataRef.current.categorizedLinks = updatedData;
+        }
+  
+        if (creditsRes.data.credits !== dataRef.current.credits) {
+          setCredits(creditsRes.data.credits);
+          dataRef.current.credits = creditsRes.data.credits;
+        }
+      } catch (error) {
+        console.error("Silent refresh error:", error);
       }
-
-      // Refresh credits
-      const creditRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`, {
-        headers: { "Authorization": `Bearer ${token}` },
-      });
-      if (creditRes.data.credits !== dataRef.current.credits) {
-        setCredits(creditRes.data.credits);
-        dataRef.current.credits = creditRes.data.credits;
+    }, [savedEmail, token]);
+  
+    useEffect(() => {
+      silentRefresh();
+      const intervalId = setInterval(silentRefresh, 10000);
+      return () => clearInterval(intervalId);
+    }, [silentRefresh]);
+  
+    useEffect(() => {
+      const user = JSON.parse(sessionStorage.getItem("user"));
+      if (user?.email) {
+        setSavedEmail(user.email);
+       
       }
-    } catch (error) {
-      console.error("Silent refresh error:", error);
-    }
-  };
-
-  useEffect(() => {
-    silentRefresh();
-    const intervalId = setInterval(silentRefresh, 60000);
-    return () => clearInterval(intervalId);
-  }, [savedEmail]);
+    }, []);
+  
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];
@@ -1145,7 +1209,7 @@ function VerificationLinks() {
                                                 </div>
                                               </td>
                                               <td className="data-table-cell">
-                                                {first.totalLinks || 0}
+                                                {first.totallink || 0}
                                               </td>
                                               <td className="data-table-cell">
                                                 {first.pendingCount || 0}

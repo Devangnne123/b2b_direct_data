@@ -23,7 +23,7 @@ const VerificationTemp = sequelize.define('verification_temp', {
 
   remark: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   full_name: {
     type: DataTypes.TEXT,
