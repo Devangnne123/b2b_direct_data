@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { ToastContainer, toast } from 'react-toastify';
@@ -66,6 +66,7 @@ function Verification_company() {
   const [isConfirmationActive, setIsConfirmationActive] = useState(false);
   const [shouldRefresh, setShouldRefresh] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // Add this state
   
   const dataRef = useRef({ categorizedLinks: [], credits: null });
   const token = sessionStorage.getItem('token');
@@ -140,67 +141,72 @@ function Verification_company() {
     }
   };
 
-  const silentRefresh = async () => {
+  const silentRefresh = useCallback(async () => {
     try {
       if (!savedEmail || savedEmail === "Guest") return;
-      
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/get-verification-links-com`, {
-        headers: { "user-email": savedEmail, "Authorization": `Bearer ${token}` },
+
+      const [linksRes, creditsRes] = await Promise.all([
+        axios.get(`${import.meta.env.VITE_API_BASE_URL}/get-verification-links-com`, {
+          headers: {
+            "user-email": savedEmail,
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+        axios.get(
+          `${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        ),
+      ]);
+
+      const now = Date.now();
+      const newData = linksRes.data || [];
+
+      // Preserve processing status for items that are still within 1 minute window
+      const updatedData = newData.map((item) => {
+        const itemTime = new Date(item.date || 0).getTime();
+        if (now - itemTime < 60000) {
+          return { ...item, status: "pending" };
+        }
+        return item;
       });
 
-      const responseData = Array.isArray(response.data) ? response.data : 
-                          (response.data.links || response.data.data || []);
-
-      const transformedData = responseData.map(item => ({
-        ...item,
-        link: item.link || item.profileUrl || '',
-        remark: item.remark || 'pending',
-        matchLink: item.matchLink || null,
-        date: item.date || item.createdAt || new Date().toISOString(),
-        creditDeducted: item.creditDeducted || (item.matchCount || 0) * creditCost
-      }));
-
-      transformedData
-        .filter(item => item.status !== 'completed')
-        .forEach(item => {
-          checkStatus(item.uniqueId, true);
-        });
-   
-      if (JSON.stringify(transformedData) !== JSON.stringify(dataRef.current.categorizedLinks)) {
-        setCategorizedLinks(transformedData);
-        dataRef.current.categorizedLinks = transformedData;
+      if (
+        JSON.stringify(updatedData) !==
+        JSON.stringify(dataRef.current.categorizedLinks)
+      ) {
+        setCategorizedLinks(updatedData);
+        dataRef.current.categorizedLinks = updatedData;
       }
 
-      const creditRes = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`, {
-        headers: { "Authorization": `Bearer ${token}` },
-      });
-      
-      if (creditRes.data.credits !== dataRef.current.credits) {
-        setCredits(creditRes.data.credits);
-        dataRef.current.credits = creditRes.data.credits;
+      if (creditsRes.data.credits !== dataRef.current.credits) {
+        setCredits(creditsRes.data.credits);
+        dataRef.current.credits = creditsRes.data.credits;
       }
     } catch (error) {
       console.error("Silent refresh error:", error);
-      setCategorizedLinks([]);
-      dataRef.current.categorizedLinks = [];
     }
-  };
+  }, [savedEmail, token]);
 
   useEffect(() => {
     silentRefresh();
-    const intervalId = setInterval(silentRefresh, 60000);
+    const intervalId = setInterval(silentRefresh, 50000);
     return () => clearInterval(intervalId);
-  }, [savedEmail, shouldRefresh]);
+  }, [silentRefresh]);
 
   const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
+    if (isProcessing && !isBackgroundCheck) return; // Prevent multiple clicks
+    
     try {
-
-      if (!isBackgroundCheck) setLoading(true);
+      if (!isBackgroundCheck) {
+        setLoading(true);
+        setIsProcessing(true);
+      }
       
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/check-status-link_com/${uniqueId}`
       );
-
 
       if (isBackgroundCheck) {
         setCategorizedLinks(prev => 
@@ -215,17 +221,7 @@ function Verification_company() {
         toast.success(`Status checked for ${uniqueId}`);
       }
 
-
       if (response.data.status === 'completed' && !response.data.emailSent) {
-        // await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/send-completion-email-com`, {
-        //   email: savedEmail,
-        //   uniqueId: uniqueId,
-        //   totalRecords: response.data.totalRecords,
-        //   completedRecords: response.data.completedRecords
-        // }, { headers: { "Authorization": `Bearer ${token}` } });
-        
-
-
         setCategorizedLinks(prev => 
           prev.map(item => 
             item.uniqueId === uniqueId 
@@ -240,7 +236,10 @@ function Verification_company() {
         toast.error(error.response?.data?.message || 'Failed to check status');
       }
     } finally {
-      if (!isBackgroundCheck) setLoading(false);
+      if (!isBackgroundCheck) {
+        setLoading(false);
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -260,6 +259,8 @@ function Verification_company() {
   };
 
   const handleUpload = async () => {
+    if (isProcessing) return; // Prevent multiple clicks
+    
     if (!file) {
       toast.error('Please select a file');
       return;
@@ -289,13 +290,13 @@ function Verification_company() {
       }
   
       setLoading(true);
+      setIsProcessing(true);
       setFile(null); 
       const formData = new FormData();
       formData.append('file', file);
   
       const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload-excel-verification-com`, formData, {
         headers: {
-          // 'Content-Type': 'multipart/form-data',
           'user-email': savedEmail,
           "Authorization": `Bearer ${token}`,      
           "credit-cost": creditCost,
@@ -332,11 +333,12 @@ function Verification_company() {
       toast.error(err.response?.data?.message || "Failed to upload file");
     } finally {
       setLoading(false);
+      setIsProcessing(false);
     }
   };
 
   const confirmUpload = async () => {
-    if (isConfirming) return;
+    if (isConfirming || isProcessing) return;
    
     if (!savedEmail) {
       toast.error('Missing required information');
@@ -351,6 +353,7 @@ function Verification_company() {
     setIsConfirmationActive(false);
 
     try {
+      setIsProcessing(true);
       const formData = new FormData();
       formData.append("file", pendingUpload.originalFile);
       formData.append("userEmail", savedEmail);
@@ -415,20 +418,22 @@ function Verification_company() {
       }
     } finally {
       sessionStorage.removeItem("isProcessing");
+      setIsProcessing(false);
       setIsConfirming(false);
       setLoading(false);
     }
   };
 
   const cancelUpload = async () => {
-    if (isConfirming) {
+    if (isConfirming || isProcessing) {
       toast.info("Cannot cancel during processing");
       return;
     }
   
     try {
+      setIsProcessing(true);
       await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing2`,
         {
           userEmail: savedEmail,
           isProcessing: false
@@ -446,6 +451,8 @@ function Verification_company() {
     } catch (error) {
       console.error("Failed to cancel upload:", error);
       toast.error("Failed to cancel upload");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -517,6 +524,8 @@ function Verification_company() {
   }, [categorizedLinks, sortConfig]);
 
   const downloadGroupedEntry = async (group) => {
+    if (isProcessing) return; // Prevent multiple clicks
+    
     try {
       if (!group || group.length === 0) {
         toast.error('No data available to download');
@@ -530,6 +539,7 @@ function Verification_company() {
       }
 
       setLoading(true);
+      setIsProcessing(true);
       
       const response = await axios.get(
         `${import.meta.env.VITE_API_BASE_URL}/api/verification-uploads-com/${uniqueId}`,
@@ -582,6 +592,7 @@ function Verification_company() {
       toast.error('Failed to download data. Please try again.');
     } finally {
       setLoading(false);
+      setIsProcessing(false);
     }
   };
 
@@ -634,72 +645,61 @@ function Verification_company() {
   };
 
   function UploadConfirmationDialog({
-  pendingUpload,
-  onConfirm,
-  onCancel,
-  isConfirming,
- 
-}) {
-  const blocked = isConfirming;
+    pendingUpload,
+    onConfirm,
+    onCancel,
+    isConfirming,
+    isProcessing // Add this prop
+  }) {
+    const blocked = isConfirming || isProcessing;
 
-  return (
-    <div className={`modal-container ${blocked ? "modal-blocked" : ""}`}>
-      <h3 className="modal-heading">Confirm Upload</h3>
+    return (
+      <div className={`modal-container ${blocked ? "modal-blocked" : ""}`}>
+        <h3 className="modal-heading">Confirm Upload</h3>
 
-      <div className="modal-content-space">
-        <div className="horizontal-table">
-          <div className="horizontal-table-item">
-            <span className="horizontal-table-label">File</span>
-            <span className="horizontal-table-value">
-              📄 {pendingUpload.file}
-            </span>
-          </div>
-          <div className="horizontal-table-item">
-            <span className="horizontal-table-label">Links Found</span>
-            <span className="horizontal-table-value">
-              🔗 {pendingUpload.linkCount}
-            </span>
-          </div>
-        </div>
-
-        <div className="info-message">
-          Your file contains {pendingUpload.linkCount} LinkedIn links. Do you
-          want to proceed with processing?
-        </div>
-
-        {/* Warning message when processing was interrupted */}
-        {/* {blocked && (
-          <div className="warning-message">
-            <div className="warning-icon">⚠️</div>
-            <div className="warning-text">
-              You have a file processing. If you refresh, you may lose data and need to wait 5 minutes to upload again.
+        <div className="modal-content-space">
+          <div className="horizontal-table">
+            <div className="horizontal-table-item">
+              <span className="horizontal-table-label">File</span>
+              <span className="horizontal-table-value">
+                📄 {pendingUpload.file}
+              </span>
+            </div>
+            <div className="horizontal-table-item">
+              <span className="horizontal-table-label">Links Found</span>
+              <span className="horizontal-table-value">
+                🔗 {pendingUpload.linkCount}
+              </span>
             </div>
           </div>
-        )} */}
-      </div>
 
-      <div className="buttons-container">
-        <button
-          onClick={!blocked ? onCancel : undefined}
-          className={`cancel-button ${blocked ? "button-disabled" : ""}`}
-          disabled={blocked}
-        >
-          <span>❌</span>
-          <span>{blocked ? "Processing..." : "Cancel"}</span>
-        </button>
-        <button
-          onClick={!blocked ? onConfirm : undefined}
-          className={`confirm-button ${blocked ? "button-disabled" : ""}`}
-          disabled={blocked}
-          
-        >
-          <span>✅</span>
-          <span>{blocked ? "Processing..." : "Confirm"}</span>
-        </button>
+          <div className="info-message">
+            Your file contains {pendingUpload.linkCount} LinkedIn links. Do you
+            want to proceed with processing?
+          </div>
+        </div>
+
+        <div className="buttons-container">
+          <button
+            onClick={!blocked ? onCancel : undefined}
+            className={`cancel-button ${blocked ? "button-disabled" : ""}`}
+            disabled={blocked}
+          >
+            <span>❌</span>
+            <span>{blocked ? "Processing..." : "Cancel"}</span>
+          </button>
+          <button
+            onClick={!blocked ? onConfirm : undefined}
+            className={`confirm-button ${blocked ? "button-disabled" : ""}`}
+            disabled={blocked}
+          >
+            <span>✅</span>
+            <span>{blocked ? "Processing..." : "Confirm"}</span>
+          </button>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -751,13 +751,13 @@ function Verification_company() {
                             accept=".xlsx, .xls, .csv"
                             onChange={handleFileChange}
                             className="file-upload-input"
-                            disabled={showConfirmation || isConfirmationActive}
+                            disabled={showConfirmation || isConfirmationActive || isProcessing}
                             required
                           />
                           <button
                             onClick={handleUpload}
                             className={`upload-button ${
-                              showConfirmation || !file || isConfirmationActive
+                              showConfirmation || !file || isConfirmationActive || isProcessing
                                 ? "upload-button-disabled"
                                 : ""
                             }`}
@@ -768,10 +768,11 @@ function Verification_company() {
                               credits < creditCost ||
                               loading ||
                               showConfirmation ||
-                              isConfirmationActive
+                              isConfirmationActive ||
+                              isProcessing
                             }
                           >
-                            {loading ? (
+                            {loading || isProcessing ? (
                               <Loader2 className="upload-button-loader" />
                             ) : (
                               "Upload File"
@@ -799,10 +800,9 @@ function Verification_company() {
                           onConfirm={confirmUpload}
                           onCancel={cancelUpload}
                           isConfirming={isConfirming}
-                          
+                          isProcessing={isProcessing}
                         />
                       )}
-
 
                       {categorizedLinks.length > 0 && !showConfirmation && (
                         <div className="data-section">
@@ -893,7 +893,7 @@ function Verification_company() {
                                                 </div>
                                               </td>
                                               <td className="data-table-cell">
-                                                {first.totalLinks || 0}
+                                                {first.totallink || 0}
                                               </td>
                                               <td className="data-table-cell">
                                                 {first.pendingCount || 0}
@@ -907,9 +907,9 @@ function Verification_company() {
                                                   <button
                                                     onClick={() => checkStatus(uniqueId)}
                                                     className="status-check-button"
-                                                    disabled={loading}
+                                                    disabled={loading || isProcessing}
                                                   >
-                                                    {loading ? (
+                                                    {loading || isProcessing ? (
                                                       <Loader2 className="status-check-loader" />
                                                     ) : (
                                                       "Check Status"
@@ -932,11 +932,18 @@ function Verification_company() {
                                                     downloadGroupedEntry(group)
                                                   }
                                                   className="download-button"
+                                                  disabled={isProcessing}
                                                 >
-                                                  <Download className="download-button-icon" />
-                                                  <span className="download-button-text">
-                                                    Download
-                                                  </span>
+                                                  {isProcessing ? (
+                                                    <Loader2 className="download-button-loader" />
+                                                  ) : (
+                                                    <>
+                                                      <Download className="download-button-icon" />
+                                                      <span className="download-button-text">
+                                                        Download
+                                                      </span>
+                                                    </>
+                                                  )}
                                                 </button>
                                               </td>
                                             </tr>
@@ -952,9 +959,9 @@ function Verification_company() {
                                 <div className="pagination-container">
                                   <button
                                     onClick={prevPage}
-                                    disabled={currentPage === 1}
+                                    disabled={currentPage === 1 || isProcessing}
                                     className={`pagination-button ${
-                                      currentPage === 1 ? "pagination-button-disabled" : ""
+                                      currentPage === 1 || isProcessing ? "pagination-button-disabled" : ""
                                     }`}
                                   >
                                     <ChevronLeft className="pagination-icon" />
@@ -971,6 +978,7 @@ function Verification_company() {
                                         className={`pagination-number ${
                                           currentPage === number ? "pagination-number-active" : ""
                                         }`}
+                                        disabled={isProcessing}
                                       >
                                         {number}
                                       </button>
@@ -979,9 +987,9 @@ function Verification_company() {
 
                                   <button
                                     onClick={nextPage}
-                                    disabled={currentPage === totalPages}
+                                    disabled={currentPage === totalPages || isProcessing}
                                     className={`pagination-button ${
-                                      currentPage === totalPages
+                                      currentPage === totalPages || isProcessing
                                         ? "pagination-button-disabled"
                                         : ""
                                     }`}

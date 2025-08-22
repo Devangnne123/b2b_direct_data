@@ -1130,3 +1130,28 @@ button:focus-visible,
   color: #721c24;
   border: 1px solid #f5c6cb;
 }
+
+
+.button-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-blocked {
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.upload-button-disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.download-button-loader {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

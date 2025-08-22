@@ -70,7 +70,7 @@ function VerificationLinks() {
   const [isConfirmationActive, setIsConfirmationActive] = useState(false);
   const dataRef = useRef({ categorizedLinks: [], credits: null });
   const [isConfirming, setIsConfirming] = useState(false);
-
+  const [isProcessing, setIsProcessing] = useState(false); // Add this state
   const token = sessionStorage.getItem('token');
 
  useEffect(() => {
@@ -147,9 +147,12 @@ function VerificationLinks() {
   }, [savedEmail]);
 
   const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
+     if (isProcessing && !isBackgroundCheck) return; // Prevent multiple clicks
     try {
       // Only show processing for manual checks
-      if (!isBackgroundCheck) setLoading(true);
+      if (!isBackgroundCheck){setLoading(true);
+        setIsProcessing(true);
+      } 
       
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/check-status-link/${uniqueId}`
@@ -196,6 +199,7 @@ function VerificationLinks() {
       }
     } finally {
       if (!isBackgroundCheck) setLoading(false);
+       setIsProcessing(false);
     }
   };
 
@@ -299,7 +303,7 @@ function VerificationLinks() {
   
     useEffect(() => {
       silentRefresh();
-      const intervalId = setInterval(silentRefresh, 10000);
+      const intervalId = setInterval(silentRefresh, 50000);
       return () => clearInterval(intervalId);
     }, [silentRefresh]);
   
@@ -330,6 +334,7 @@ function VerificationLinks() {
 
 
   const handleUpload = async () => {
+     if (isProcessing) return; // Prevent multiple clicks
     if (!file) {
       toast.error('Please select a file');
       return;
@@ -345,6 +350,7 @@ function VerificationLinks() {
     }
 
     try {
+      
         // First check processing status
         const processingCheck = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL}/api/check-file-processing1`,
@@ -380,6 +386,7 @@ function VerificationLinks() {
     formData.append('file', file);
 
     try {
+      setIsProcessing(true);
       // setLoading(true);
       // setUploadProgress(0);
       const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/upload-excel-verification`, formData, {
@@ -429,77 +436,78 @@ function VerificationLinks() {
                 toast.error(err.response?.data?.message || "Failed to upload file");
               } finally {
                 setLoading(false);
+                setIsProcessing(false);
               }
           };
 
-  const handleUpload1 = async () => {
-    if (!file) {
-      toast.error('Please select a file');
-      return;
-    }
-    if (!savedEmail || savedEmail === "Guest") {
-      toast.error('Please login to upload files');
-      return;
-    }
+  // const handleUpload1 = async () => {
+  //   if (!file) {
+  //     toast.error('Please select a file');
+  //     return;
+  //   }
+  //   if (!savedEmail || savedEmail === "Guest") {
+  //     toast.error('Please login to upload files');
+  //     return;
+  //   }
 
-    const formData = new FormData();
-       formData.append("file", pendingUpload.originalFile);
-    formData.append("userEmail", savedEmail);
-    formData.append("processCredits", "true"); // Flag to process credits immediately
+  //   const formData = new FormData();
+  //      formData.append("file", pendingUpload.originalFile);
+  //   formData.append("userEmail", savedEmail);
+  //   formData.append("processCredits", "true"); // Flag to process credits immediately
 
-    try {
+  //   try {
      
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/con-upload-excel-verification`, formData, {
-        headers: {
+  //     const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/con-upload-excel-verification`, formData, {
+  //       headers: {
           
-          'user-email': savedEmail,
-          "Authorization": `Bearer ${token}`,
-          "credit-cost": creditCost
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / (progressEvent.total || 1)
-          );
-          setUploadProgress(percentCompleted);
-        }
-      });
+  //         'user-email': savedEmail,
+  //         "Authorization": `Bearer ${token}`,
+  //         "credit-cost": creditCost
+  //       },
+  //       onUploadProgress: (progressEvent) => {
+  //         const percentCompleted = Math.round(
+  //           (progressEvent.loaded * 100) / (progressEvent.total || 1)
+  //         );
+  //         setUploadProgress(percentCompleted);
+  //       }
+  //     });
 
-      const uploadData = {
-        file: file.name,
-        totalLinks: response.data.categorizedLinks?.length || 0,
-        pendingCount: response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0,
-        uniqueId: response.data.uniqueId,
-        creditToDeduct: (response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0) * creditCost,
-        date: response.data.date || new Date().toISOString(),
-        timestamp: new Date().toISOString(),
-      };
+  //     const uploadData = {
+  //       file: file.name,
+  //       totalLinks: response.data.categorizedLinks?.length || 0,
+  //       pendingCount: response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0,
+  //       uniqueId: response.data.uniqueId,
+  //       creditToDeduct: (response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0) * creditCost,
+  //       date: response.data.date || new Date().toISOString(),
+  //       timestamp: new Date().toISOString(),
+  //     };
 
-      // Save to session storage
-      sessionStorage.setItem(
-        'pendingVerificationUploads', 
-        JSON.stringify(uploadData)
-      );
-      setPendingUpload(uploadData);
-      setShowConfirmation(true);
-      setIsConfirmationActive(true);
+  //     // Save to session storage
+  //     sessionStorage.setItem(
+  //       'pendingVerificationUploads', 
+  //       JSON.stringify(uploadData)
+  //     );
+  //     setPendingUpload(uploadData);
+  //     setShowConfirmation(true);
+  //     setIsConfirmationActive(true);
       
-      setFile(null);
-      document.getElementById('file-input').value = '';
-    } catch (error) {
-      console.error('Upload error:', error);
-      const errorMessage = error.response?.data?.error || 
-                         error.response?.data?.message || 
-                         error.message || 
-                         'Upload failed. Please try again.';
-      toast.error(errorMessage);
-      setUploadProgress(0);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     setFile(null);
+  //     document.getElementById('file-input').value = '';
+  //   } catch (error) {
+  //     console.error('Upload error:', error);
+  //     const errorMessage = error.response?.data?.error || 
+  //                        error.response?.data?.message || 
+  //                        error.message || 
+  //                        'Upload failed. Please try again.';
+  //     toast.error(errorMessage);
+  //     setUploadProgress(0);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const confirmUpload = async () => {
-    if (isConfirming ) return;
+    if (isConfirming || isProcessing ) return;
 
     if (!savedEmail) {
       toast.error('Missing required information');
@@ -515,7 +523,7 @@ function VerificationLinks() {
         setIsConfirmationActive(false);
 
         try{
-
+   setIsProcessing(true);
     const formData = new FormData();
        formData.append("file", pendingUpload.originalFile);
     formData.append("userEmail", savedEmail);
@@ -593,113 +601,113 @@ function VerificationLinks() {
          }
        } finally {
          sessionStorage.removeItem("isProcessing");
-         
+          setIsProcessing(false);
          setIsConfirming(false);
          setLoading(false);
        }
      };
 
-  const confirmUpload1 = async () => {
-    if (isConfirming ) return;
+  // const confirmUpload1 = async () => {
+  //   if (isConfirming ) return;
 
-    if (!savedEmail) {
-      toast.error('Missing required information');
-      return;
-    }
+  //   if (!savedEmail) {
+  //     toast.error('Missing required information');
+  //     return;
+  //   }
 
-     toast.success("File processed successfully. Ready for matching.");
-       // Clean up frontend state
-        sessionStorage.removeItem("isProcessing");
-        sessionStorage.removeItem("pendingUpload");
-        setPendingUpload(null);
-        setShowConfirmation(false);
-        setIsConfirmationActive(false);
+  //    toast.success("File processed successfully. Ready for matching.");
+  //      // Clean up frontend state
+  //       sessionStorage.removeItem("isProcessing");
+  //       sessionStorage.removeItem("pendingUpload");
+  //       setPendingUpload(null);
+  //       setShowConfirmation(false);
+  //       setIsConfirmationActive(false);
 
     
-    try {
-      // 1. Process the matching
-      await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/process-matching/${pendingUpload.uniqueId}`, 
-        {},
-        { headers: { 'user-email': savedEmail } }
-      );
+  //   try {
+  //     // 1. Process the matching
+  //     await axios.post(
+  //       `${import.meta.env.VITE_API_BASE_URL}/process-matching/${pendingUpload.uniqueId}`, 
+  //       {},
+  //       { headers: { 'user-email': savedEmail } }
+  //     );
 
-      // 2. Deduct credits
-      const creditRes = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/deduct-credits_v`,
-        {
-          userEmail: savedEmail,
-          credits: pendingUpload.creditToDeduct,
-          uniqueId: pendingUpload.uniqueId
-        },{ headers: {"Authorization": `Bearer ${token}`  } }
-      );
-      setCredits(creditRes.data.updatedCredits);
+  //     // 2. Deduct credits
+  //     const creditRes = await axios.post(
+  //       `${import.meta.env.VITE_API_BASE_URL}/api/deduct-credits_v`,
+  //       {
+  //         userEmail: savedEmail,
+  //         credits: pendingUpload.creditToDeduct,
+  //         uniqueId: pendingUpload.uniqueId
+  //       },{ headers: {"Authorization": `Bearer ${token}`  } }
+  //     );
+  //     setCredits(creditRes.data.updatedCredits);
 
-      // 4. Fetch and send to all team emails
-      const teamEmailsResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/get/team-emails`,{
-         headers: {"Authorization": `Bearer ${token}`  } }
-      );
-      if (!teamEmailsResponse.data.success) {
-        throw new Error('Failed to fetch team emails');
-      }
+  //     // 4. Fetch and send to all team emails
+  //     const teamEmailsResponse = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/get/team-emails`,{
+  //        headers: {"Authorization": `Bearer ${token}`  } }
+  //     );
+  //     if (!teamEmailsResponse.data.success) {
+  //       throw new Error('Failed to fetch team emails');
+  //     }
 
-      const teamEmails = teamEmailsResponse.data.data || [];
-      console.log(`Sending to ${teamEmails.length} team members`);
+  //     const teamEmails = teamEmailsResponse.data.data || [];
+  //     console.log(`Sending to ${teamEmails.length} team members`);
 
-      if (teamEmails.length > 0) {
-        const emailPromises = teamEmails.map(async (teamMember) => {
-          try {
-            const response = await axios.post(
-              `${import.meta.env.VITE_API_BASE_URL}/api/send-verification-confirmation/link`,
-              {
-                email: teamMember.email,
-                uniqueId: pendingUpload.uniqueId,
-                totalLinks: pendingUpload.totalLinks,
-                pendingCount: pendingUpload.pendingCount,
-                creditCost: pendingUpload.creditToDeduct,
-                initiatedBy: savedEmail
-              },{
-                headers: {"Authorization" : `Bearer ${token}`} 
-              },
-            );
-            return { success: true, email: teamMember.email, data: response.data };
-          } catch (error) {
-            console.error(`Failed to send to ${teamMember.email}:`, error.response?.data || error.message);
-            return { 
-              success: false, 
-              email: teamMember.email, 
-              error: error.message 
-            };
-          }
-        });
+  //     if (teamEmails.length > 0) {
+  //       const emailPromises = teamEmails.map(async (teamMember) => {
+  //         try {
+  //           const response = await axios.post(
+  //             `${import.meta.env.VITE_API_BASE_URL}/api/send-verification-confirmation/link`,
+  //             {
+  //               email: teamMember.email,
+  //               uniqueId: pendingUpload.uniqueId,
+  //               totalLinks: pendingUpload.totalLinks,
+  //               pendingCount: pendingUpload.pendingCount,
+  //               creditCost: pendingUpload.creditToDeduct,
+  //               initiatedBy: savedEmail
+  //             },{
+  //               headers: {"Authorization" : `Bearer ${token}`} 
+  //             },
+  //           );
+  //           return { success: true, email: teamMember.email, data: response.data };
+  //         } catch (error) {
+  //           console.error(`Failed to send to ${teamMember.email}:`, error.response?.data || error.message);
+  //           return { 
+  //             success: false, 
+  //             email: teamMember.email, 
+  //             error: error.message 
+  //           };
+  //         }
+  //       });
 
-        const results = await Promise.all(emailPromises);
-        const failedEmails = results.filter(r => !r.success);
+  //       const results = await Promise.all(emailPromises);
+  //       const failedEmails = results.filter(r => !r.success);
         
-        if (failedEmails.length > 0) {
-          console.warn('Failed emails:', failedEmails);
-          toast.warning(`Sent to team but failed for ${failedEmails.length} members`);
-        } else {
-          toast.success('Notifications sent to all team members');
-        }
-      }
+  //       if (failedEmails.length > 0) {
+  //         console.warn('Failed emails:', failedEmails);
+  //         toast.warning(`Sent to team but failed for ${failedEmails.length} members`);
+  //       } else {
+  //         toast.success('Notifications sent to all team members');
+  //       }
+  //     }
 
-      toast.success(`Processed ${pendingUpload.pendingCount} links! Deducted ${pendingUpload.creditToDeduct} credits`);
-    } catch (error) {
-      console.error('Processing error:', {
-        error: error.message,
-        response: error.response?.data,
-        stack: error.stack
-      });
-      toast.error(error.response?.data?.error || error.message || 'Processing failed');
-    } finally {
-      setLoading(false);
-      setShowConfirmation(false);
-      setIsConfirmationActive(false);
-      setPendingUpload(null);
-      sessionStorage.removeItem('pendingVerificationUploads');
-    }
-  };
+  //     toast.success(`Processed ${pendingUpload.pendingCount} links! Deducted ${pendingUpload.creditToDeduct} credits`);
+  //   } catch (error) {
+  //     console.error('Processing error:', {
+  //       error: error.message,
+  //       response: error.response?.data,
+  //       stack: error.stack
+  //     });
+  //     toast.error(error.response?.data?.error || error.message || 'Processing failed');
+  //   } finally {
+  //     setLoading(false);
+  //     setShowConfirmation(false);
+  //     setIsConfirmationActive(false);
+  //     setPendingUpload(null);
+  //     sessionStorage.removeItem('pendingVerificationUploads');
+  //   }
+  // };
 
   // const cancelUpload = async () => {
   //   try {
@@ -728,12 +736,13 @@ function VerificationLinks() {
 
 
    const cancelUpload = async () => {
-    if (isConfirming) {
+    if (isConfirming|| isProcessing) {
       toast.info("Cannot cancel during processing");
       return;
     }
   
     try {
+      setIsProcessing(true);
   
       // Notify backend to cancel processing
      await axios.post(
@@ -757,6 +766,9 @@ function VerificationLinks() {
     } catch (error) {
       console.error("Failed to cancel upload:", error);
       toast.error("Failed to cancel upload");
+    }
+    finally {
+      setIsProcessing(false);
     }
   };
 
@@ -828,7 +840,9 @@ function VerificationLinks() {
   }, [categorizedLinks, sortConfig]);
 
   const downloadGroupedEntry = async (group) => {
+    if (isProcessing) return; // Prevent multiple clicks
     try {
+      setIsProcessing(true);
       if (!group || group.length === 0) {
         toast.error('No data available to download');
         return;
@@ -895,6 +909,7 @@ function VerificationLinks() {
       toast.error('Failed to download data. Please try again.');
     } finally {
       setLoading(false);
+      setIsProcessing(false);
     }
   };
 
@@ -957,7 +972,7 @@ function VerificationLinks() {
   isConfirming,
  
 }) {
-  const blocked = isConfirming;
+  const blocked = isConfirming || isProcessing;
 
   return (
     <div className={`modal-container ${blocked ? "modal-blocked" : ""}`}>
@@ -1074,7 +1089,7 @@ function VerificationLinks() {
                           <button
                             onClick={handleUpload}
                             className={`upload-button ${
-                              showConfirmation || !file || isConfirmationActive
+                              showConfirmation || !file || isConfirmationActive|| isProcessing
                                 ? "upload-button-disabled"
                                 : ""
                             }`}
@@ -1085,10 +1100,11 @@ function VerificationLinks() {
                               credits < creditCost ||
                               loading ||
                               showConfirmation ||
-                              isConfirmationActive
+                              isConfirmationActive||
+                               isProcessing // Add this condition
                             }
                           >
-                            {loading ? (
+                            {loading || isProcessing ? (
                               <Loader2 className="upload-button-loader" />
                             ) : (
                               "Upload File"
@@ -1116,11 +1132,13 @@ function VerificationLinks() {
                           onConfirm={confirmUpload}
                           onCancel={cancelUpload}
                           isConfirming={isConfirming}
+                          isProcessing={isProcessing} // Pass the isProcessing state
                           
                         />
                       )}
 
-                      {categorizedLinks.length > 0 && !showConfirmation && (
+                      {categorizedLinks.length > 0 && 
+                      !showConfirmation && (
                         <div className="data-section">
                           <div className="data-section-header">
                             <h3 className="data-section-title">Your Verification History</h3>
@@ -1223,9 +1241,9 @@ function VerificationLinks() {
                                                   <button
                                                     onClick={() => checkStatus(uniqueId)}
                                                     className="status-check-button"
-                                                    disabled={loading}
+                                                    disabled={loading || isProcessing}
                                                   >
-                                                    {loading ? (
+                                                    {loading || isProcessing ? (
                                                       <Loader2 className="status-check-loader" />
                                                     ) : (
                                                       "Check Status"
@@ -1248,12 +1266,18 @@ function VerificationLinks() {
                                                     downloadGroupedEntry(group)
                                                   }
                                                   className="download-button"
+                                                  disabled={isProcessing} // Add disabled state
+
                                                 >
-                                                  <Download className="download-button-icon" />
-                                                  <span className="download-button-text">
-                                                    Download
-                                                  </span>
-                                                </button>
+                                                 {isProcessing ? ( // Show loader when processing
+      <Loader2 className="download-button-loader" />
+    ) : (
+      <>
+        <Download className="download-button-icon" />
+        <span className="download-button-text">Download</span>
+      </>
+    )}
+  </button>
                                               </td>
                                             </tr>
                                           );

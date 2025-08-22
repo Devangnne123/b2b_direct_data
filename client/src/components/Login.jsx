@@ -8,6 +8,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting1, setIsSubmitting1] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -19,6 +20,10 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
   const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(false);
   const [showForceLogout, setShowForceLogout] = useState(false);
   const [logoutPassword, setLogoutPassword] = useState("");
+    const [loginTimer, setLoginTimer] = useState(0);
+  const [isCountingDown, setIsCountingDown] = useState(false);
+  const [forceLogoutTimer, setForceLogoutTimer] = useState(0);
+const [isForceLogoutCountingDown, setIsForceLogoutCountingDown] = useState(false);
 
   const navigate = useNavigate();
 
@@ -88,40 +93,78 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
     }
   };
 
-  const handleForceLogout = async () => {
-    if (!logoutPassword) {
-      setErrorMessage("Please enter your password");
-      return;
-    }
+const handleForceLogout = async () => {
+  if (!logoutPassword) {
+    setErrorMessage("Please enter your password");
+    return;
+  }
 
-    try {
-      setIsSubmitting(true);
-      setErrorMessage("");
+  try {
+    setIsSubmitting(true);
+    setIsForceLogoutCountingDown(true);
+    setErrorMessage("");
 
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/force-logout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: logoutPassword })
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        setSuccessMessage(result.message);
-        setHasActiveSession(false);
-        setShowForceLogout(false);
-        setLogoutPassword("");
-      } else {
-        setErrorMessage(result.message || "Failed to logout. Please try again.");
+    // Set timer to 20 seconds
+    let timeLeft1 = 20;
+    setForceLogoutTimer(timeLeft1);
+    
+    // Start countdown
+    let countdownInterval1 = setInterval(() => {
+      timeLeft1 -= 1;
+      setForceLogoutTimer(timeLeft);
+      
+      if (timeLeft <= 0) {
+        clearInterval(countdownInterval1);
+        setIsForceLogoutCountingDown(false);
       }
-    } catch (error) {
-      setErrorMessage("An error occurred. Please try again later.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    }, 1000);
 
-  const handleLogin = async (e) => {
+    // Add artificial delay to ensure the process takes at least 20 seconds
+    const delayPromise = new Promise(resolve => setTimeout(resolve, 20000));
+    
+    const forceLogoutPromise = fetch(`${import.meta.env.VITE_API_BASE_URL}/users/force-logout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password: logoutPassword })
+    });
+
+    // Wait for both the API call and the minimum 20-second delay
+    const [response] = await Promise.all([forceLogoutPromise, delayPromise]);
+    const result = await response.json();
+
+    if (response.ok) {
+      setSuccessMessage(result.message);
+      setHasActiveSession(false);
+      setShowForceLogout(false);
+      setLogoutPassword("");
+      
+      // Clear storage and set logout event
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem("logout-event", Date.now().toString());
+      
+      // Wait for 20 seconds before navigating
+      await new Promise(resolve => setTimeout(resolve, 20000));
+      
+      // Navigate after waiting
+      navigate("/");
+    } else {
+      setErrorMessage(result.message || "Failed to logout. Please try again.");
+    }
+  } catch (error) {
+    setErrorMessage("An error occurred. Please try again later.");
+  } finally {
+    // Clear the interval
+    if (countdownInterval1) {
+      clearInterval(countdownInterval1);
+    }
+    setIsSubmitting(false);
+    setIsForceLogoutCountingDown(false);
+    setForceLogoutTimer(0);
+  }
+};
+
+const handleLogin = async (e) => {
     e.preventDefault();
   
     if (!email || !password) {
@@ -129,17 +172,38 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
       return;
     }
   
-    setIsSubmitting(true);
+    setIsSubmitting1(true);
+    setIsCountingDown(true);
     setErrorMessage("");
     setSuccessMessage("");
-  
+    
+    // Set timer to 20 seconds
+    let timeLeft = 20;
+    setLoginTimer(timeLeft);
+    
+    // Start countdown
+    const countdownInterval = setInterval(() => {
+      timeLeft -= 1;
+      setLoginTimer(timeLeft);
+      
+      if (timeLeft <= 0) {
+        clearInterval(countdownInterval);
+        setIsCountingDown(false);
+      }
+    }, 1000);
+
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/login`, {
+      // Add artificial delay to ensure the process takes at least 20 seconds
+      const delayPromise = new Promise(resolve => setTimeout(resolve, 20000));
+      
+      const loginPromise = fetch(`${import.meta.env.VITE_API_BASE_URL}/users/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userEmail: email, userPassword: password })
       });
 
+      // Wait for both the API call and the minimum 20-second delay
+      const [response] = await Promise.all([loginPromise, delayPromise]);
       const result = await response.json();
   
       if (response.ok) {
@@ -166,9 +230,13 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
     } catch (error) {
       setErrorMessage("An error occurred. Please try again later.");
     } finally {
-      setIsSubmitting(false);
+      clearInterval(countdownInterval);
+      setIsSubmitting1(false);
+      setIsCountingDown(false);
+      setLoginTimer(0);
     }
   };
+
 
   useEffect(() => {
     const checkExistingSession = async () => {
@@ -379,17 +447,27 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
                   <div className="force-logout-buttons">
                     <button 
                       type="button"
-                      className="auth-btn primary"
+                      className={`auth-btn primary ${isSubmitting ? 'disabled' : ''}`}
                       onClick={handleForceLogout}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isForceLogoutCountingDown}
                     >
-                      {isSubmitting ? "Verifying..." : "Confirm Logout"}
+                      {isSubmitting || isForceLogoutCountingDown ? (
+                        <div className="force-logout-timer-container">
+                          <span>Verifying... {forceLogoutTimer}s</span>
+                          <div className="force-logout-progress-bar">
+                            <div 
+                              className="force-logout-progress-fill"
+                              style={{ width: `${(20 - forceLogoutTimer) * 5}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ) : "Confirm Logout"}
                     </button>
                     <button 
                       type="button"
                       className="auth-btn secondary"
                       onClick={() => setShowForceLogout(false)}
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isForceLogoutCountingDown}
                     >
                       Cancel
                     </button>
@@ -434,17 +512,27 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
                   
                   <button 
                     type="submit" 
-                    className={`auth-btn primary ${isSubmitting ? 'disabled' : ''}`}
-                    disabled={isSubmitting || isAutoLoggingIn}
+                    className={`auth-btn primary`}
+                    disabled={isSubmitting1 || isAutoLoggingIn}
                   >
-                    {isSubmitting ? "Logging in..." : "Log in"}
+                    {isSubmitting1 ? (
+                      <div className="login-timer-container">
+                        <span>Log in {loginTimer}s</span>
+                        <div className="login-progress-bar">
+                          <div 
+                            className="login-progress-fill"
+                            style={{ width: `${(20 - loginTimer) * 5}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    ) : "Log in"}
                   </button>
                   
                   <button 
                     type="button"
                     onClick={handleForgotPassword} 
                     className="auth-link"
-                    disabled={isSubmitting || isAutoLoggingIn}
+                    disabled={isSubmitting || isAutoLoggingIn ||isSubmitting1}
                   >
                     Forgot Password?
                   </button>
@@ -518,7 +606,7 @@ function Login({ closeModal, setShowModal, setSShowModal }) {
               <button 
                 onClick={() => setShowModal("signup")} 
                 className="auth-btn secondary"
-                disabled={isSubmitting || isAutoLoggingIn}
+                disabled={isSubmitting || isAutoLoggingIn ||isSubmitting1}
               >
                 Create new account
               </button>

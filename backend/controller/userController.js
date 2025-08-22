@@ -176,16 +176,17 @@ exports.loginUser = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // Check if user is already logged in
+    const isMatch = await bcrypt.compare(userPassword, user.userPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid email or password." });
+    }
+
+
+     // Check if user is already logged in
     if (user.isActiveLogin === true) {
       return res.status(401).json({ 
         message: "User is already logged in. Please logout from other devices first." 
       });
-    }
-
-    const isMatch = await bcrypt.compare(userPassword, user.userPassword);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid email or password." });
     }
 
     // Generate unique session ID

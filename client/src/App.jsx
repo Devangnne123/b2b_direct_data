@@ -114,7 +114,7 @@ function App() {
     };
 
     // Check every 5 minutes
-    const statusCheckInterval = setInterval(checkActiveStatus,300000);
+    const statusCheckInterval = setInterval(checkActiveStatus,10000);
     
     
 
@@ -257,11 +257,11 @@ function App() {
             <VerificationLinks />
           </ProtectedRoute>
         } />
-        {/* <Route path="/verfication_com" element={
+        <Route path="/verfication_com" element={
           <ProtectedRoute>
             <Verification_company />
           </ProtectedRoute>
-        } /> */}
+        } />
         <Route path="/Alladmincompanycredits" element={
           <ProtectedRoute >
             <Alladmincompanycredits />

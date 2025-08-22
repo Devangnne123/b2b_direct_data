@@ -27,7 +27,7 @@ const VerificationTemp_com = sequelize.define('verification_temp_com', {
   },
   remark: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   company_name: {
     type: DataTypes.TEXT,
