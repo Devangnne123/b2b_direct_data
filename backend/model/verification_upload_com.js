@@ -153,7 +153,11 @@ const VerificationUpload_com = sequelize.define('verification_upload_com', {
   last_sync: {
     type: DataTypes.DATE,
     allowNull: true
-  }
+  },
+  Data_id: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
 }, {
   tableName: 'verification_uploads_com',
   timestamps: false

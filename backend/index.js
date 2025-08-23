@@ -822,28 +822,29 @@ const matchedCount = await Link.count({
         {
           creditDeducted: creditCost,
           remainingCredits: user.credits,
+          Data_id : 1
         },
         { where: { uniqueId } }
       );
 
-      // Create TempLinkMobile records for ALL matched links
-      const matchedLinks = await Link.findAll({
-        where: { 
-          uniqueId,
-          email: email,
-          linkedin_link_id: { [Op.ne]: null }
+      // // Create TempLinkMobile records for ALL matched links
+      // const matchedLinks = await Link.findAll({
+      //   where: { 
+      //     uniqueId,
+      //     email: email,
+      //     linkedin_link_id: { [Op.ne]: null }
           
-        }
-      });
+      //   }
+      // });
 
-      for (const link of matchedLinks) {
-        await TempLinkMobile.create({
-          uniqueId: link.uniqueId,
-          matchLink: link.matchLink,
-          linkedin_link_id: link.linkedin_link_id,
-          processed: true
-        });
-      }
+      // for (const link of matchedLinks) {
+      //   await TempLinkMobile.create({
+      //     uniqueId: link.uniqueId,
+      //     matchLink: link.matchLink,
+      //     linkedin_link_id: link.linkedin_link_id,
+      //     processed: true
+      //   });
+      // }
 
       await setProcessingFalse(email);
       
@@ -1491,137 +1492,137 @@ const cron = require('node-cron');
 //   }
 // });
 
-cron.schedule('*/3 * * * *', async () => {
-  console.log('\n🔄 Starting TempLinkMobile to Link sync job...');
+// cron.schedule('*/3 * * * *', async () => {
+//   console.log('\n🔄 Starting TempLinkMobile to Link sync job...');
 
-  try {
-    // Verify database connection first
-    await sequelize.authenticate();
+//   try {
+//     // Verify database connection first
+//     await sequelize.authenticate();
     
-    // Process records in batches to prevent memory issues
-    let offset = 0;
-    const batchSize = 300;
-    let hasMoreRecords = true;
-    let processedCount = 0;
-    let skippedCount = 0;
-    let deletedCount = 0;
+//     // Process records in batches to prevent memory issues
+//     let offset = 0;
+//     const batchSize = 300;
+//     let hasMoreRecords = true;
+//     let processedCount = 0;
+//     let skippedCount = 0;
+//     let deletedCount = 0;
 
-    while (hasMoreRecords) {
-      const tempRecords = await TempLinkMobile.findAll({
-        limit: batchSize,
-        offset: offset,
+//     while (hasMoreRecords) {
+//       const tempRecords = await TempLinkMobile.findAll({
+//         limit: batchSize,
+//         offset: offset,
        
-      });
+//       });
 
-      if (tempRecords.length === 0) {
-        hasMoreRecords = false;
-        continue;
-      }
+//       if (tempRecords.length === 0) {
+//         hasMoreRecords = false;
+//         continue;
+//       }
 
-      for (const temp of tempRecords) {
-        let transaction;
-        try {
-          transaction = await sequelize.transaction();
+//       for (const temp of tempRecords) {
+//         let transaction;
+//         try {
+//           transaction = await sequelize.transaction();
 
-          const {
-            id,
-            uniqueId,
-            linkedin_link_id,
-            mobile_number,
-            mobile_number_2,
-            person_name,
-            person_location
+//           const {
+//             id,
+//             uniqueId,
+//             linkedin_link_id,
+//             mobile_number,
+//             mobile_number_2,
+//             person_name,
+//             person_location
             
-          } = temp;
+//           } = temp;
 
-          // Skip if required fields are missing
-          if (!linkedin_link_id || !uniqueId) {
-            console.log(`⚠️ Skipping record ${id}: Missing linkedin_link_id or uniqueId`);
-            skippedCount++;
-            await transaction.commit();
-            continue;
-          }
+//           // Skip if required fields are missing
+//           if (!linkedin_link_id || !uniqueId) {
+//             console.log(`⚠️ Skipping record ${id}: Missing linkedin_link_id or uniqueId`);
+//             skippedCount++;
+//             await transaction.commit();
+//             continue;
+//           }
 
-          // Find matching Link record
-          const linkRecord = await Link.findOne({
-            where: { linkedin_link_id, uniqueId },
-            transaction
-          });
+//           // Find matching Link record
+//           const linkRecord = await Link.findOne({
+//             where: { linkedin_link_id, uniqueId },
+//             transaction
+//           });
 
-          if (!linkRecord) {
-            console.log(`⚠️ No Link found for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId}`);
-            skippedCount++;
-            await transaction.commit();
-            continue;
-          }
+//           if (!linkRecord) {
+//             console.log(`⚠️ No Link found for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId}`);
+//             skippedCount++;
+//             await transaction.commit();
+//             continue;
+//           }
 
-          // Determine status
-          let status = "pending";
-          if (!(
-            (mobile_number === null || mobile_number === "N/A") &&
-            (mobile_number_2 === null || mobile_number_2 === "N/A")
-          )) {
-            status = "completed";
-          }
+//           // Determine status
+//           let status = "pending";
+//           if (!(
+//             (mobile_number === null || mobile_number === "N/A") &&
+//             (mobile_number_2 === null || mobile_number_2 === "N/A")
+//           )) {
+//             status = "completed";
+//           }
 
-          // Update Link record
-          const [updated] = await Link.update({
-            mobile_number,
-            mobile_number_2,
-            person_name,
-            person_location,
-            status
+//           // Update Link record
+//           const [updated] = await Link.update({
+//             mobile_number,
+//             mobile_number_2,
+//             person_name,
+//             person_location,
+//             status
             
             
-          }, {
-            where: { linkedin_link_id, uniqueId },
-            transaction
-          });
+//           }, {
+//             where: { linkedin_link_id, uniqueId },
+//             transaction
+//           });
 
-          if (updated > 0) {
-            processedCount++;
-            console.log(`✓ Updated Link for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId} | Status: ${status}`);
+//           if (updated > 0) {
+//             processedCount++;
+//             console.log(`✓ Updated Link for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId} | Status: ${status}`);
 
-            // Delete from TempLinkMobile if completed
-            if (status === 'completed') {
-              await TempLinkMobile.destroy({ 
-                where: { id },
-                transaction
-              });
-              deletedCount++;
-              console.log(`🗑️ Deleted TempLinkMobile record ${id}`);
-            }
-          }
+//             // Delete from TempLinkMobile if completed
+//             if (status === 'completed') {
+//               await TempLinkMobile.destroy({ 
+//                 where: { id },
+//                 transaction
+//               });
+//               deletedCount++;
+//               console.log(`🗑️ Deleted TempLinkMobile record ${id}`);
+//             }
+//           }
 
-          await transaction.commit();
+//           await transaction.commit();
           
-          // Small delay between operations
-          await new Promise(resolve => setTimeout(resolve, 100));
+//           // Small delay between operations
+//           await new Promise(resolve => setTimeout(resolve, 100));
           
-        } catch (recordError) {
-          // if (transaction) await transaction.rollback();
-          console.error(`⚠️ Error processing record ${temp.id}:`, recordError.message);
-          continue;
-        }
-      }
+//         } catch (recordError) {
+//           // if (transaction) await transaction.rollback();
+//           console.error(`⚠️ Error processing record ${temp.id}:`, recordError.message);
+//           continue;
+//         }
+//       }
 
-      offset += batchSize;
-    }
+//       offset += batchSize;
+//     }
 
    
 
-    console.log(`✅ Sync completed successfully. Stats:
-      - Processed: ${processedCount}
-      - Skipped: ${skippedCount}
-      - Deleted: ${deletedCount}
-    `);
+//     console.log(`✅ Sync completed successfully. Stats:
+//       - Processed: ${processedCount}
+//       - Skipped: ${skippedCount}
+//       - Deleted: ${deletedCount}
+//     `);
 
-  } catch (jobError) {
-    console.error('❌ Error in sync job:', jobError);
-  }
-});
+//   } catch (jobError) {
+//     console.error('❌ Error in sync job:', jobError);
+//   }
+// });
 
-console.log('⏰ TempLinkMobile sync job scheduled to run every 2 minutes');
+// console.log('⏰ TempLinkMobile sync job scheduled to run every 2 minutes');
 
 
 
@@ -2075,105 +2076,105 @@ console.log('⏰ TempLinkMobile sync job scheduled to run every 2 minutes');
 
 
 
-async function checkAndUpdateEmailStatus() {
-  console.log('⏳ Cron Job: Checking matchLink status...');
+//////////////////// async function checkAndUpdateEmailStatus() {
+//   console.log('⏳ Cron Job: Checking matchLink status...');
 
-  try {
-    // Step 1: Get all uniqueIds in emailsent with pending status
-    const pendingUniqueIds = await emailsent.findAll({
-      where: { status: 'pending' },
-      attributes: ['uniqueId'],
-      group: ['uniqueId']
-    });
+//   try {
+//     // Step 1: Get all uniqueIds in emailsent with pending status
+//     const pendingUniqueIds = await emailsent.findAll({
+//       where: { status: 'pending' },
+//       attributes: ['uniqueId'],
+//       group: ['uniqueId']
+//     });
 
-    for (const record of pendingUniqueIds) {
-      const uniqueId = record.uniqueId;
+//     for (const record of pendingUniqueIds) {
+//       const uniqueId = record.uniqueId;
 
-      // Step 2: Get all Link rows for this uniqueId where matchLink is not null
-      const matchedLinks = await Link.findAll({
-        where: {
-          uniqueId,
-          matchLink: { [Op.ne]: null }
-        },
-        attributes: ['status']
-      });
+//       // Step 2: Get all Link rows for this uniqueId where matchLink is not null
+//       const matchedLinks = await Link.findAll({
+//         where: {
+//           uniqueId,
+//           matchLink: { [Op.ne]: null }
+//         },
+//         attributes: ['status']
+//       });
 
-      if (matchedLinks.length === 0) {
-        console.log(`⚠️ No matchLink found for ${uniqueId}, skipping...`);
-        continue;
-      }
+//       if (matchedLinks.length === 0) {
+//         console.log(`⚠️ No matchLink found for ${uniqueId}, skipping...`);
+//         continue;
+//       }
 
-      // Step 3: Check if all matched links are pending or completed
-      const hasPending = matchedLinks.every(link => link.status === 'pending');
-      const hasCompleted = matchedLinks.every(link => link.status === 'completed');
+//       // Step 3: Check if all matched links are pending or completed
+//       const hasPending = matchedLinks.every(link => link.status === 'pending');
+//       const hasCompleted = matchedLinks.every(link => link.status === 'completed');
 
-      if (hasPending) {
-        console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
-        continue;
-      }
+//       if (hasPending) {
+//         console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
+//         continue;
+//       }
 
-      if (hasCompleted) {
-        // Step 4: If none are pending, update emailsent status to completed
-        await emailsent.update(
-          { status: 'completed' },
-          { where: { uniqueId } }
-        );
-        await Link.update(
-          { final_status: 'completed' },
-          { where: { uniqueId } }
-        );
+//       if (hasCompleted) {
+//         // Step 4: If none are pending, update emailsent status to completed
+//         await emailsent.update(
+//           { status: 'completed' },
+//           { where: { uniqueId } }
+//         );
+//         await Link.update(
+//           { final_status: 'completed' },
+//           { where: { uniqueId } }
+//         );
 
-        console.log(`✅ ${uniqueId} marked as completed in emailsent`);
+//         console.log(`✅ ${uniqueId} marked as completed in emailsent`);
 
-        // Step 5: Get email address for this uniqueId
-        const emailRecord = await emailsent.findOne({
-          where: { uniqueId },
-          attributes: ['email']
-        });
+//         // Step 5: Get email address for this uniqueId
+//         const emailRecord = await emailsent.findOne({
+//           where: { uniqueId },
+//           attributes: ['email']
+//         });
 
-        if (!emailRecord || !emailRecord.email) {
-          console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
-          continue;
-        }
+//         if (!emailRecord || !emailRecord.email) {
+//           console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
+//           continue;
+//         }
 
-        const email = emailRecord.email;
+//         const email = emailRecord.email;
 
-        // Step 6: Send the email
-        try {
-          const mailOptions = {
-            from: '"B2B Direct Number Enrichment System" <b2bdirectdata@gmail.com>',
-            to: email,
-            subject: `B2B Direct Number Enrichment System Completed - ${uniqueId}`,
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #2563eb;">B2B Direct Number Enrichment System Completed</h2>
-                <p>All enrichment processes for ${uniqueId} have been completed.</p>
+//         // Step 6: Send the email
+//         try {
+//           const mailOptions = {
+//             from: '"B2B Direct Number Enrichment System" <b2bdirectdata@gmail.com>',
+//             to: email,
+//             subject: `B2B Direct Number Enrichment System Completed - ${uniqueId}`,
+//             html: `
+//               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//                 <h2 style="color: #2563eb;">B2B Direct Number Enrichment System Completed</h2>
+//                 <p>All enrichment processes for ${uniqueId} have been completed.</p>
                 
-                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                  <h3 style="margin-top: 0; color: #1f2937;">Direct Number Enrichment</h3>
-                  <p><strong>File UniqueId:</strong> ${uniqueId}</p>
-                </div>
+//                 <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+//                   <h3 style="margin-top: 0; color: #1f2937;">Direct Number Enrichment</h3>
+//                   <p><strong>File UniqueId:</strong> ${uniqueId}</p>
+//                 </div>
                 
-                <p>All results are now available for download.</p>
-                <p>Team,<br/>B2B Direct Data</p>
-              </div>
-            `
-          };
+//                 <p>All results are now available for download.</p>
+//                 <p>Team,<br/>B2B Direct Data</p>
+//               </div>
+//             `
+//           };
 
-          await transporter.sendMail(mailOptions);
-          console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
-        } catch (err) {
-          console.error(`❌ Failed to send email for ${uniqueId}:`, err);
-        }
-      }
-    }
-  } catch (error) {
-    console.error('❌ Error in cron job:', error);
-  }
-}
+//           await transporter.sendMail(mailOptions);
+//           console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
+//         } catch (err) {
+//           console.error(`❌ Failed to send email for ${uniqueId}:`, err);
+//         }
+//       }
+//     }
+//   } catch (error) {
+//     console.error('❌ Error in cron job:', error);
+//   }
+// }
 
-cron.schedule('*/10 * * * *', checkAndUpdateEmailStatus);
-console.log('⏰ Email status check job scheduled to run every 10 minutes');
+// cron.schedule('*/10 * * * *', checkAndUpdateEmailStatus);
+// console.log('⏰ Email status check job scheduled to run every 10 minutes');
 
 // async function checkAndUpdateEmailStatus() {
 //   console.log('⏳ Cron Job: Checking matchLink status...');
@@ -4043,21 +4044,22 @@ app.post('/con-upload-excel-verification', upload.single('file'), async (req, re
         await VerificationUpload.update(
           { 
             creditsUsed: creditsToDeduct,
-            remainingCredits: user.credits
+            remainingCredits: user.credits,
+            Data_id : 1
           },
           { where: { uniqueId } }
         );
 
-        const batch = await VerificationUpload.findAll({
-          where: { uniqueId, email, remark: 'pending' }
-        });
+        // const batch = await VerificationUpload.findAll({
+        //   where: { uniqueId, email, remark: 'pending' }
+        // });
 
-        for (const linkRecord of batch) {
-          await VerificationTemp.create({
-            uniqueId: linkRecord.uniqueId,
-            clean_linkedin_link: linkRecord.clean_link,
-          });
-        }
+        // for (const linkRecord of batch) {
+        //   await VerificationTemp.create({
+        //     uniqueId: linkRecord.uniqueId,
+        //     clean_linkedin_link: linkRecord.clean_link,
+        //   });
+        // }
 
         await setProcessingFalse2(email);
 
@@ -4652,142 +4654,7 @@ app.post('/api/send-verification-confirmation/link',auth, async (req, res) => {
 
 // console.log('⏰ VerificationTemp sync job scheduled to run every 3 minutes');
 
-cron.schedule('*/10 * * * *', async () => {
-  console.log('\n🔄 Starting VerificationTemp to VerificationUpload sync job...');
 
-  try {
-    // Verify database connection first
-    await sequelize.authenticate();
-    
-    // Process records in batches to prevent memory issues
-    let offset = 0;
-    const batchSize = 300;
-    let hasMoreRecords = true;
-    let processedCount = 0;
-    let skippedCount = 0;
-    let markedCompletedCount = 0;
-    let deletedCount = 0;
-
-    while (hasMoreRecords) {
-      const tempRecords = await VerificationTemp.findAll({
-        limit: batchSize,
-        offset: offset,
-
-      });
-
-      if (tempRecords.length === 0) {
-        hasMoreRecords = false;
-        continue;
-      }
-
-      for (const temp of tempRecords) {
-        let transaction;
-        try {
-          transaction = await sequelize.transaction();
-
-          const tempData = temp.get({ plain: true });
-          
-          // Skip if required fields are missing
-          if (!tempData.link_id || !tempData.uniqueId) {
-            console.log(`⚠️ Skipping record ${tempData.id}: Missing link_id or uniqueId`);
-            skippedCount++;
-            await transaction.commit();
-            continue;
-          }
-
-          // Check if both fields have valid values
-          const hasValidFinalRemarks = tempData.final_remarks && 
-                                     tempData.final_remarks.trim() !== '';
-          const hasValidContactsId = tempData.list_contacts_id && 
-                                    tempData.list_contacts_id.trim() !== '';
-          const shouldMarkCompleted = hasValidFinalRemarks && hasValidContactsId;
-
-          // Prepare update data for main table
-          const updateData = {
-            full_name: tempData.full_name,
-            head_title: tempData.head_title,
-            head_location: tempData.head_location,
-            title_1: tempData.title_1,
-            company_1: tempData.company_1,
-            company_link_1: tempData.company_link_1,
-            exp_duration: tempData.exp_duration,
-            exp_location: tempData.exp_location,
-            job_type: tempData.job_type,
-            title_2: tempData.title_2,
-            company_2: tempData.company_2,
-            company_link_2: tempData.company_link_2,
-            exp_duration_2: tempData.exp_duration_2,
-            exp_location_2: tempData.exp_location_2,
-            job_type_2: tempData.job_type_2,
-            final_remarks: tempData.final_remarks,
-            list_contacts_id: tempData.list_contacts_id,
-            url_id: tempData.url_id,
-            last_sync: new Date()
-          };
-
-          // Update status if conditions are met
-          if (shouldMarkCompleted) {
-            updateData.status = 'Completed';
-          }
-
-          // Update main table
-          const [updated] = await VerificationUpload.update(updateData, {
-            where: { 
-              uniqueId: tempData.uniqueId,
-              link_id: tempData.link_id
-            },
-            transaction
-          });
-
-          if (updated > 0) {
-            processedCount++;
-            console.log(`✓ Updated VerificationUpload for link_id: ${tempData.link_id}, uniqueId: ${tempData.uniqueId}`);
-
-            // Delete from VerificationTemp if completed
-            if (shouldMarkCompleted) {
-              await VerificationTemp.destroy({ 
-                where: { id: tempData.id },
-                transaction
-              });
-              markedCompletedCount++;
-              deletedCount++;
-              console.log(`🗑️ Deleted VerificationTemp record ${tempData.id}`);
-            }
-          } else {
-            skippedCount++;
-            console.log(`⚠️ No matching record found for link_id: ${tempData.link_id}`);
-          }
-
-          await transaction.commit();
-          
-          // Small delay between operations
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-        } catch (recordError) {
-          
-          console.error(`⚠️ Error processing record ${temp.id}:`, recordError.message);
-          continue;
-        }
-      }
-
-      offset += batchSize;
-    }
-
-
-
-    console.log(`✅ Sync completed successfully. Stats:
-      - Processed: ${processedCount}
-      - Marked as completed: ${markedCompletedCount}
-      - Deleted: ${deletedCount}
-      - Skipped: ${skippedCount}
-    `);
-
-  } catch (jobError) {
-    console.error('❌ Error in sync job:', jobError);
-  }
-});
-
-console.log('⏰ VerificationTemp sync job scheduled to run every 10 minutes');
 
 
 // cron.schedule('*/10 * * * *', async () => {
@@ -4953,104 +4820,104 @@ console.log('⏰ VerificationTemp sync job scheduled to run every 10 minutes');
 // console.log('⏰ VerificationTemp sync job scheduled to run every 10 minutes');
 
 
-async function checkAndUpdateEmailStatus1() {
-  console.log('⏳ Cron Job: Checking matchLink status...');
+///////////////////async function checkAndUpdateEmailStatus1() {
+//   console.log('⏳ Cron Job: Checking matchLink status...');
 
-  try {
-    // Step 1: Get all uniqueIds in emailsent with pending status
-    const pendingUniqueIds = await emailsent1.findAll({
-      where: { status: 'pending' },
-      attributes: ['uniqueId'],
-      group: ['uniqueId']
-    });
+//   try {
+//     // Step 1: Get all uniqueIds in emailsent with pending status
+//     const pendingUniqueIds = await emailsent1.findAll({
+//       where: { status: 'pending' },
+//       attributes: ['uniqueId'],
+//       group: ['uniqueId']
+//     });
 
-    for (const record of pendingUniqueIds) {
-      const uniqueId = record.uniqueId;
+//     for (const record of pendingUniqueIds) {
+//       const uniqueId = record.uniqueId;
 
-      // Step 2: Get all Link rows for this uniqueId where matchLink is not null
-      const matchedLinks = await VerificationUpload.findAll({
-        where: {
-          uniqueId,
-          clean_link: { [Op.ne]: null }
-        },
-        attributes: ['status']
-      });
+//       // Step 2: Get all Link rows for this uniqueId where matchLink is not null
+//       const matchedLinks = await VerificationUpload.findAll({
+//         where: {
+//           uniqueId,
+//           clean_link: { [Op.ne]: null }
+//         },
+//         attributes: ['status']
+//       });
 
-      if (matchedLinks.length === 0) {
-        console.log(`⚠️ No cleanlink found for ${uniqueId}, skipping...`);
-        continue;
-      }
+//       if (matchedLinks.length === 0) {
+//         console.log(`⚠️ No cleanlink found for ${uniqueId}, skipping...`);
+//         continue;
+//       }
 
-      // Step 3: Check if all matched links are pending or completed
-      const hasPending = matchedLinks.every(link => link.status === 'pending');
-      const hasCompleted = matchedLinks.every(link => link.status === 'Completed');
+//       // Step 3: Check if all matched links are pending or completed
+//       const hasPending = matchedLinks.every(link => link.status === 'pending');
+//       const hasCompleted = matchedLinks.every(link => link.status === 'Completed');
 
-      if (hasPending) {
-        console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
-        continue;
-      }
+//       if (hasPending) {
+//         console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
+//         continue;
+//       }
 
-      if (hasCompleted) {
-        // Step 4: If none are pending, update emailsent status to completed
-        await emailsent1.update(
-          { status: 'completed' },
-          { where: { uniqueId } }
-        );
-        await VerificationUpload.update(
-          { final_status: 'Completed' },
-          { where: { uniqueId } }
-        );
+//       if (hasCompleted) {
+//         // Step 4: If none are pending, update emailsent status to completed
+//         await emailsent1.update(
+//           { status: 'completed' },
+//           { where: { uniqueId } }
+//         );
+//         await VerificationUpload.update(
+//           { final_status: 'Completed' },
+//           { where: { uniqueId } }
+//         );
 
-        console.log(`✅ ${uniqueId} marked as completed in emailsent`);
+//         console.log(`✅ ${uniqueId} marked as completed in emailsent`);
 
-        // Step 5: Get email address for this uniqueId
-        const emailRecord = await emailsent1.findOne({
-          where: { uniqueId },
-          attributes: ['email']
-        });
+//         // Step 5: Get email address for this uniqueId
+//         const emailRecord = await emailsent1.findOne({
+//           where: { uniqueId },
+//           attributes: ['email']
+//         });
 
-        if (!emailRecord || !emailRecord.email) {
-          console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
-          continue;
-        }
+//         if (!emailRecord || !emailRecord.email) {
+//           console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
+//           continue;
+//         }
 
-        const email = emailRecord.email;
+//         const email = emailRecord.email;
 
-        // Step 6: Send the email
-        try {
-          const mailOptions = {
-            from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
-            to: email,
-            subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #2563eb;">B2B LinkedIn Verification System Completed</h2>
-                <p>All Verification processes for ${uniqueId} have been completed.</p>
+//         // Step 6: Send the email
+//         try {
+//           const mailOptions = {
+//             from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
+//             to: email,
+//             subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
+//             html: `
+//               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//                 <h2 style="color: #2563eb;">B2B LinkedIn Verification System Completed</h2>
+//                 <p>All Verification processes for ${uniqueId} have been completed.</p>
                 
-                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                  <h3 style="margin-top: 0; color: #1f2937;">LinkedIn Verification System</h3>
-                  <p><strong>File UniqueId:</strong> ${uniqueId}</p>
-                </div>
+//                 <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+//                   <h3 style="margin-top: 0; color: #1f2937;">LinkedIn Verification System</h3>
+//                   <p><strong>File UniqueId:</strong> ${uniqueId}</p>
+//                 </div>
                 
-                <p>All results are now available for download.</p>
-                <p>Team,<br/>B2B Direct Data</p>
-              </div>
-            `
-          };
+//                 <p>All results are now available for download.</p>
+//                 <p>Team,<br/>B2B Direct Data</p>
+//               </div>
+//             `
+//           };
 
-          await transporter.sendMail(mailOptions);
-          console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
-        } catch (err) {
-          console.error(`❌ Failed to send email for ${uniqueId}:`, err);
-        }
-      }
-    }
-  } catch (error) {
-    console.error('❌ Error in cron job:', error);
-  }
-}
-cron.schedule('*/10 * * * *', checkAndUpdateEmailStatus1);
-console.log('⏰ Email status check job scheduled to run every 10 minutes');
+//           await transporter.sendMail(mailOptions);
+//           console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
+//         } catch (err) {
+//           console.error(`❌ Failed to send email for ${uniqueId}:`, err);
+//         }
+//       }
+//     }
+//   } catch (error) {
+//     console.error('❌ Error in cron job:', error);
+//   }
+// }
+// cron.schedule('*/20 * * * *', checkAndUpdateEmailStatus1);
+// console.log('⏰ Email status check job scheduled to run every 10 minutes');
 
 // async function checkAndUpdateEmailStatus1() {
 //   console.log('⏳ Cron Job: Checking matchLink status...');
@@ -6157,21 +6024,22 @@ app.post('/con-upload-excel-verification-com', upload.single('file'), async (req
         await VerificationUpload_com.update(
           { 
             creditsUsed: creditsToDeduct,
-            remainingCredits: user.credits
+            remainingCredits: user.credits,
+             Data_id : 1
           },
           { where: { uniqueId } }
         );
 
-        const batch = await VerificationUpload_com.findAll({
-          where: { uniqueId, email, remark: 'pending' }
-        });
+        // const batch = await VerificationUpload_com.findAll({
+        //   where: { uniqueId, email, remark: 'pending' }
+        // });
 
-        for (const linkRecord of batch) {
-          await VerificationTemp_com.create({
-            uniqueId: linkRecord.uniqueId,
-            clean_linkedin_link: linkRecord.clean_link,
-          });
-        }
+        // for (const linkRecord of batch) {
+        //   await VerificationTemp_com.create({
+        //     uniqueId: linkRecord.uniqueId,
+        //     clean_linkedin_link: linkRecord.clean_link,
+        //   });
+        // }
 
       // // If there are pending links, process them
       // if (pendingCount > 0) {
@@ -6589,142 +6457,142 @@ app.delete('/api/delete-verification-uploads-com/:uniqueId',auth, async (req, re
 
 
 
-// Scheduled job to sync VerificationTemp_com to VerificationUpload_com
-cron.schedule('*/10 * * * *', async () => {
-  console.log('\n🔄 Starting VerificationTemp to VerificationUpload sync job...');
+// // Scheduled job to sync VerificationTemp_com to VerificationUpload_com
+// cron.schedule('*/10 * * * *', async () => {
+//   console.log('\n🔄 Starting VerificationTemp to VerificationUpload sync job...');
 
-  try {
-    // Verify database connection first
-    await sequelize.authenticate();
+//   try {
+//     // Verify database connection first
+//     await sequelize.authenticate();
     
-    // Process records in batches to prevent memory issues
-    let offset = 0;
-    const batchSize = 300;
-    let hasMoreRecords = true;
-    let processedCount = 0;
-    let skippedCount = 0;
-    let markedCompletedCount = 0;
-    let deletedCount = 0;
+//     // Process records in batches to prevent memory issues
+//     let offset = 0;
+//     const batchSize = 300;
+//     let hasMoreRecords = true;
+//     let processedCount = 0;
+//     let skippedCount = 0;
+//     let markedCompletedCount = 0;
+//     let deletedCount = 0;
 
-    while (hasMoreRecords) {
-      const tempRecords = await VerificationTemp_com.findAll({
-        limit: batchSize,
-        offset: offset,
-      });
+//     while (hasMoreRecords) {
+//       const tempRecords = await VerificationTemp_com.findAll({
+//         limit: batchSize,
+//         offset: offset,
+//       });
 
-      if (tempRecords.length === 0) {
-        hasMoreRecords = false;
-        continue;
-      }
+//       if (tempRecords.length === 0) {
+//         hasMoreRecords = false;
+//         continue;
+//       }
 
-      for (const temp of tempRecords) {
-        let transaction;
-        try {
-          transaction = await sequelize.transaction();
+//       for (const temp of tempRecords) {
+//         let transaction;
+//         try {
+//           transaction = await sequelize.transaction();
 
-          const tempData = temp.get({ plain: true });
+//           const tempData = temp.get({ plain: true });
           
-          // Skip if required fields are missing
-          if (!tempData.link_id || !tempData.uniqueId) {
-            console.log(`⚠️ Skipping record ${tempData.id}: Missing link_id or uniqueId`);
-            skippedCount++;
-            await transaction.commit();
-            continue;
-          }
+//           // Skip if required fields are missing
+//           if (!tempData.link_id || !tempData.uniqueId) {
+//             console.log(`⚠️ Skipping record ${tempData.id}: Missing link_id or uniqueId`);
+//             skippedCount++;
+//             await transaction.commit();
+//             continue;
+//           }
 
 
-          // Check validation conditions
-          const hasValidFinalRemarks = tempData.final_remarks && 
-                                     tempData.final_remarks.trim() !== '';
-          const hasValidCompanyId = tempData.company_id && 
-                                  tempData.company_id.trim() !== '';
-          const shouldMarkCompleted = hasValidFinalRemarks && hasValidCompanyId;
+//           // Check validation conditions
+//           const hasValidFinalRemarks = tempData.final_remarks && 
+//                                      tempData.final_remarks.trim() !== '';
+//           const hasValidCompanyId = tempData.company_id && 
+//                                   tempData.company_id.trim() !== '';
+//           const shouldMarkCompleted = hasValidFinalRemarks && hasValidCompanyId;
 
-          // Prepare update data
-          const updateData = {
-            company_name: tempData.company_name,
-            company_url: tempData.company_url,
-            company_headquater: tempData.company_headquater,
-            company_industry: tempData.company_industry,
-            company_size: tempData.company_size,
-            employee_count: tempData.employee_count,
-            year_founded: tempData.year_founded,
-            company_speciality: tempData.company_speciality,
-            linkedin_url: tempData.linkedin_url,
-            company_stock_name: tempData.company_stock_name,
-            verified_page_date: tempData.verified_page_date,
-            phone_number: tempData.phone_number,
-            company_followers: tempData.company_followers,
-            location_total: tempData.location_total,
-            overview: tempData.overview,
-            visit_website: tempData.visit_website,
-            final_remarks: tempData.final_remarks,
-            company_id: tempData.company_id,
-            last_sync: new Date()
-          };
+//           // Prepare update data
+//           const updateData = {
+//             company_name: tempData.company_name,
+//             company_url: tempData.company_url,
+//             company_headquater: tempData.company_headquater,
+//             company_industry: tempData.company_industry,
+//             company_size: tempData.company_size,
+//             employee_count: tempData.employee_count,
+//             year_founded: tempData.year_founded,
+//             company_speciality: tempData.company_speciality,
+//             linkedin_url: tempData.linkedin_url,
+//             company_stock_name: tempData.company_stock_name,
+//             verified_page_date: tempData.verified_page_date,
+//             phone_number: tempData.phone_number,
+//             company_followers: tempData.company_followers,
+//             location_total: tempData.location_total,
+//             overview: tempData.overview,
+//             visit_website: tempData.visit_website,
+//             final_remarks: tempData.final_remarks,
+//             company_id: tempData.company_id,
+//             last_sync: new Date()
+//           };
 
-          // Update status if completed
-          if (shouldMarkCompleted) {
-            updateData.status = 'Completed';
+//           // Update status if completed
+//           if (shouldMarkCompleted) {
+//             updateData.status = 'Completed';
            
-          }
+//           }
 
-          // Update main table
-          const [updated] = await VerificationUpload_com.update(updateData, {
-            where: { 
-              uniqueId: tempData.uniqueId,
-              link_id: tempData.link_id
-            },
-            transaction
-          });
+//           // Update main table
+//           const [updated] = await VerificationUpload_com.update(updateData, {
+//             where: { 
+//               uniqueId: tempData.uniqueId,
+//               link_id: tempData.link_id
+//             },
+//             transaction
+//           });
 
-          if (updated > 0) {
-            processedCount++;
-            console.log(`✓ Updated VerificationUpload_com for link_id: ${tempData.link_id}`);
+//           if (updated > 0) {
+//             processedCount++;
+//             console.log(`✓ Updated VerificationUpload_com for link_id: ${tempData.link_id}`);
             
-            // Delete from temp table if completed
-            if (shouldMarkCompleted) {
-              await VerificationTemp_com.destroy({ 
-                where: { id: tempData.id },
-                transaction
-              });
-              markedCompletedCount++;
-              deletedCount++;
-              console.log(`🗑️ Deleted temp record ${tempData.id}`);
-            }
-          } else {
-            skippedCount++;
-            console.log(`⚠️ No matching record found for link_id: ${tempData.link_id}`);
-          }
+//             // Delete from temp table if completed
+//             if (shouldMarkCompleted) {
+//               await VerificationTemp_com.destroy({ 
+//                 where: { id: tempData.id },
+//                 transaction
+//               });
+//               markedCompletedCount++;
+//               deletedCount++;
+//               console.log(`🗑️ Deleted temp record ${tempData.id}`);
+//             }
+//           } else {
+//             skippedCount++;
+//             console.log(`⚠️ No matching record found for link_id: ${tempData.link_id}`);
+//           }
 
-          await transaction.commit();
+//           await transaction.commit();
           
-          // Small delay between operations
-          await new Promise(resolve => setTimeout(resolve, 100));
+//           // Small delay between operations
+//           await new Promise(resolve => setTimeout(resolve, 100));
           
-        } catch (recordError) {
-          errorCount++;
-          // if (transaction) await transaction.rollback();
-          console.error(`❌ Error processing record ${tempRecord.id}:`, recordError.message);
-          continue;
-        }
-      }
+//         } catch (recordError) {
+//           errorCount++;
+//           // if (transaction) await transaction.rollback();
+//           console.error(`❌ Error processing record ${tempRecord.id}:`, recordError.message);
+//           continue;
+//         }
+//       }
 
-      offset += batchSize;
-    }
-  console.log(`✅ Sync completed successfully. Stats:
-      - Processed: ${processedCount}
-      - Marked as completed: ${markedCompletedCount}
-      - Deleted: ${deletedCount}
-      - Skipped: ${skippedCount}
-    `);
+//       offset += batchSize;
+//     }
+//   console.log(`✅ Sync completed successfully. Stats:
+//       - Processed: ${processedCount}
+//       - Marked as completed: ${markedCompletedCount}
+//       - Deleted: ${deletedCount}
+//       - Skipped: ${skippedCount}
+//     `);
 
-  } catch (jobError) {
-    console.error('❌ Error in sync job:', jobError);
-  }
-});
+//   } catch (jobError) {
+//     console.error('❌ Error in sync job:', jobError);
+//   }
+// });
 
-console.log('⏰ VerificationTemp_com sync job scheduled to run every 10 minutes');
+// console.log('⏰ VerificationTemp_com sync job scheduled to run every 10 minutes');
 
 
 
@@ -6901,104 +6769,104 @@ console.log('⏰ VerificationTemp_com sync job scheduled to run every 10 minutes
 
 // console.log('⏰ VerificationTemp_com sync job scheduled to run every 10 minutes');
 
-async function checkAndUpdateEmailStatus2() {
-  console.log('⏳ Cron Job: Checking matchLink status...');
+//////////////// async function checkAndUpdateEmailStatus2() {
+//   console.log('⏳ Cron Job: Checking matchLink status...');
 
-  try {
-    // Step 1: Get all uniqueIds in emailsent with pending status
-    const pendingUniqueIds = await emailsent2.findAll({
-      where: { status: 'pending' },
-      attributes: ['uniqueId'],
-      group: ['uniqueId']
-    });
+//   try {
+//     // Step 1: Get all uniqueIds in emailsent with pending status
+//     const pendingUniqueIds = await emailsent2.findAll({
+//       where: { status: 'pending' },
+//       attributes: ['uniqueId'],
+//       group: ['uniqueId']
+//     });
 
-    for (const record of pendingUniqueIds) {
-      const uniqueId = record.uniqueId;
+//     for (const record of pendingUniqueIds) {
+//       const uniqueId = record.uniqueId;
 
-      // Step 2: Get all Link rows for this uniqueId where matchLink is not null
-      const matchedLinks = await VerificationUpload_com.findAll({
-        where: {
-          uniqueId,
-          clean_link: { [Op.ne]: null }
-        },
-        attributes: ['status']
-      });
+//       // Step 2: Get all Link rows for this uniqueId where matchLink is not null
+//       const matchedLinks = await VerificationUpload_com.findAll({
+//         where: {
+//           uniqueId,
+//           clean_link: { [Op.ne]: null }
+//         },
+//         attributes: ['status']
+//       });
 
-      if (matchedLinks.length === 0) {
-        console.log(`⚠️ No cleanlink found for ${uniqueId}, skipping...`);
-        continue;
-      }
+//       if (matchedLinks.length === 0) {
+//         console.log(`⚠️ No cleanlink found for ${uniqueId}, skipping...`);
+//         continue;
+//       }
 
-      // Step 3: Check if all matched links are pending or completed
-      const hasPending = matchedLinks.every(link => link.status === 'pending');
-      const hasCompleted = matchedLinks.every(link => link.status === 'Completed');
+//       // Step 3: Check if all matched links are pending or completed
+//       const hasPending = matchedLinks.every(link => link.status === 'pending');
+//       const hasCompleted = matchedLinks.every(link => link.status === 'Completed');
 
-      if (hasPending) {
-        console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
-        continue;
-      }
+//       if (hasPending) {
+//         console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
+//         continue;
+//       }
 
-      if (hasCompleted) {
-        // Step 4: If none are pending, update emailsent status to completed
-        await emailsent2.update(
-          { status: 'completed' },
-          { where: { uniqueId } }
-        );
-        await VerificationUpload.update(
-          { final_status: 'Completed' },
-          { where: { uniqueId } }
-        );
+//       if (hasCompleted) {
+//         // Step 4: If none are pending, update emailsent status to completed
+//         await emailsent2.update(
+//           { status: 'completed' },
+//           { where: { uniqueId } }
+//         );
+//         await VerificationUpload.update(
+//           { final_status: 'Completed' },
+//           { where: { uniqueId } }
+//         );
 
-        console.log(`✅ ${uniqueId} marked as completed in emailsent`);
+//         console.log(`✅ ${uniqueId} marked as completed in emailsent`);
 
-        // Step 5: Get email address for this uniqueId
-        const emailRecord = await emailsent2.findOne({
-          where: { uniqueId },
-          attributes: ['email']
-        });
+//         // Step 5: Get email address for this uniqueId
+//         const emailRecord = await emailsent2.findOne({
+//           where: { uniqueId },
+//           attributes: ['email']
+//         });
 
-        if (!emailRecord || !emailRecord.email) {
-          console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
-          continue;
-        }
+//         if (!emailRecord || !emailRecord.email) {
+//           console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
+//           continue;
+//         }
 
-        const email = emailRecord.email;
+//         const email = emailRecord.email;
 
-        // Step 6: Send the email
-        try {
-          const mailOptions = {
-            from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
-            to: email,
-            subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #2563eb;">B2B LinkedIn Verification System Completed</h2>
-                <p>All Verification processes for ${uniqueId} have been completed.</p>
+//         // Step 6: Send the email
+//         try {
+//           const mailOptions = {
+//             from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
+//             to: email,
+//             subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
+//             html: `
+//               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//                 <h2 style="color: #2563eb;">B2B LinkedIn Verification System Completed</h2>
+//                 <p>All Verification processes for ${uniqueId} have been completed.</p>
                 
-                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                  <h3 style="margin-top: 0; color: #1f2937;">LinkedIn Verification System</h3>
-                  <p><strong>File UniqueId:</strong> ${uniqueId}</p>
-                </div>
+//                 <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+//                   <h3 style="margin-top: 0; color: #1f2937;">LinkedIn Verification System</h3>
+//                   <p><strong>File UniqueId:</strong> ${uniqueId}</p>
+//                 </div>
                 
-                <p>All results are now available for download.</p>
-                <p>Team,<br/>B2B Direct Data</p>
-              </div>
-            `
-          };
+//                 <p>All results are now available for download.</p>
+//                 <p>Team,<br/>B2B Direct Data</p>
+//               </div>
+//             `
+//           };
 
-          await transporter.sendMail(mailOptions);
-          console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
-        } catch (err) {
-          console.error(`❌ Failed to send email for ${uniqueId}:`, err);
-        }
-      }
-    }
-  } catch (error) {
-    console.error('❌ Error in cron job:', error);
-  }
-}
-cron.schedule('*/10 * * * *', checkAndUpdateEmailStatus2);
-console.log('⏰ Email status check job scheduled to run every 10 minutes');
+//           await transporter.sendMail(mailOptions);
+//           console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
+//         } catch (err) {
+//           console.error(`❌ Failed to send email for ${uniqueId}:`, err);
+//         }
+//       }
+//     }
+//   } catch (error) {
+//     console.error('❌ Error in cron job:', error);
+//   }
+// }
+// cron.schedule('*/15 * * * *', checkAndUpdateEmailStatus2);
+// console.log('⏰ Email status check job scheduled to run every 10 minutes');
 
 
 

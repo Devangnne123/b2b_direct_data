@@ -87,7 +87,11 @@ status: {
   type: DataTypes.STRING,
   allowNull: true,        // or true if you want to allow null values
   defaultValue: 'pending', // ✅ sets default value to 'pending'
-}
+},
+Data_id: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  }
 
 
 }, {

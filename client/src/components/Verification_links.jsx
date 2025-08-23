@@ -146,62 +146,62 @@ function VerificationLinks() {
     fetchCredits();
   }, [savedEmail]);
 
-  const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
-     if (isProcessing && !isBackgroundCheck) return; // Prevent multiple clicks
-    try {
-      // Only show processing for manual checks
-      if (!isBackgroundCheck){setLoading(true);
-        setIsProcessing(true);
-      } 
+  // const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
+  //    if (isProcessing && !isBackgroundCheck) return; // Prevent multiple clicks
+  //   try {
+  //     // Only show processing for manual checks
+  //     if (!isBackgroundCheck){setLoading(true);
+  //       setIsProcessing(true);
+  //     } 
       
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/check-status-link/${uniqueId}`
-      );
+  //     const response = await axios.post(
+  //       `${import.meta.env.VITE_API_BASE_URL}/check-status-link/${uniqueId}`
+  //     );
 
-      // Silent update for background checks
-      if (isBackgroundCheck) {
-        setCategorizedLinks(prev => 
-          prev.map(item => 
-            item.uniqueId === uniqueId 
-              ? { ...item, ...response.data } 
-              : item
-          )
-        );
-      } else {
-        setStatusCheckData(response.data);
-        toast.success(`Status checked for ${uniqueId}`);
-      }
+  //     // Silent update for background checks
+  //     if (isBackgroundCheck) {
+  //       setCategorizedLinks(prev => 
+  //         prev.map(item => 
+  //           item.uniqueId === uniqueId 
+  //             ? { ...item, ...response.data } 
+  //             : item
+  //         )
+  //       );
+  //     } else {
+  //       setStatusCheckData(response.data);
+  //       toast.success(`Status checked for ${uniqueId}`);
+  //     }
 
-      // Handle completion logic silently
-      if (response.data.status === 'completed' && !response.data.emailSent) {
-        // await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/send-completion-email`, {
-        //   email: savedEmail,
-        //   uniqueId: uniqueId,
-        //   totalRecords: response.data.totalRecords,
-        //   completedRecords: response.data.completedRecords
-        // },{
-        //   headers:{"Authorization": `Bearer ${token}`}
-        // });
+  //     // Handle completion logic silently
+  //     if (response.data.status === 'completed' && !response.data.emailSent) {
+  //       // await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/send-completion-email`, {
+  //       //   email: savedEmail,
+  //       //   uniqueId: uniqueId,
+  //       //   totalRecords: response.data.totalRecords,
+  //       //   completedRecords: response.data.completedRecords
+  //       // },{
+  //       //   headers:{"Authorization": `Bearer ${token}`}
+  //       // });
         
-        // Update state silently
-        setCategorizedLinks(prev => 
-          prev.map(item => 
-            item.uniqueId === uniqueId 
-              ? { ...item, emailSent: true } 
-              : item
-          )
-        ); 
-      }
-    } catch (error) {
-      if (!isBackgroundCheck) {
-        console.error('Error checking status:', error);
-        toast.error(error.response?.data?.message || 'Failed to check status');
-      }
-    } finally {
-      if (!isBackgroundCheck) setLoading(false);
-       setIsProcessing(false);
-    }
-  };
+  //       // Update state silently
+  //       setCategorizedLinks(prev => 
+  //         prev.map(item => 
+  //           item.uniqueId === uniqueId 
+  //             ? { ...item, emailSent: true } 
+  //             : item
+  //         )
+  //       ); 
+  //     }
+  //   } catch (error) {
+  //     if (!isBackgroundCheck) {
+  //       console.error('Error checking status:', error);
+  //       toast.error(error.response?.data?.message || 'Failed to check status');
+  //     }
+  //   } finally {
+  //     if (!isBackgroundCheck) setLoading(false);
+  //      setIsProcessing(false);
+  //   }
+  // };
 
   // const silentRefresh = async () => {
   //   try {
@@ -303,7 +303,7 @@ function VerificationLinks() {
   
     useEffect(() => {
       silentRefresh();
-      const intervalId = setInterval(silentRefresh, 1000000);
+      const intervalId = setInterval(silentRefresh, 50000);
       return () => clearInterval(intervalId);
     }, [silentRefresh]);
   
@@ -1138,7 +1138,8 @@ function VerificationLinks() {
                       )}
 
                       {/* {categorizedLinks.length > 0 &&  */
-                      !showConfirmation && (
+                      // !showConfirmation && 
+                      (
                         <div className="data-section">
                           <div className="data-section-header">
                             <h3 className="data-section-title">Your Verification History</h3>

@@ -191,57 +191,57 @@ function Verification_company() {
 
   useEffect(() => {
     silentRefresh();
-    const intervalId = setInterval(silentRefresh, 1000000);
+    const intervalId = setInterval(silentRefresh,  50000);
     return () => clearInterval(intervalId);
   }, [silentRefresh]);
 
-  const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
-    if (isProcessing && !isBackgroundCheck) return; // Prevent multiple clicks
+  // const checkStatus = async (uniqueId, isBackgroundCheck = false) => {
+  //   if (isProcessing && !isBackgroundCheck) return; // Prevent multiple clicks
     
-    try {
-      if (!isBackgroundCheck) {
-        setLoading(true);
-        setIsProcessing(true);
-      }
+  //   try {
+  //     if (!isBackgroundCheck) {
+  //       setLoading(true);
+  //       setIsProcessing(true);
+  //     }
       
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/check-status-link_com/${uniqueId}`
-      );
+  //     const response = await axios.post(
+  //       `${import.meta.env.VITE_API_BASE_URL}/check-status-link_com/${uniqueId}`
+  //     );
 
-      if (isBackgroundCheck) {
-        setCategorizedLinks(prev => 
-          prev.map(item => 
-            item.uniqueId === uniqueId 
-              ? { ...item, ...response.data } 
-              : item
-          )
-        );
-      } else {
-        setStatusCheckData(response.data);
-        toast.success(`Status checked for ${uniqueId}`);
-      }
+  //     if (isBackgroundCheck) {
+  //       setCategorizedLinks(prev => 
+  //         prev.map(item => 
+  //           item.uniqueId === uniqueId 
+  //             ? { ...item, ...response.data } 
+  //             : item
+  //         )
+  //       );
+  //     } else {
+  //       setStatusCheckData(response.data);
+  //       toast.success(`Status checked for ${uniqueId}`);
+  //     }
 
-      if (response.data.status === 'completed' && !response.data.emailSent) {
-        setCategorizedLinks(prev => 
-          prev.map(item => 
-            item.uniqueId === uniqueId 
-              ? { ...item, emailSent: true } 
-              : item
-          )
-        );
-      }
-    } catch (error) {
-      if (!isBackgroundCheck) {
-        console.error('Error checking status:', error);
-        toast.error(error.response?.data?.message || 'Failed to check status');
-      }
-    } finally {
-      if (!isBackgroundCheck) {
-        setLoading(false);
-        setIsProcessing(false);
-      }
-    }
-  };
+  //     if (response.data.status === 'completed' && !response.data.emailSent) {
+  //       setCategorizedLinks(prev => 
+  //         prev.map(item => 
+  //           item.uniqueId === uniqueId 
+  //             ? { ...item, emailSent: true } 
+  //             : item
+  //         )
+  //       );
+  //     }
+  //   } catch (error) {
+  //     if (!isBackgroundCheck) {
+  //       console.error('Error checking status:', error);
+  //       toast.error(error.response?.data?.message || 'Failed to check status');
+  //     }
+  //   } finally {
+  //     if (!isBackgroundCheck) {
+  //       setLoading(false);
+  //       setIsProcessing(false);
+  //     }
+  //   }
+  // };
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files?.[0];

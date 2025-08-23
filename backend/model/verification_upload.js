@@ -150,7 +150,11 @@ emailSentAt: {
   url_id: {
     type: DataTypes.TEXT,
     allowNull: true
-  }
+  },
+  Data_id: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
 }, {
   tableName: 'web_contact_verfication_main',
   timestamps: false

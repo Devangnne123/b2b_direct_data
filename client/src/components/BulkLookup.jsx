@@ -210,7 +210,7 @@ function BulkLookup() {
 
   useEffect(() => {
     silentRefresh();
-    const intervalId = setInterval(silentRefresh, 1000000);
+    const intervalId = setInterval(silentRefresh, 50000);
     return () => clearInterval(intervalId);
   }, [silentRefresh]);
 
