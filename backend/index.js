@@ -1491,164 +1491,26 @@ const cron = require('node-cron');
 //   }
 // });
 
-// cron.schedule('*/3 * * * *', async () => {
-//   console.log('\n🔄 Starting TempLinkMobile to Link sync job...');
-
-//   try {
-//     // Verify database connection first
-//     await sequelize.authenticate();
-    
-//     // Process records in batches to prevent memory issues
-//     let offset = 0;
-//     const batchSize = 300;
-//     let hasMoreRecords = true;
-//     let processedCount = 0;
-//     let skippedCount = 0;
-//     let deletedCount = 0;
-
-//     while (hasMoreRecords) {
-//       const tempRecords = await TempLinkMobile.findAll({
-//         limit: batchSize,
-//         offset: offset,
-       
-//       });
-
-//       if (tempRecords.length === 0) {
-//         hasMoreRecords = false;
-//         continue;
-//       }
-
-//       for (const temp of tempRecords) {
-//         let transaction;
-//         try {
-//           transaction = await sequelize.transaction();
-
-//           const {
-//             id,
-//             uniqueId,
-//             linkedin_link_id,
-//             mobile_number,
-//             mobile_number_2,
-//             person_name,
-//             person_location
-            
-//           } = temp;
-
-//           // Skip if required fields are missing
-//           if (!linkedin_link_id || !uniqueId) {
-//             console.log(`⚠️ Skipping record ${id}: Missing linkedin_link_id or uniqueId`);
-//             skippedCount++;
-//             await transaction.commit();
-//             continue;
-//           }
-
-//           // Find matching Link record
-//           const linkRecord = await Link.findOne({
-//             where: { linkedin_link_id, uniqueId },
-//             transaction
-//           });
-
-//           if (!linkRecord) {
-//             console.log(`⚠️ No Link found for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId}`);
-//             skippedCount++;
-//             await transaction.commit();
-//             continue;
-//           }
-
-//           // Determine status
-//           let status = "pending";
-//           if (!(
-//             (mobile_number === null || mobile_number === "N/A") &&
-//             (mobile_number_2 === null || mobile_number_2 === "N/A")
-//           )) {
-//             status = "completed";
-//           }
-
-//           // Update Link record
-//           const [updated] = await Link.update({
-//             mobile_number,
-//             mobile_number_2,
-//             person_name,
-//             person_location,
-//             status
-            
-            
-//           }, {
-//             where: { linkedin_link_id, uniqueId },
-//             transaction
-//           });
-
-//           if (updated > 0) {
-//             processedCount++;
-//             console.log(`✓ Updated Link for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId} | Status: ${status}`);
-
-//             // Delete from TempLinkMobile if completed
-//             if (status === 'completed') {
-//               await TempLinkMobile.destroy({ 
-//                 where: { id },
-//                 transaction
-//               });
-//               deletedCount++;
-//               console.log(`🗑️ Deleted TempLinkMobile record ${id}`);
-//             }
-//           }
-
-//           await transaction.commit();
-          
-//           // Small delay between operations
-//           await new Promise(resolve => setTimeout(resolve, 100));
-          
-//         } catch (recordError) {
-//           // if (transaction) await transaction.rollback();
-//           console.error(`⚠️ Error processing record ${temp.id}:`, recordError.message);
-//           continue;
-//         }
-//       }
-
-//       offset += batchSize;
-//     }
-
-   
-
-//     console.log(`✅ Sync completed successfully. Stats:
-//       - Processed: ${processedCount}
-//       - Skipped: ${skippedCount}
-//       - Deleted: ${deletedCount}
-//     `);
-
-//   } catch (jobError) {
-//     console.error('❌ Error in sync job:', jobError);
-//   }
-// });
-
-// console.log('⏰ TempLinkMobile sync job scheduled to run every 2 minutes');
-
-
-
 cron.schedule('*/3 * * * *', async () => {
   console.log('\n🔄 Starting TempLinkMobile to Link sync job...');
-  const jobStartTime = Date.now();
 
   try {
     // Verify database connection first
     await sequelize.authenticate();
     
+    // Process records in batches to prevent memory issues
+    let offset = 0;
+    const batchSize = 300;
+    let hasMoreRecords = true;
     let processedCount = 0;
     let skippedCount = 0;
     let deletedCount = 0;
-    let lastProcessedId = 0;
-
-    // Process records using cursor-based pagination (more efficient than offset)
-    let hasMoreRecords = true;
 
     while (hasMoreRecords) {
       const tempRecords = await TempLinkMobile.findAll({
-        where: {
-          id: { [Op.gt]: lastProcessedId }
-        },
-        limit: 100, // Smaller batch size
-        order: [['id', 'ASC']],
-        raw: true // Get plain objects for faster processing
+        limit: batchSize,
+        offset: offset,
+       
       });
 
       if (tempRecords.length === 0) {
@@ -1656,13 +1518,99 @@ cron.schedule('*/3 * * * *', async () => {
         continue;
       }
 
-      // Process batch in parallel with controlled concurrency
-      await processBatch(tempRecords);
-      
-      lastProcessedId = tempRecords[tempRecords.length - 1].id;
+      for (const temp of tempRecords) {
+        let transaction;
+        try {
+          transaction = await sequelize.transaction();
+
+          const {
+            id,
+            uniqueId,
+            linkedin_link_id,
+            mobile_number,
+            mobile_number_2,
+            person_name,
+            person_location
+            
+          } = temp;
+
+          // Skip if required fields are missing
+          if (!linkedin_link_id || !uniqueId) {
+            console.log(`⚠️ Skipping record ${id}: Missing linkedin_link_id or uniqueId`);
+            skippedCount++;
+            await transaction.commit();
+            continue;
+          }
+
+          // Find matching Link record
+          const linkRecord = await Link.findOne({
+            where: { linkedin_link_id, uniqueId },
+            transaction
+          });
+
+          if (!linkRecord) {
+            console.log(`⚠️ No Link found for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId}`);
+            skippedCount++;
+            await transaction.commit();
+            continue;
+          }
+
+          // Determine status
+          let status = "pending";
+          if (!(
+            (mobile_number === null || mobile_number === "N/A") &&
+            (mobile_number_2 === null || mobile_number_2 === "N/A")
+          )) {
+            status = "completed";
+          }
+
+          // Update Link record
+          const [updated] = await Link.update({
+            mobile_number,
+            mobile_number_2,
+            person_name,
+            person_location,
+            status
+            
+            
+          }, {
+            where: { linkedin_link_id, uniqueId },
+            transaction
+          });
+
+          if (updated > 0) {
+            processedCount++;
+            console.log(`✓ Updated Link for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId} | Status: ${status}`);
+
+            // Delete from TempLinkMobile if completed
+            if (status === 'completed') {
+              await TempLinkMobile.destroy({ 
+                where: { id },
+                transaction
+              });
+              deletedCount++;
+              console.log(`🗑️ Deleted TempLinkMobile record ${id}`);
+            }
+          }
+
+          await transaction.commit();
+          
+          // Small delay between operations
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+        } catch (recordError) {
+          // if (transaction) await transaction.rollback();
+          console.error(`⚠️ Error processing record ${temp.id}:`, recordError.message);
+          continue;
+        }
+      }
+
+      offset += batchSize;
     }
 
-    console.log(`✅ Sync completed in ${(Date.now() - jobStartTime) / 1000}s. Stats:
+   
+
+    console.log(`✅ Sync completed successfully. Stats:
       - Processed: ${processedCount}
       - Skipped: ${skippedCount}
       - Deleted: ${deletedCount}
@@ -1673,103 +1621,155 @@ cron.schedule('*/3 * * * *', async () => {
   }
 });
 
-// Process batch with controlled concurrency
-async function processBatch(records) {
-  const BATCH_CONCURRENCY = 2; // Process 5 records at a time
+console.log('⏰ TempLinkMobile sync job scheduled to run every 2 minutes');
+
+
+
+// cron.schedule('*/3 * * * *', async () => {
+//   console.log('\n🔄 Starting TempLinkMobile to Link sync job...');
+//   const jobStartTime = Date.now();
+
+//   try {
+//     // Verify database connection first
+//     await sequelize.authenticate();
+    
+//     let processedCount = 0;
+//     let skippedCount = 0;
+//     let deletedCount = 0;
+//     let lastProcessedId = 0;
+
+//     // Process records using cursor-based pagination (more efficient than offset)
+//     let hasMoreRecords = true;
+
+//     while (hasMoreRecords) {
+//       const tempRecords = await TempLinkMobile.findAll({
+//         where: {
+//           id: { [Op.gt]: lastProcessedId }
+//         },
+//         limit: 100, // Smaller batch size
+//         order: [['id', 'ASC']],
+//         raw: true // Get plain objects for faster processing
+//       });
+
+//       if (tempRecords.length === 0) {
+//         hasMoreRecords = false;
+//         continue;
+//       }
+
+//       // Process batch in parallel with controlled concurrency
+//       await processBatch(tempRecords);
+      
+//       lastProcessedId = tempRecords[tempRecords.length - 1].id;
+//     }
+
+//     console.log(`✅ Sync completed in ${(Date.now() - jobStartTime) / 1000}s. Stats:
+//       - Processed: ${processedCount}
+//       - Skipped: ${skippedCount}
+//       - Deleted: ${deletedCount}
+//     `);
+
+//   } catch (jobError) {
+//     console.error('❌ Error in sync job:', jobError);
+//   }
+// });
+
+// // Process batch with controlled concurrency
+// async function processBatch(records) {
+//   const BATCH_CONCURRENCY = 2; // Process 5 records at a time
   
-  for (let i = 0; i < records.length; i += BATCH_CONCURRENCY) {
-    const batch = records.slice(i, i + BATCH_CONCURRENCY);
+//   for (let i = 0; i < records.length; i += BATCH_CONCURRENCY) {
+//     const batch = records.slice(i, i + BATCH_CONCURRENCY);
     
-    await Promise.allSettled(
-      batch.map(record => processSingleRecord(record))
-    );
+//     await Promise.allSettled(
+//       batch.map(record => processSingleRecord(record))
+//     );
     
-    // Small delay between batches to prevent overwhelming the database
-    await new Promise(resolve => setTimeout(resolve, 50));
-  }
-}
+//     // Small delay between batches to prevent overwhelming the database
+//     await new Promise(resolve => setTimeout(resolve, 50));
+//   }
+// }
 
-async function processSingleRecord(temp) {
-  const {
-    id,
-    uniqueId,
-    linkedin_link_id,
-    mobile_number,
-    mobile_number_2,
-    person_name,
-    person_location
-  } = temp;
+// async function processSingleRecord(temp) {
+//   const {
+//     id,
+//     uniqueId,
+//     linkedin_link_id,
+//     mobile_number,
+//     mobile_number_2,
+//     person_name,
+//     person_location
+//   } = temp;
 
-  // Skip if required fields are missing
-  if (!linkedin_link_id || !uniqueId) {
-    console.log(`⚠️ Skipping record ${id}: Missing linkedin_link_id or uniqueId`);
-    skippedCount++;
-    return;
-  }
+//   // Skip if required fields are missing
+//   if (!linkedin_link_id || !uniqueId) {
+//     console.log(`⚠️ Skipping record ${id}: Missing linkedin_link_id or uniqueId`);
+//     skippedCount++;
+//     return;
+//   }
 
-  let transaction;
-  try {
-    transaction = await sequelize.transaction();
+//   let transaction;
+//   try {
+//     transaction = await sequelize.transaction();
 
-    // Find matching Link record
-    const linkRecord = await Link.findOne({
-      where: { linkedin_link_id, uniqueId },
-      transaction,
-      lock: transaction.LOCK.UPDATE // Prevent race conditions
-    });
+//     // Find matching Link record
+//     const linkRecord = await Link.findOne({
+//       where: { linkedin_link_id, uniqueId },
+//       transaction,
+//       lock: transaction.LOCK.UPDATE // Prevent race conditions
+//     });
 
-    if (!linkRecord) {
-      console.log(`⚠️ No Link found for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId}`);
-      skippedCount++;
-      await transaction.commit();
-      return;
-    }
+//     if (!linkRecord) {
+//       console.log(`⚠️ No Link found for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId}`);
+//       skippedCount++;
+//       await transaction.commit();
+//       return;
+//     }
 
-    // Determine status
-    let status = "pending";
-    const hasValidMobile = mobile_number && mobile_number !== "N/A";
-    const hasValidMobile2 = mobile_number_2 && mobile_number_2 !== "N/A";
+//     // Determine status
+//     let status = "pending";
+//     const hasValidMobile = mobile_number && mobile_number !== "N/A";
+//     const hasValidMobile2 = mobile_number_2 && mobile_number_2 !== "N/A";
     
-    if (hasValidMobile || hasValidMobile2) {
-      status = "completed";
-    }
+//     if (hasValidMobile || hasValidMobile2) {
+//       status = "completed";
+//     }
 
-    // Update Link record
-    const [updated] = await Link.update({
-      mobile_number: hasValidMobile ? mobile_number : null,
-      mobile_number_2: hasValidMobile2 ? mobile_number_2 : null,
-      person_name: person_name || null,
-      person_location: person_location || null,
-      status
-    }, {
-      where: { linkedin_link_id, uniqueId },
-      transaction
-    });
+//     // Update Link record
+//     const [updated] = await Link.update({
+//       mobile_number: hasValidMobile ? mobile_number : null,
+//       mobile_number_2: hasValidMobile2 ? mobile_number_2 : null,
+//       person_name: person_name || null,
+//       person_location: person_location || null,
+//       status
+//     }, {
+//       where: { linkedin_link_id, uniqueId },
+//       transaction
+//     });
 
-    if (updated > 0) {
-      processedCount++;
-      console.log(`✓ Updated Link for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId} | Status: ${status}`);
+//     if (updated > 0) {
+//       processedCount++;
+//       console.log(`✓ Updated Link for linkedin_link_id: ${linkedin_link_id}, uniqueId: ${uniqueId} | Status: ${status}`);
 
-      // Delete from TempLinkMobile if completed
-      if (status === 'completed') {
-        await TempLinkMobile.destroy({ 
-          where: { id },
-          transaction
-        });
-        deletedCount++;
-        console.log(`🗑️ Deleted TempLinkMobile record ${id}`);
-      }
-    }
+//       // Delete from TempLinkMobile if completed
+//       if (status === 'completed') {
+//         await TempLinkMobile.destroy({ 
+//           where: { id },
+//           transaction
+//         });
+//         deletedCount++;
+//         console.log(`🗑️ Deleted TempLinkMobile record ${id}`);
+//       }
+//     }
 
-    await transaction.commit();
+//     await transaction.commit();
     
-  } catch (recordError) {
-    if (transaction) await transaction.rollback();
-    console.error(`⚠️ Error processing record ${temp.id}:`, recordError.message);
-  }
-}
+//   } catch (recordError) {
+//     if (transaction) await transaction.rollback();
+//     console.error(`⚠️ Error processing record ${temp.id}:`, recordError.message);
+//   }
+// }
 
-console.log('⏰ TempLinkMobile sync job scheduled to run every 3 minutes');
+// console.log('⏰ TempLinkMobile sync job scheduled to run every 3 minutes');
 
 
 // const cron = require('node-cron');
@@ -4652,169 +4652,27 @@ app.post('/api/send-verification-confirmation/link',auth, async (req, res) => {
 
 // console.log('⏰ VerificationTemp sync job scheduled to run every 3 minutes');
 
-// cron.schedule('*/10 * * * *', async () => {
-//   console.log('\n🔄 Starting VerificationTemp to VerificationUpload sync job...');
-
-//   try {
-//     // Verify database connection first
-//     await sequelize.authenticate();
-    
-//     // Process records in batches to prevent memory issues
-//     let offset = 0;
-//     const batchSize = 300;
-//     let hasMoreRecords = true;
-//     let processedCount = 0;
-//     let skippedCount = 0;
-//     let markedCompletedCount = 0;
-//     let deletedCount = 0;
-
-//     while (hasMoreRecords) {
-//       const tempRecords = await VerificationTemp.findAll({
-//         limit: batchSize,
-//         offset: offset,
-
-//       });
-
-//       if (tempRecords.length === 0) {
-//         hasMoreRecords = false;
-//         continue;
-//       }
-
-//       for (const temp of tempRecords) {
-//         let transaction;
-//         try {
-//           transaction = await sequelize.transaction();
-
-//           const tempData = temp.get({ plain: true });
-          
-//           // Skip if required fields are missing
-//           if (!tempData.link_id || !tempData.uniqueId) {
-//             console.log(`⚠️ Skipping record ${tempData.id}: Missing link_id or uniqueId`);
-//             skippedCount++;
-//             await transaction.commit();
-//             continue;
-//           }
-
-//           // Check if both fields have valid values
-//           const hasValidFinalRemarks = tempData.final_remarks && 
-//                                      tempData.final_remarks.trim() !== '';
-//           const hasValidContactsId = tempData.list_contacts_id && 
-//                                     tempData.list_contacts_id.trim() !== '';
-//           const shouldMarkCompleted = hasValidFinalRemarks && hasValidContactsId;
-
-//           // Prepare update data for main table
-//           const updateData = {
-//             full_name: tempData.full_name,
-//             head_title: tempData.head_title,
-//             head_location: tempData.head_location,
-//             title_1: tempData.title_1,
-//             company_1: tempData.company_1,
-//             company_link_1: tempData.company_link_1,
-//             exp_duration: tempData.exp_duration,
-//             exp_location: tempData.exp_location,
-//             job_type: tempData.job_type,
-//             title_2: tempData.title_2,
-//             company_2: tempData.company_2,
-//             company_link_2: tempData.company_link_2,
-//             exp_duration_2: tempData.exp_duration_2,
-//             exp_location_2: tempData.exp_location_2,
-//             job_type_2: tempData.job_type_2,
-//             final_remarks: tempData.final_remarks,
-//             list_contacts_id: tempData.list_contacts_id,
-//             url_id: tempData.url_id,
-//             last_sync: new Date()
-//           };
-
-//           // Update status if conditions are met
-//           if (shouldMarkCompleted) {
-//             updateData.status = 'Completed';
-//           }
-
-//           // Update main table
-//           const [updated] = await VerificationUpload.update(updateData, {
-//             where: { 
-//               uniqueId: tempData.uniqueId,
-//               link_id: tempData.link_id
-//             },
-//             transaction
-//           });
-
-//           if (updated > 0) {
-//             processedCount++;
-//             console.log(`✓ Updated VerificationUpload for link_id: ${tempData.link_id}, uniqueId: ${tempData.uniqueId}`);
-
-//             // Delete from VerificationTemp if completed
-//             if (shouldMarkCompleted) {
-//               await VerificationTemp.destroy({ 
-//                 where: { id: tempData.id },
-//                 transaction
-//               });
-//               markedCompletedCount++;
-//               deletedCount++;
-//               console.log(`🗑️ Deleted VerificationTemp record ${tempData.id}`);
-//             }
-//           } else {
-//             skippedCount++;
-//             console.log(`⚠️ No matching record found for link_id: ${tempData.link_id}`);
-//           }
-
-//           await transaction.commit();
-          
-//           // Small delay between operations
-//           await new Promise(resolve => setTimeout(resolve, 100));
-          
-//         } catch (recordError) {
-          
-//           console.error(`⚠️ Error processing record ${temp.id}:`, recordError.message);
-//           continue;
-//         }
-//       }
-
-//       offset += batchSize;
-//     }
-
-
-
-//     console.log(`✅ Sync completed successfully. Stats:
-//       - Processed: ${processedCount}
-//       - Marked as completed: ${markedCompletedCount}
-//       - Deleted: ${deletedCount}
-//       - Skipped: ${skippedCount}
-//     `);
-
-//   } catch (jobError) {
-//     console.error('❌ Error in sync job:', jobError);
-//   }
-// });
-
-// console.log('⏰ VerificationTemp sync job scheduled to run every 10 minutes');
-
-
 cron.schedule('*/10 * * * *', async () => {
   console.log('\n🔄 Starting VerificationTemp to VerificationUpload sync job...');
-  const jobStartTime = Date.now();
 
   try {
     // Verify database connection first
     await sequelize.authenticate();
     
+    // Process records in batches to prevent memory issues
+    let offset = 0;
+    const batchSize = 300;
+    let hasMoreRecords = true;
     let processedCount = 0;
     let skippedCount = 0;
     let markedCompletedCount = 0;
     let deletedCount = 0;
-    let lastProcessedId = 0;
-
-    // Process records using cursor-based pagination (more efficient than offset)
-    let hasMoreRecords = true;
 
     while (hasMoreRecords) {
       const tempRecords = await VerificationTemp.findAll({
-        where: {
-          id: { [Op.gt]: lastProcessedId }
-        },
-        limit: 100, // Reduced batch size
-        order: [['id', 'ASC']],
-        raw: true // Faster data retrieval
+        limit: batchSize,
+        offset: offset,
+
       });
 
       if (tempRecords.length === 0) {
@@ -4822,135 +4680,277 @@ cron.schedule('*/10 * * * *', async () => {
         continue;
       }
 
-      // Process batch with controlled concurrency
-      await processVerificationBatch(tempRecords);
-      
-      lastProcessedId = tempRecords[tempRecords.length - 1].id;
-      
-      // Add delay between batches to prevent overwhelming the database
-      await new Promise(resolve => setTimeout(resolve, 200));
+      for (const temp of tempRecords) {
+        let transaction;
+        try {
+          transaction = await sequelize.transaction();
+
+          const tempData = temp.get({ plain: true });
+          
+          // Skip if required fields are missing
+          if (!tempData.link_id || !tempData.uniqueId) {
+            console.log(`⚠️ Skipping record ${tempData.id}: Missing link_id or uniqueId`);
+            skippedCount++;
+            await transaction.commit();
+            continue;
+          }
+
+          // Check if both fields have valid values
+          const hasValidFinalRemarks = tempData.final_remarks && 
+                                     tempData.final_remarks.trim() !== '';
+          const hasValidContactsId = tempData.list_contacts_id && 
+                                    tempData.list_contacts_id.trim() !== '';
+          const shouldMarkCompleted = hasValidFinalRemarks && hasValidContactsId;
+
+          // Prepare update data for main table
+          const updateData = {
+            full_name: tempData.full_name,
+            head_title: tempData.head_title,
+            head_location: tempData.head_location,
+            title_1: tempData.title_1,
+            company_1: tempData.company_1,
+            company_link_1: tempData.company_link_1,
+            exp_duration: tempData.exp_duration,
+            exp_location: tempData.exp_location,
+            job_type: tempData.job_type,
+            title_2: tempData.title_2,
+            company_2: tempData.company_2,
+            company_link_2: tempData.company_link_2,
+            exp_duration_2: tempData.exp_duration_2,
+            exp_location_2: tempData.exp_location_2,
+            job_type_2: tempData.job_type_2,
+            final_remarks: tempData.final_remarks,
+            list_contacts_id: tempData.list_contacts_id,
+            url_id: tempData.url_id,
+            last_sync: new Date()
+          };
+
+          // Update status if conditions are met
+          if (shouldMarkCompleted) {
+            updateData.status = 'Completed';
+          }
+
+          // Update main table
+          const [updated] = await VerificationUpload.update(updateData, {
+            where: { 
+              uniqueId: tempData.uniqueId,
+              link_id: tempData.link_id
+            },
+            transaction
+          });
+
+          if (updated > 0) {
+            processedCount++;
+            console.log(`✓ Updated VerificationUpload for link_id: ${tempData.link_id}, uniqueId: ${tempData.uniqueId}`);
+
+            // Delete from VerificationTemp if completed
+            if (shouldMarkCompleted) {
+              await VerificationTemp.destroy({ 
+                where: { id: tempData.id },
+                transaction
+              });
+              markedCompletedCount++;
+              deletedCount++;
+              console.log(`🗑️ Deleted VerificationTemp record ${tempData.id}`);
+            }
+          } else {
+            skippedCount++;
+            console.log(`⚠️ No matching record found for link_id: ${tempData.link_id}`);
+          }
+
+          await transaction.commit();
+          
+          // Small delay between operations
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+        } catch (recordError) {
+          
+          console.error(`⚠️ Error processing record ${temp.id}:`, recordError.message);
+          continue;
+        }
+      }
+
+      offset += batchSize;
     }
 
-    const jobDuration = (Date.now() - jobStartTime) / 1000;
-    console.log(`✅ Sync completed in ${jobDuration}s. Stats:
+
+
+    console.log(`✅ Sync completed successfully. Stats:
       - Processed: ${processedCount}
       - Marked as completed: ${markedCompletedCount}
       - Deleted: ${deletedCount}
       - Skipped: ${skippedCount}
     `);
 
-    // Warn if job is taking too long
-    if (jobDuration > 240) { // 4 minutes threshold
-      console.warn('⚠️ Job is taking too long, consider optimizing further');
-    }
-
   } catch (jobError) {
     console.error('❌ Error in sync job:', jobError);
   }
 });
 
-// Process batch with controlled concurrency
-async function processVerificationBatch(records) {
-  const BATCH_CONCURRENCY = 2; // Lower concurrency for complex operations
-  
-  for (let i = 0; i < records.length; i += BATCH_CONCURRENCY) {
-    const batch = records.slice(i, i + BATCH_CONCURRENCY);
-    
-    await Promise.allSettled(
-      batch.map(record => processSingleVerificationRecord(record))
-    );
-    
-    // Small delay between sub-batches
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-}
-
-async function processSingleVerificationRecord(tempData) {
-  const { id, link_id, uniqueId } = tempData;
-
-  // Skip if required fields are missing
-  if (!link_id || !uniqueId) {
-    console.log(`⚠️ Skipping record ${id}: Missing link_id or uniqueId`);
-    skippedCount++;
-    return;
-  }
-
-  let transaction;
-  try {
-    transaction = await sequelize.transaction();
-
-    // Check if both fields have valid values
-    const hasValidFinalRemarks = tempData.final_remarks && 
-                               tempData.final_remarks.trim() !== '';
-    const hasValidContactsId = tempData.list_contacts_id && 
-                              tempData.list_contacts_id.trim() !== '';
-    const shouldMarkCompleted = hasValidFinalRemarks && hasValidContactsId;
-
-    // Prepare update data for main table
-    const updateData = {
-      full_name: tempData.full_name || null,
-      head_title: tempData.head_title || null,
-      head_location: tempData.head_location || null,
-      title_1: tempData.title_1 || null,
-      company_1: tempData.company_1 || null,
-      company_link_1: tempData.company_link_1 || null,
-      exp_duration: tempData.exp_duration || null,
-      exp_location: tempData.exp_location || null,
-      job_type: tempData.job_type || null,
-      title_2: tempData.title_2 || null,
-      company_2: tempData.company_2 || null,
-      company_link_2: tempData.company_link_2 || null,
-      exp_duration_2: tempData.exp_duration_2 || null,
-      exp_location_2: tempData.exp_location_2 || null,
-      job_type_2: tempData.job_type_2 || null,
-      final_remarks: tempData.final_remarks || null,
-      list_contacts_id: tempData.list_contacts_id || null,
-      url_id: tempData.url_id || null,
-      last_sync: new Date()
-    };
-
-    // Update status if conditions are met
-    if (shouldMarkCompleted) {
-      updateData.status = 'Completed';
-    }
-
-    // Update main table
-    const [updated] = await VerificationUpload.update(updateData, {
-      where: { 
-        uniqueId: uniqueId,
-        link_id: link_id
-      },
-      transaction
-    });
-
-    if (updated > 0) {
-      processedCount++;
-      console.log(`✓ Updated VerificationUpload for link_id: ${link_id}, uniqueId: ${uniqueId}`);
-
-      // Delete from VerificationTemp if completed
-      if (shouldMarkCompleted) {
-        await VerificationTemp.destroy({ 
-          where: { id: id },
-          transaction
-        });
-        markedCompletedCount++;
-        deletedCount++;
-        console.log(`🗑️ Deleted VerificationTemp record ${id}`);
-      }
-    } else {
-      skippedCount++;
-      console.log(`⚠️ No matching record found for link_id: ${link_id}`);
-    }
-
-    await transaction.commit();
-    
-  } catch (recordError) {
-    if (transaction) await transaction.rollback();
-    console.error(`⚠️ Error processing record ${id}:`, recordError.message);
-  }
-}
-
 console.log('⏰ VerificationTemp sync job scheduled to run every 10 minutes');
+
+
+// cron.schedule('*/10 * * * *', async () => {
+//   console.log('\n🔄 Starting VerificationTemp to VerificationUpload sync job...');
+//   const jobStartTime = Date.now();
+
+//   try {
+//     // Verify database connection first
+//     await sequelize.authenticate();
+    
+//     let processedCount = 0;
+//     let skippedCount = 0;
+//     let markedCompletedCount = 0;
+//     let deletedCount = 0;
+//     let lastProcessedId = 0;
+
+//     // Process records using cursor-based pagination (more efficient than offset)
+//     let hasMoreRecords = true;
+
+//     while (hasMoreRecords) {
+//       const tempRecords = await VerificationTemp.findAll({
+//         where: {
+//           id: { [Op.gt]: lastProcessedId }
+//         },
+//         limit: 100, // Reduced batch size
+//         order: [['id', 'ASC']],
+//         raw: true // Faster data retrieval
+//       });
+
+//       if (tempRecords.length === 0) {
+//         hasMoreRecords = false;
+//         continue;
+//       }
+
+//       // Process batch with controlled concurrency
+//       await processVerificationBatch(tempRecords);
+      
+//       lastProcessedId = tempRecords[tempRecords.length - 1].id;
+      
+//       // Add delay between batches to prevent overwhelming the database
+//       await new Promise(resolve => setTimeout(resolve, 200));
+//     }
+
+//     const jobDuration = (Date.now() - jobStartTime) / 1000;
+//     console.log(`✅ Sync completed in ${jobDuration}s. Stats:
+//       - Processed: ${processedCount}
+//       - Marked as completed: ${markedCompletedCount}
+//       - Deleted: ${deletedCount}
+//       - Skipped: ${skippedCount}
+//     `);
+
+//     // Warn if job is taking too long
+//     if (jobDuration > 240) { // 4 minutes threshold
+//       console.warn('⚠️ Job is taking too long, consider optimizing further');
+//     }
+
+//   } catch (jobError) {
+//     console.error('❌ Error in sync job:', jobError);
+//   }
+// });
+
+// // Process batch with controlled concurrency
+// async function processVerificationBatch(records) {
+//   const BATCH_CONCURRENCY = 2; // Lower concurrency for complex operations
+  
+//   for (let i = 0; i < records.length; i += BATCH_CONCURRENCY) {
+//     const batch = records.slice(i, i + BATCH_CONCURRENCY);
+    
+//     await Promise.allSettled(
+//       batch.map(record => processSingleVerificationRecord(record))
+//     );
+    
+//     // Small delay between sub-batches
+//     await new Promise(resolve => setTimeout(resolve, 100));
+//   }
+// }
+
+// async function processSingleVerificationRecord(tempData) {
+//   const { id, link_id, uniqueId } = tempData;
+
+//   // Skip if required fields are missing
+//   if (!link_id || !uniqueId) {
+//     console.log(`⚠️ Skipping record ${id}: Missing link_id or uniqueId`);
+//     skippedCount++;
+//     return;
+//   }
+
+//   let transaction;
+//   try {
+//     transaction = await sequelize.transaction();
+
+//     // Check if both fields have valid values
+//     const hasValidFinalRemarks = tempData.final_remarks && 
+//                                tempData.final_remarks.trim() !== '';
+//     const hasValidContactsId = tempData.list_contacts_id && 
+//                               tempData.list_contacts_id.trim() !== '';
+//     const shouldMarkCompleted = hasValidFinalRemarks && hasValidContactsId;
+
+//     // Prepare update data for main table
+//     const updateData = {
+//       full_name: tempData.full_name || null,
+//       head_title: tempData.head_title || null,
+//       head_location: tempData.head_location || null,
+//       title_1: tempData.title_1 || null,
+//       company_1: tempData.company_1 || null,
+//       company_link_1: tempData.company_link_1 || null,
+//       exp_duration: tempData.exp_duration || null,
+//       exp_location: tempData.exp_location || null,
+//       job_type: tempData.job_type || null,
+//       title_2: tempData.title_2 || null,
+//       company_2: tempData.company_2 || null,
+//       company_link_2: tempData.company_link_2 || null,
+//       exp_duration_2: tempData.exp_duration_2 || null,
+//       exp_location_2: tempData.exp_location_2 || null,
+//       job_type_2: tempData.job_type_2 || null,
+//       final_remarks: tempData.final_remarks || null,
+//       list_contacts_id: tempData.list_contacts_id || null,
+//       url_id: tempData.url_id || null,
+//       last_sync: new Date()
+//     };
+
+//     // Update status if conditions are met
+//     if (shouldMarkCompleted) {
+//       updateData.status = 'Completed';
+//     }
+
+//     // Update main table
+//     const [updated] = await VerificationUpload.update(updateData, {
+//       where: { 
+//         uniqueId: uniqueId,
+//         link_id: link_id
+//       },
+//       transaction
+//     });
+
+//     if (updated > 0) {
+//       processedCount++;
+//       console.log(`✓ Updated VerificationUpload for link_id: ${link_id}, uniqueId: ${uniqueId}`);
+
+//       // Delete from VerificationTemp if completed
+//       if (shouldMarkCompleted) {
+//         await VerificationTemp.destroy({ 
+//           where: { id: id },
+//           transaction
+//         });
+//         markedCompletedCount++;
+//         deletedCount++;
+//         console.log(`🗑️ Deleted VerificationTemp record ${id}`);
+//       }
+//     } else {
+//       skippedCount++;
+//       console.log(`⚠️ No matching record found for link_id: ${link_id}`);
+//     }
+
+//     await transaction.commit();
+    
+//   } catch (recordError) {
+//     if (transaction) await transaction.rollback();
+//     console.error(`⚠️ Error processing record ${id}:`, recordError.message);
+//   }
+// }
+
+// console.log('⏰ VerificationTemp sync job scheduled to run every 10 minutes');
 
 
 async function checkAndUpdateEmailStatus1() {
@@ -6589,184 +6589,27 @@ app.delete('/api/delete-verification-uploads-com/:uniqueId',auth, async (req, re
 
 
 
-
-
-// 
-
-
 // Scheduled job to sync VerificationTemp_com to VerificationUpload_com
-// cron.schedule('*/10 * * * *', async () => {
-//   console.log('\n🔄 Starting VerificationTemp to VerificationUpload sync job...');
-
-//   try {
-//     // Verify database connection first
-//     await sequelize.authenticate();
-    
-//     // Process records in batches to prevent memory issues
-//     let offset = 0;
-//     const batchSize = 300;
-//     let hasMoreRecords = true;
-//     let processedCount = 0;
-//     let skippedCount = 0;
-//     let markedCompletedCount = 0;
-//     let deletedCount = 0;
-
-//     while (hasMoreRecords) {
-//       const tempRecords = await VerificationTemp_com.findAll({
-//         limit: batchSize,
-//         offset: offset,
-//       });
-
-//       if (tempRecords.length === 0) {
-//         hasMoreRecords = false;
-//         continue;
-//       }
-
-//       for (const temp of tempRecords) {
-//         let transaction;
-//         try {
-//           transaction = await sequelize.transaction();
-
-//           const tempData = temp.get({ plain: true });
-          
-//           // Skip if required fields are missing
-//           if (!tempData.link_id || !tempData.uniqueId) {
-//             console.log(`⚠️ Skipping record ${tempData.id}: Missing link_id or uniqueId`);
-//             skippedCount++;
-//             await transaction.commit();
-//             continue;
-//           }
-
-
-//           // Check validation conditions
-//           const hasValidFinalRemarks = tempData.final_remarks && 
-//                                      tempData.final_remarks.trim() !== '';
-//           const hasValidCompanyId = tempData.company_id && 
-//                                   tempData.company_id.trim() !== '';
-//           const shouldMarkCompleted = hasValidFinalRemarks && hasValidCompanyId;
-
-//           // Prepare update data
-//           const updateData = {
-//             company_name: tempData.company_name,
-//             company_url: tempData.company_url,
-//             company_headquater: tempData.company_headquater,
-//             company_industry: tempData.company_industry,
-//             company_size: tempData.company_size,
-//             employee_count: tempData.employee_count,
-//             year_founded: tempData.year_founded,
-//             company_speciality: tempData.company_speciality,
-//             linkedin_url: tempData.linkedin_url,
-//             company_stock_name: tempData.company_stock_name,
-//             verified_page_date: tempData.verified_page_date,
-//             phone_number: tempData.phone_number,
-//             company_followers: tempData.company_followers,
-//             location_total: tempData.location_total,
-//             overview: tempData.overview,
-//             visit_website: tempData.visit_website,
-//             final_remarks: tempData.final_remarks,
-//             company_id: tempData.company_id,
-//             last_sync: new Date()
-//           };
-
-//           // Update status if completed
-//           if (shouldMarkCompleted) {
-//             updateData.status = 'Completed';
-           
-//           }
-
-//           // Update main table
-//           const [updated] = await VerificationUpload_com.update(updateData, {
-//             where: { 
-//               uniqueId: tempData.uniqueId,
-//               link_id: tempData.link_id
-//             },
-//             transaction
-//           });
-
-//           if (updated > 0) {
-//             processedCount++;
-//             console.log(`✓ Updated VerificationUpload_com for link_id: ${tempData.link_id}`);
-            
-//             // Delete from temp table if completed
-//             if (shouldMarkCompleted) {
-//               await VerificationTemp_com.destroy({ 
-//                 where: { id: tempData.id },
-//                 transaction
-//               });
-//               markedCompletedCount++;
-//               deletedCount++;
-//               console.log(`🗑️ Deleted temp record ${tempData.id}`);
-//             }
-//           } else {
-//             skippedCount++;
-//             console.log(`⚠️ No matching record found for link_id: ${tempData.link_id}`);
-//           }
-
-//           await transaction.commit();
-          
-//           // Small delay between operations
-//           await new Promise(resolve => setTimeout(resolve, 100));
-          
-//         } catch (recordError) {
-//           errorCount++;
-//           // if (transaction) await transaction.rollback();
-//           console.error(`❌ Error processing record ${tempRecord.id}:`, recordError.message);
-//           continue;
-//         }
-//       }
-
-//       offset += batchSize;
-//     }
-//   console.log(`✅ Sync completed successfully. Stats:
-//       - Processed: ${processedCount}
-//       - Marked as completed: ${markedCompletedCount}
-//       - Deleted: ${deletedCount}
-//       - Skipped: ${skippedCount}
-//     `);
-
-//   } catch (jobError) {
-//     console.error('❌ Error in sync job:', jobError);
-//   }
-// });
-
-// console.log('⏰ VerificationTemp_com sync job scheduled to run every 10 minutes');
-
-
-
-// Global counters for this job
-let processedCount = 0;
-let skippedCount = 0;
-let markedCompletedCount = 0;
-let deletedCount = 0;
-let errorCount = 0;
-
 cron.schedule('*/10 * * * *', async () => {
-  console.log('\n🔄 Starting VerificationTemp_com to VerificationUpload_com sync job...');
-  const jobStartTime = Date.now();
-
-  // Reset counters
-  processedCount = 0;
-  skippedCount = 0;
-  markedCompletedCount = 0;
-  deletedCount = 0;
-  errorCount = 0;
+  console.log('\n🔄 Starting VerificationTemp to VerificationUpload sync job...');
 
   try {
     // Verify database connection first
     await sequelize.authenticate();
     
-    let lastProcessedId = 0;
+    // Process records in batches to prevent memory issues
+    let offset = 0;
+    const batchSize = 300;
     let hasMoreRecords = true;
+    let processedCount = 0;
+    let skippedCount = 0;
+    let markedCompletedCount = 0;
+    let deletedCount = 0;
 
-    // Process records using cursor-based pagination
     while (hasMoreRecords) {
       const tempRecords = await VerificationTemp_com.findAll({
-        where: {
-          id: { [Op.gt]: lastProcessedId }
-        },
-        limit: 100, // Reduced batch size for better performance
-        order: [['id', 'ASC']],
-        raw: true // Faster data retrieval
+        limit: batchSize,
+        offset: offset,
       });
 
       if (tempRecords.length === 0) {
@@ -6774,137 +6617,289 @@ cron.schedule('*/10 * * * *', async () => {
         continue;
       }
 
-      // Process batch with controlled concurrency
-      await processCompanyBatch(tempRecords);
-      
-      lastProcessedId = tempRecords[tempRecords.length - 1].id;
-      
-      // Add delay between batches to prevent overwhelming the database
-      await new Promise(resolve => setTimeout(resolve, 150));
-    }
+      for (const temp of tempRecords) {
+        let transaction;
+        try {
+          transaction = await sequelize.transaction();
 
-    const jobDuration = (Date.now() - jobStartTime) / 1000;
-    console.log(`✅ Sync completed in ${jobDuration}s. Stats:
+          const tempData = temp.get({ plain: true });
+          
+          // Skip if required fields are missing
+          if (!tempData.link_id || !tempData.uniqueId) {
+            console.log(`⚠️ Skipping record ${tempData.id}: Missing link_id or uniqueId`);
+            skippedCount++;
+            await transaction.commit();
+            continue;
+          }
+
+
+          // Check validation conditions
+          const hasValidFinalRemarks = tempData.final_remarks && 
+                                     tempData.final_remarks.trim() !== '';
+          const hasValidCompanyId = tempData.company_id && 
+                                  tempData.company_id.trim() !== '';
+          const shouldMarkCompleted = hasValidFinalRemarks && hasValidCompanyId;
+
+          // Prepare update data
+          const updateData = {
+            company_name: tempData.company_name,
+            company_url: tempData.company_url,
+            company_headquater: tempData.company_headquater,
+            company_industry: tempData.company_industry,
+            company_size: tempData.company_size,
+            employee_count: tempData.employee_count,
+            year_founded: tempData.year_founded,
+            company_speciality: tempData.company_speciality,
+            linkedin_url: tempData.linkedin_url,
+            company_stock_name: tempData.company_stock_name,
+            verified_page_date: tempData.verified_page_date,
+            phone_number: tempData.phone_number,
+            company_followers: tempData.company_followers,
+            location_total: tempData.location_total,
+            overview: tempData.overview,
+            visit_website: tempData.visit_website,
+            final_remarks: tempData.final_remarks,
+            company_id: tempData.company_id,
+            last_sync: new Date()
+          };
+
+          // Update status if completed
+          if (shouldMarkCompleted) {
+            updateData.status = 'Completed';
+           
+          }
+
+          // Update main table
+          const [updated] = await VerificationUpload_com.update(updateData, {
+            where: { 
+              uniqueId: tempData.uniqueId,
+              link_id: tempData.link_id
+            },
+            transaction
+          });
+
+          if (updated > 0) {
+            processedCount++;
+            console.log(`✓ Updated VerificationUpload_com for link_id: ${tempData.link_id}`);
+            
+            // Delete from temp table if completed
+            if (shouldMarkCompleted) {
+              await VerificationTemp_com.destroy({ 
+                where: { id: tempData.id },
+                transaction
+              });
+              markedCompletedCount++;
+              deletedCount++;
+              console.log(`🗑️ Deleted temp record ${tempData.id}`);
+            }
+          } else {
+            skippedCount++;
+            console.log(`⚠️ No matching record found for link_id: ${tempData.link_id}`);
+          }
+
+          await transaction.commit();
+          
+          // Small delay between operations
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+        } catch (recordError) {
+          errorCount++;
+          // if (transaction) await transaction.rollback();
+          console.error(`❌ Error processing record ${tempRecord.id}:`, recordError.message);
+          continue;
+        }
+      }
+
+      offset += batchSize;
+    }
+  console.log(`✅ Sync completed successfully. Stats:
       - Processed: ${processedCount}
       - Marked as completed: ${markedCompletedCount}
       - Deleted: ${deletedCount}
       - Skipped: ${skippedCount}
-      - Errors: ${errorCount}
     `);
-
-    // Warn if job is taking too long
-    if (jobDuration > 240) {
-      console.warn('⚠️ Job is taking too long, consider optimizing further');
-    }
 
   } catch (jobError) {
     console.error('❌ Error in sync job:', jobError);
   }
 });
 
-// Process batch with controlled concurrency
-async function processCompanyBatch(records) {
-  const BATCH_CONCURRENCY = 2; // Lower concurrency for database-intensive operations
-  
-  for (let i = 0; i < records.length; i += BATCH_CONCURRENCY) {
-    const batch = records.slice(i, i + BATCH_CONCURRENCY);
-    
-    await Promise.allSettled(
-      batch.map(record => processSingleCompanyRecord(record))
-    );
-    
-    // Small delay between sub-batches
-    await new Promise(resolve => setTimeout(resolve, 50));
-  }
-}
-
-async function processSingleCompanyRecord(tempData) {
-  const { id, link_id, uniqueId } = tempData;
-
-  // Skip if required fields are missing
-  if (!link_id || !uniqueId) {
-    console.log(`⚠️ Skipping record ${id}: Missing link_id or uniqueId`);
-    skippedCount++;
-    return;
-  }
-
-  let transaction;
-  try {
-    transaction = await sequelize.transaction();
-
-    // Check validation conditions
-    const hasValidFinalRemarks = tempData.final_remarks && 
-                               tempData.final_remarks.trim() !== '';
-    const hasValidCompanyId = tempData.company_id && 
-                            tempData.company_id.trim() !== '';
-    const shouldMarkCompleted = hasValidFinalRemarks && hasValidCompanyId;
-
-    // Prepare update data - only include fields that actually changed
-    const updateData = {
-      company_name: tempData.company_name || null,
-      company_url: tempData.company_url || null,
-      company_headquater: tempData.company_headquater || null,
-      company_industry: tempData.company_industry || null,
-      company_size: tempData.company_size || null,
-      employee_count: tempData.employee_count || null,
-      year_founded: tempData.year_founded || null,
-      company_speciality: tempData.company_speciality || null,
-      linkedin_url: tempData.linkedin_url || null,
-      company_stock_name: tempData.company_stock_name || null,
-      verified_page_date: tempData.verified_page_date || null,
-      phone_number: tempData.phone_number || null,
-      company_followers: tempData.company_followers || null,
-      location_total: tempData.location_total || null,
-      overview: tempData.overview || null,
-      visit_website: tempData.visit_website || null,
-      final_remarks: tempData.final_remarks || null,
-      company_id: tempData.company_id || null,
-      last_sync: new Date()
-    };
-
-    // Update status if completed
-    if (shouldMarkCompleted) {
-      updateData.status = 'Completed';
-    }
-
-    // Update main table - use atomic update to avoid overwriting existing data unnecessarily
-    const [updated] = await VerificationUpload_com.update(updateData, {
-      where: { 
-        uniqueId: uniqueId,
-        link_id: link_id
-      },
-      transaction
-    });
-
-    if (updated > 0) {
-      processedCount++;
-      console.log(`✓ Updated VerificationUpload_com for link_id: ${link_id}`);
-      
-      // Delete from temp table if completed
-      if (shouldMarkCompleted) {
-        await VerificationTemp_com.destroy({ 
-          where: { id: id },
-          transaction
-        });
-        markedCompletedCount++;
-        deletedCount++;
-        console.log(`🗑️ Deleted temp record ${id}`);
-      }
-    } else {
-      skippedCount++;
-      console.log(`⚠️ No matching record found for link_id: ${link_id}`);
-    }
-
-    await transaction.commit();
-    
-  } catch (recordError) {
-    errorCount++;
-    if (transaction) await transaction.rollback();
-    console.error(`❌ Error processing record ${id}:`, recordError.message);
-  }
-}
-
 console.log('⏰ VerificationTemp_com sync job scheduled to run every 10 minutes');
+
+
+
+// // Global counters for this job
+// let processedCount = 0;
+// let skippedCount = 0;
+// let markedCompletedCount = 0;
+// let deletedCount = 0;
+// let errorCount = 0;
+
+// cron.schedule('*/10 * * * *', async () => {
+//   console.log('\n🔄 Starting VerificationTemp_com to VerificationUpload_com sync job...');
+//   const jobStartTime = Date.now();
+
+//   // Reset counters
+//   processedCount = 0;
+//   skippedCount = 0;
+//   markedCompletedCount = 0;
+//   deletedCount = 0;
+//   errorCount = 0;
+
+//   try {
+//     // Verify database connection first
+//     await sequelize.authenticate();
+    
+//     let lastProcessedId = 0;
+//     let hasMoreRecords = true;
+
+//     // Process records using cursor-based pagination
+//     while (hasMoreRecords) {
+//       const tempRecords = await VerificationTemp_com.findAll({
+//         where: {
+//           id: { [Op.gt]: lastProcessedId }
+//         },
+//         limit: 100, // Reduced batch size for better performance
+//         order: [['id', 'ASC']],
+//         raw: true // Faster data retrieval
+//       });
+
+//       if (tempRecords.length === 0) {
+//         hasMoreRecords = false;
+//         continue;
+//       }
+
+//       // Process batch with controlled concurrency
+//       await processCompanyBatch(tempRecords);
+      
+//       lastProcessedId = tempRecords[tempRecords.length - 1].id;
+      
+//       // Add delay between batches to prevent overwhelming the database
+//       await new Promise(resolve => setTimeout(resolve, 150));
+//     }
+
+//     const jobDuration = (Date.now() - jobStartTime) / 1000;
+//     console.log(`✅ Sync completed in ${jobDuration}s. Stats:
+//       - Processed: ${processedCount}
+//       - Marked as completed: ${markedCompletedCount}
+//       - Deleted: ${deletedCount}
+//       - Skipped: ${skippedCount}
+//       - Errors: ${errorCount}
+//     `);
+
+//     // Warn if job is taking too long
+//     if (jobDuration > 240) {
+//       console.warn('⚠️ Job is taking too long, consider optimizing further');
+//     }
+
+//   } catch (jobError) {
+//     console.error('❌ Error in sync job:', jobError);
+//   }
+// });
+
+// // Process batch with controlled concurrency
+// async function processCompanyBatch(records) {
+//   const BATCH_CONCURRENCY = 2; // Lower concurrency for database-intensive operations
+  
+//   for (let i = 0; i < records.length; i += BATCH_CONCURRENCY) {
+//     const batch = records.slice(i, i + BATCH_CONCURRENCY);
+    
+//     await Promise.allSettled(
+//       batch.map(record => processSingleCompanyRecord(record))
+//     );
+    
+//     // Small delay between sub-batches
+//     await new Promise(resolve => setTimeout(resolve, 50));
+//   }
+// }
+
+// async function processSingleCompanyRecord(tempData) {
+//   const { id, link_id, uniqueId } = tempData;
+
+//   // Skip if required fields are missing
+//   if (!link_id || !uniqueId) {
+//     console.log(`⚠️ Skipping record ${id}: Missing link_id or uniqueId`);
+//     skippedCount++;
+//     return;
+//   }
+
+//   let transaction;
+//   try {
+//     transaction = await sequelize.transaction();
+
+//     // Check validation conditions
+//     const hasValidFinalRemarks = tempData.final_remarks && 
+//                                tempData.final_remarks.trim() !== '';
+//     const hasValidCompanyId = tempData.company_id && 
+//                             tempData.company_id.trim() !== '';
+//     const shouldMarkCompleted = hasValidFinalRemarks && hasValidCompanyId;
+
+//     // Prepare update data - only include fields that actually changed
+//     const updateData = {
+//       company_name: tempData.company_name || null,
+//       company_url: tempData.company_url || null,
+//       company_headquater: tempData.company_headquater || null,
+//       company_industry: tempData.company_industry || null,
+//       company_size: tempData.company_size || null,
+//       employee_count: tempData.employee_count || null,
+//       year_founded: tempData.year_founded || null,
+//       company_speciality: tempData.company_speciality || null,
+//       linkedin_url: tempData.linkedin_url || null,
+//       company_stock_name: tempData.company_stock_name || null,
+//       verified_page_date: tempData.verified_page_date || null,
+//       phone_number: tempData.phone_number || null,
+//       company_followers: tempData.company_followers || null,
+//       location_total: tempData.location_total || null,
+//       overview: tempData.overview || null,
+//       visit_website: tempData.visit_website || null,
+//       final_remarks: tempData.final_remarks || null,
+//       company_id: tempData.company_id || null,
+//       last_sync: new Date()
+//     };
+
+//     // Update status if completed
+//     if (shouldMarkCompleted) {
+//       updateData.status = 'Completed';
+//     }
+
+//     // Update main table - use atomic update to avoid overwriting existing data unnecessarily
+//     const [updated] = await VerificationUpload_com.update(updateData, {
+//       where: { 
+//         uniqueId: uniqueId,
+//         link_id: link_id
+//       },
+//       transaction
+//     });
+
+//     if (updated > 0) {
+//       processedCount++;
+//       console.log(`✓ Updated VerificationUpload_com for link_id: ${link_id}`);
+      
+//       // Delete from temp table if completed
+//       if (shouldMarkCompleted) {
+//         await VerificationTemp_com.destroy({ 
+//           where: { id: id },
+//           transaction
+//         });
+//         markedCompletedCount++;
+//         deletedCount++;
+//         console.log(`🗑️ Deleted temp record ${id}`);
+//       }
+//     } else {
+//       skippedCount++;
+//       console.log(`⚠️ No matching record found for link_id: ${link_id}`);
+//     }
+
+//     await transaction.commit();
+    
+//   } catch (recordError) {
+//     errorCount++;
+//     if (transaction) await transaction.rollback();
+//     console.error(`❌ Error processing record ${id}:`, recordError.message);
+//   }
+// }
+
+// console.log('⏰ VerificationTemp_com sync job scheduled to run every 10 minutes');
 
 async function checkAndUpdateEmailStatus2() {
   console.log('⏳ Cron Job: Checking matchLink status...');
