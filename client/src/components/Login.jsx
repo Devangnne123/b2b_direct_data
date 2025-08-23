@@ -27,28 +27,28 @@ const [isForceLogoutCountingDown, setIsForceLogoutCountingDown] = useState(false
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const checkActiveSession = async () => {
-      if (!email) return;
+  // useEffect(() => {
+  //   const checkActiveSession = async () => {
+  //     if (!email) return;
 
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/check-status`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email })
-        });
+  //     try {
+  //       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/users/check-status`, {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ email })
+  //       });
 
-        const data = await response.json();
-        setHasActiveSession(data.isActiveLogin === true);
-      } catch (error) {
-        console.error("Session check error:", error);
-        setHasActiveSession(false);
-      }
-    };
+  //       const data = await response.json();
+  //       setHasActiveSession(data.isActiveLogin === true);
+  //     } catch (error) {
+  //       console.error("Session check error:", error);
+  //       setHasActiveSession(false);
+  //     }
+  //   };
 
-    const timer = setTimeout(checkActiveSession, 500);
-    return () => clearTimeout(timer);
-  }, [email]);
+  //   const timer = setTimeout(checkActiveSession, 500);
+  //   return () => clearTimeout(timer);
+  // }, [email]);
 
   const handleAutoLogin = async () => {
     setIsAutoLoggingIn(true);

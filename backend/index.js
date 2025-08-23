@@ -888,7 +888,7 @@ const matchedCount = await Link.count({
         totallink: links.length,
         matchedCount:matchedCount,
         updatedCredits: user.credits,
-        tempRecordsCreated: matchedLinks.length
+        
       });
     }
     

@@ -114,7 +114,7 @@ function App() {
     };
 
     // Check every 5 minutes
-    const statusCheckInterval = setInterval(checkActiveStatus,10000);
+    // const statusCheckInterval = setInterval(checkActiveStatus,10000);
     
     
 
@@ -135,7 +135,7 @@ function App() {
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
-      clearInterval(statusCheckInterval);
+      // clearInterval(statusCheckInterval);
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [navigate]);
