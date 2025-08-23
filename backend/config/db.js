@@ -64,20 +64,20 @@ const sequelize = new Sequelize('postgres', 'postgres', 'admin==88', {
   host: 'newdevang.cnmam8aewz34.ap-south-1.rds.amazonaws.com',
   dialect: 'postgres',
   port: 5432,
-  logging: false,
+  // logging: false,
   dialectOptions: {
     ssl: {
       require: true,
       rejectUnauthorized: false,
     },
   },
-  pool: {
-    max: 60,
-    min: 10,
-    acquire: 80000,
-    idle: 10000,
-    evict: 10000
-  },
+  // pool: {
+  //   max: 60,
+  //   min: 10,
+  //   acquire: 80000,
+  //   idle: 10000,
+  //   evict: 10000
+  // },
   // retry: {
   //   max: 3,
   //   match: [
