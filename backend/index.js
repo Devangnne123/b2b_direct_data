@@ -2075,312 +2075,312 @@ console.log('⏰ TempLinkMobile sync job scheduled to run every 3 minutes');
 
 
 
-// async function checkAndUpdateEmailStatus() {
-//   console.log('⏳ Cron Job: Checking matchLink status...');
-
-//   try {
-//     // Step 1: Get all uniqueIds in emailsent with pending status
-//     const pendingUniqueIds = await emailsent.findAll({
-//       where: { status: 'pending' },
-//       attributes: ['uniqueId'],
-//       group: ['uniqueId']
-//     });
-
-//     for (const record of pendingUniqueIds) {
-//       const uniqueId = record.uniqueId;
-
-//       // Step 2: Get all Link rows for this uniqueId where matchLink is not null
-//       const matchedLinks = await Link.findAll({
-//         where: {
-//           uniqueId,
-//           matchLink: { [Op.ne]: null }
-//         },
-//         attributes: ['status']
-//       });
-
-//       if (matchedLinks.length === 0) {
-//         console.log(`⚠️ No matchLink found for ${uniqueId}, skipping...`);
-//         continue;
-//       }
-
-//       // Step 3: Check if all matched links are pending or completed
-//       const hasPending = matchedLinks.every(link => link.status === 'pending');
-//       const hasCompleted = matchedLinks.every(link => link.status === 'completed');
-
-//       if (hasPending) {
-//         console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
-//         continue;
-//       }
-
-//       if (hasCompleted) {
-//         // Step 4: If none are pending, update emailsent status to completed
-//         await emailsent.update(
-//           { status: 'completed' },
-//           { where: { uniqueId } }
-//         );
-//         await Link.update(
-//           { final_status: 'completed' },
-//           { where: { uniqueId } }
-//         );
-
-//         console.log(`✅ ${uniqueId} marked as completed in emailsent`);
-
-//         // Step 5: Get email address for this uniqueId
-//         const emailRecord = await emailsent.findOne({
-//           where: { uniqueId },
-//           attributes: ['email']
-//         });
-
-//         if (!emailRecord || !emailRecord.email) {
-//           console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
-//           continue;
-//         }
-
-//         const email = emailRecord.email;
-
-//         // Step 6: Send the email
-//         try {
-//           const mailOptions = {
-//             from: '"B2B Direct Number Enrichment System" <b2bdirectdata@gmail.com>',
-//             to: email,
-//             subject: `B2B Direct Number Enrichment System Completed - ${uniqueId}`,
-//             html: `
-//               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-//                 <h2 style="color: #2563eb;">B2B Direct Number Enrichment System Completed</h2>
-//                 <p>All enrichment processes for ${uniqueId} have been completed.</p>
-                
-//                 <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-//                   <h3 style="margin-top: 0; color: #1f2937;">Direct Number Enrichment</h3>
-//                   <p><strong>File UniqueId:</strong> ${uniqueId}</p>
-//                 </div>
-                
-//                 <p>All results are now available for download.</p>
-//                 <p>Team,<br/>B2B Direct Data</p>
-//               </div>
-//             `
-//           };
-
-//           await transporter.sendMail(mailOptions);
-//           console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
-//         } catch (err) {
-//           console.error(`❌ Failed to send email for ${uniqueId}:`, err);
-//         }
-//       }
-//     }
-//   } catch (error) {
-//     console.error('❌ Error in cron job:', error);
-//   }
-// }
-
-// cron.schedule('*/10 * * * *', checkAndUpdateEmailStatus);
-// console.log('⏰ Email status check job scheduled to run every 10 minutes');
-
 async function checkAndUpdateEmailStatus() {
   console.log('⏳ Cron Job: Checking matchLink status...');
-  const jobStartTime = Date.now();
 
   try {
-    // Step 1: Get all uniqueIds with pending status in one query
+    // Step 1: Get all uniqueIds in emailsent with pending status
     const pendingUniqueIds = await emailsent.findAll({
       where: { status: 'pending' },
       attributes: ['uniqueId'],
-      group: ['uniqueId'],
-      raw: true
+      group: ['uniqueId']
     });
 
-    if (pendingUniqueIds.length === 0) {
-      console.log('✅ No pending uniqueIds found');
-      return;
-    }
+    for (const record of pendingUniqueIds) {
+      const uniqueId = record.uniqueId;
 
-    const uniqueIds = pendingUniqueIds.map(record => record.uniqueId);
-    console.log(`📊 Processing ${uniqueIds.length} uniqueIds with pending status`);
-
-    // Step 2: Get status counts for all uniqueIds in bulk
-    const statusCounts = await Link.findAll({
-      where: {
-        uniqueId: { [Op.in]: uniqueIds },
-        matchLink: { [Op.ne]: null }
-      },
-      attributes: [
-        'uniqueId',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'total_count'],
-        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = "pending" THEN 1 ELSE 0 END')), 'pending_count'],
-        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = "completed" THEN 1 ELSE 0 END')), 'completed_count']
-      ],
-      group: ['uniqueId'],
-      raw: true
-    });
-
-    // Create a map for quick lookup
-    const statusMap = new Map();
-    statusCounts.forEach(item => {
-      statusMap.set(item.uniqueId, {
-        total: parseInt(item.total_count) || 0,
-        pending: parseInt(item.pending_count) || 0,
-        completed: parseInt(item.completed_count) || 0
+      // Step 2: Get all Link rows for this uniqueId where matchLink is not null
+      const matchedLinks = await Link.findAll({
+        where: {
+          uniqueId,
+          matchLink: { [Op.ne]: null }
+        },
+        attributes: ['status']
       });
-    });
 
-    // Step 3: Get email addresses for all uniqueIds in bulk
-    const emailRecords = await emailsent.findAll({
-      where: { uniqueId: { [Op.in]: uniqueIds } },
-      attributes: ['uniqueId', 'email'],
-      raw: true
-    });
-
-    const emailMap = new Map();
-    emailRecords.forEach(record => {
-      emailMap.set(record.uniqueId, record.email);
-    });
-
-    // Step 4: Process each uniqueId
-    const completedUniqueIds = [];
-    const emailsToSend = [];
-
-    for (const uniqueId of uniqueIds) {
-      const statusInfo = statusMap.get(uniqueId);
-      
-      if (!statusInfo || statusInfo.total === 0) {
+      if (matchedLinks.length === 0) {
         console.log(`⚠️ No matchLink found for ${uniqueId}, skipping...`);
         continue;
       }
 
-      if (statusInfo.pending > 0) {
-        console.log(`⏳ ${uniqueId} has ${statusInfo.pending} pending matchLink rows, skipping...`);
+      // Step 3: Check if all matched links are pending or completed
+      const hasPending = matchedLinks.every(link => link.status === 'pending');
+      const hasCompleted = matchedLinks.every(link => link.status === 'completed');
+
+      if (hasPending) {
+        console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
         continue;
       }
 
-      if (statusInfo.completed === statusInfo.total) {
-        completedUniqueIds.push(uniqueId);
-        const email = emailMap.get(uniqueId);
-        if (email) {
-          emailsToSend.push({ uniqueId, email });
+      if (hasCompleted) {
+        // Step 4: If none are pending, update emailsent status to completed
+        await emailsent.update(
+          { status: 'completed' },
+          { where: { uniqueId } }
+        );
+        await Link.update(
+          { final_status: 'completed' },
+          { where: { uniqueId } }
+        );
+
+        console.log(`✅ ${uniqueId} marked as completed in emailsent`);
+
+        // Step 5: Get email address for this uniqueId
+        const emailRecord = await emailsent.findOne({
+          where: { uniqueId },
+          attributes: ['email']
+        });
+
+        if (!emailRecord || !emailRecord.email) {
+          console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
+          continue;
+        }
+
+        const email = emailRecord.email;
+
+        // Step 6: Send the email
+        try {
+          const mailOptions = {
+            from: '"B2B Direct Number Enrichment System" <b2bdirectdata@gmail.com>',
+            to: email,
+            subject: `B2B Direct Number Enrichment System Completed - ${uniqueId}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #2563eb;">B2B Direct Number Enrichment System Completed</h2>
+                <p>All enrichment processes for ${uniqueId} have been completed.</p>
+                
+                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                  <h3 style="margin-top: 0; color: #1f2937;">Direct Number Enrichment</h3>
+                  <p><strong>File UniqueId:</strong> ${uniqueId}</p>
+                </div>
+                
+                <p>All results are now available for download.</p>
+                <p>Team,<br/>B2B Direct Data</p>
+              </div>
+            `
+          };
+
+          await transporter.sendMail(mailOptions);
+          console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
+        } catch (err) {
+          console.error(`❌ Failed to send email for ${uniqueId}:`, err);
         }
       }
     }
-
-    // Step 5: Bulk update emailsent and Link status
-    if (completedUniqueIds.length > 0) {
-      await emailsent.update(
-        { status: 'completed' },
-        { 
-          where: { uniqueId: { [Op.in]: completedUniqueIds } },
-          silent: true
-        }
-      );
-
-      await Link.update(
-        { final_status: 'completed' },
-        { 
-          where: { uniqueId: { [Op.in]: completedUniqueIds } },
-          silent: true
-        }
-      );
-
-      console.log(`✅ Marked ${completedUniqueIds.length} uniqueIds as completed`);
-    }
-
-    // Step 6: Send emails in parallel with controlled concurrency
-    if (emailsToSend.length > 0) {
-      console.log(`📧 Preparing to send ${emailsToSend.length} completion emails`);
-      await sendEnrichmentEmails(emailsToSend);
-    }
-
-    const jobDuration = (Date.now() - jobStartTime) / 1000;
-    console.log(`✅ Email status check completed in ${jobDuration}s. Processed: ${uniqueIds.length}, Completed: ${completedUniqueIds.length}, Emails sent: ${emailsToSend.length}`);
-
   } catch (error) {
     console.error('❌ Error in cron job:', error);
   }
 }
 
-// Helper function to send emails with controlled concurrency
-async function sendEnrichmentEmails(emailsToSend, concurrency = 3) {
-  for (let i = 0; i < emailsToSend.length; i += concurrency) {
-    const batch = emailsToSend.slice(i, i + concurrency);
-    
-    await Promise.allSettled(
-      batch.map(({ uniqueId, email }) => sendEnrichmentEmail(uniqueId, email))
-    );
-    
-    // Small delay between batches
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
-}
-
-// Helper function to send individual email
-async function sendEnrichmentEmail(uniqueId, email) {
-  try {
-    const mailOptions = {
-      from: '"B2B Direct Number Enrichment System" <b2bdirectdata@gmail.com>',
-      to: email,
-      subject: `B2B Direct Number Enrichment System Completed - ${uniqueId}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">B2B Direct Number Enrichment System Completed</h2>
-          <p>All enrichment processes for ${uniqueId} have been completed.</p>
-          
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-            <h3 style="margin-top: 0; color: #1f2937;">Direct Number Enrichment</h3>
-            <p><strong>File UniqueId:</strong> ${uniqueId}</p>
-          </div>
-          
-          <p>All results are now available for download.</p>
-          <p>Team,<br/>B2B Direct Data</p>
-        </div>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
-  } catch (err) {
-    console.error(`❌ Failed to send email for ${uniqueId}:`, err.message);
-  }
-}
-
-// Schedule the job with proper error handling
-cron.schedule('*/10 * * * *', async () => {
-  if (isEnrichmentJobRunning) {
-    console.log('⏸️ Enrichment status check job already running, skipping...');
-    return;
-  }
-  
-  isEnrichmentJobRunning = true;
-  try {
-    await checkAndUpdateEmailStatus();
-  } catch (error) {
-    console.error('❌ Unhandled error in enrichment status job:', error);
-  } finally {
-    isEnrichmentJobRunning = false;
-  }
-});
-
+cron.schedule('*/10 * * * *', checkAndUpdateEmailStatus);
 console.log('⏰ Email status check job scheduled to run every 10 minutes');
 
-// Add job locking variable
-let isEnrichmentJobRunning = false;
+// async function checkAndUpdateEmailStatus() {
+//   console.log('⏳ Cron Job: Checking matchLink status...');
+//   const jobStartTime = Date.now();
 
-cron.schedule('*/10 * * * *', async () => {
-  try {
-    const staleUsers = await User.findAll({
-      where: {
-        isProcessingFile: true,
-        processingStartTime: {
-          [Op.lt]: new Date(new Date() - 10 * 60 * 1000) // older than 5 mins
-        }
-      }
-    });
+//   try {
+//     // Step 1: Get all uniqueIds with pending status in one query
+//     const pendingUniqueIds = await emailsent.findAll({
+//       where: { status: 'pending' },
+//       attributes: ['uniqueId'],
+//       group: ['uniqueId'],
+//       raw: true
+//     });
+
+//     if (pendingUniqueIds.length === 0) {
+//       console.log('✅ No pending uniqueIds found');
+//       return;
+//     }
+
+//     const uniqueIds = pendingUniqueIds.map(record => record.uniqueId);
+//     console.log(`📊 Processing ${uniqueIds.length} uniqueIds with pending status`);
+
+//     // Step 2: Get status counts for all uniqueIds in bulk
+//     const statusCounts = await Link.findAll({
+//       where: {
+//         uniqueId: { [Op.in]: uniqueIds },
+//         matchLink: { [Op.ne]: null }
+//       },
+//       attributes: [
+//         'uniqueId',
+//         [sequelize.fn('COUNT', sequelize.col('id')), 'total_count'],
+//         [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = "pending" THEN 1 ELSE 0 END')), 'pending_count'],
+//         [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = "completed" THEN 1 ELSE 0 END')), 'completed_count']
+//       ],
+//       group: ['uniqueId'],
+//       raw: true
+//     });
+
+//     // Create a map for quick lookup
+//     const statusMap = new Map();
+//     statusCounts.forEach(item => {
+//       statusMap.set(item.uniqueId, {
+//         total: parseInt(item.total_count) || 0,
+//         pending: parseInt(item.pending_count) || 0,
+//         completed: parseInt(item.completed_count) || 0
+//       });
+//     });
+
+//     // Step 3: Get email addresses for all uniqueIds in bulk
+//     const emailRecords = await emailsent.findAll({
+//       where: { uniqueId: { [Op.in]: uniqueIds } },
+//       attributes: ['uniqueId', 'email'],
+//       raw: true
+//     });
+
+//     const emailMap = new Map();
+//     emailRecords.forEach(record => {
+//       emailMap.set(record.uniqueId, record.email);
+//     });
+
+//     // Step 4: Process each uniqueId
+//     const completedUniqueIds = [];
+//     const emailsToSend = [];
+
+//     for (const uniqueId of uniqueIds) {
+//       const statusInfo = statusMap.get(uniqueId);
+      
+//       if (!statusInfo || statusInfo.total === 0) {
+//         console.log(`⚠️ No matchLink found for ${uniqueId}, skipping...`);
+//         continue;
+//       }
+
+//       if (statusInfo.pending > 0) {
+//         console.log(`⏳ ${uniqueId} has ${statusInfo.pending} pending matchLink rows, skipping...`);
+//         continue;
+//       }
+
+//       if (statusInfo.completed === statusInfo.total) {
+//         completedUniqueIds.push(uniqueId);
+//         const email = emailMap.get(uniqueId);
+//         if (email) {
+//           emailsToSend.push({ uniqueId, email });
+//         }
+//       }
+//     }
+
+//     // Step 5: Bulk update emailsent and Link status
+//     if (completedUniqueIds.length > 0) {
+//       await emailsent.update(
+//         { status: 'completed' },
+//         { 
+//           where: { uniqueId: { [Op.in]: completedUniqueIds } },
+//           silent: true
+//         }
+//       );
+
+//       await Link.update(
+//         { final_status: 'completed' },
+//         { 
+//           where: { uniqueId: { [Op.in]: completedUniqueIds } },
+//           silent: true
+//         }
+//       );
+
+//       console.log(`✅ Marked ${completedUniqueIds.length} uniqueIds as completed`);
+//     }
+
+//     // Step 6: Send emails in parallel with controlled concurrency
+//     if (emailsToSend.length > 0) {
+//       console.log(`📧 Preparing to send ${emailsToSend.length} completion emails`);
+//       await sendEnrichmentEmails(emailsToSend);
+//     }
+
+//     const jobDuration = (Date.now() - jobStartTime) / 1000;
+//     console.log(`✅ Email status check completed in ${jobDuration}s. Processed: ${uniqueIds.length}, Completed: ${completedUniqueIds.length}, Emails sent: ${emailsToSend.length}`);
+
+//   } catch (error) {
+//     console.error('❌ Error in cron job:', error);
+//   }
+// }
+
+// // Helper function to send emails with controlled concurrency
+// async function sendEnrichmentEmails(emailsToSend, concurrency = 3) {
+//   for (let i = 0; i < emailsToSend.length; i += concurrency) {
+//     const batch = emailsToSend.slice(i, i + concurrency);
     
-    for (const user of staleUsers) {
-      await user.update({ isProcessingFile: false, processingStartTime: null });
+//     await Promise.allSettled(
+//       batch.map(({ uniqueId, email }) => sendEnrichmentEmail(uniqueId, email))
+//     );
+    
+//     // Small delay between batches
+//     await new Promise(resolve => setTimeout(resolve, 500));
+//   }
+// }
+
+// // Helper function to send individual email
+// async function sendEnrichmentEmail(uniqueId, email) {
+//   try {
+//     const mailOptions = {
+//       from: '"B2B Direct Number Enrichment System" <b2bdirectdata@gmail.com>',
+//       to: email,
+//       subject: `B2B Direct Number Enrichment System Completed - ${uniqueId}`,
+//       html: `
+//         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//           <h2 style="color: #2563eb;">B2B Direct Number Enrichment System Completed</h2>
+//           <p>All enrichment processes for ${uniqueId} have been completed.</p>
+          
+//           <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+//             <h3 style="margin-top: 0; color: #1f2937;">Direct Number Enrichment</h3>
+//             <p><strong>File UniqueId:</strong> ${uniqueId}</p>
+//           </div>
+          
+//           <p>All results are now available for download.</p>
+//           <p>Team,<br/>B2B Direct Data</p>
+//         </div>
+//       `
+//     };
+
+//     await transporter.sendMail(mailOptions);
+//     console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
+//   } catch (err) {
+//     console.error(`❌ Failed to send email for ${uniqueId}:`, err.message);
+//   }
+// }
+
+// // Schedule the job with proper error handling
+// cron.schedule('*/10 * * * *', async () => {
+//   if (isEnrichmentJobRunning) {
+//     console.log('⏸️ Enrichment status check job already running, skipping...');
+//     return;
+//   }
+  
+//   isEnrichmentJobRunning = true;
+//   try {
+//     await checkAndUpdateEmailStatus();
+//   } catch (error) {
+//     console.error('❌ Unhandled error in enrichment status job:', error);
+//   } finally {
+//     isEnrichmentJobRunning = false;
+//   }
+// });
+
+// console.log('⏰ Email status check job scheduled to run every 10 minutes');
+
+// // Add job locking variable
+// let isEnrichmentJobRunning = false;
+
+// cron.schedule('*/10 * * * *', async () => {
+//   try {
+//     const staleUsers = await User.findAll({
+//       where: {
+//         isProcessingFile: true,
+//         processingStartTime: {
+//           [Op.lt]: new Date(new Date() - 10 * 60 * 1000) // older than 5 mins
+//         }
+//       }
+//     });
+    
+//     for (const user of staleUsers) {
+//       await user.update({ isProcessingFile: false, processingStartTime: null });
       
       
-    }
-  } catch (error) {
-    console.error('Error in processing cleanup job:', error);
-  }
-});
+//     }
+//   } catch (error) {
+//     console.error('Error in processing cleanup job:', error);
+//   }
+// });
 
 
 
@@ -4952,291 +4952,292 @@ async function processSingleVerificationRecord(tempData) {
 
 console.log('⏰ VerificationTemp sync job scheduled to run every 10 minutes');
 
-// async function checkAndUpdateEmailStatus1() {
-//   console.log('⏳ Cron Job: Checking matchLink status...');
-
-//   try {
-//     // Step 1: Get all uniqueIds in emailsent with pending status
-//     const pendingUniqueIds = await emailsent1.findAll({
-//       where: { status: 'pending' },
-//       attributes: ['uniqueId'],
-//       group: ['uniqueId']
-//     });
-
-//     for (const record of pendingUniqueIds) {
-//       const uniqueId = record.uniqueId;
-
-//       // Step 2: Get all Link rows for this uniqueId where matchLink is not null
-//       const matchedLinks = await VerificationUpload.findAll({
-//         where: {
-//           uniqueId,
-//           clean_link: { [Op.ne]: null }
-//         },
-//         attributes: ['status']
-//       });
-
-//       if (matchedLinks.length === 0) {
-//         console.log(`⚠️ No cleanlink found for ${uniqueId}, skipping...`);
-//         continue;
-//       }
-
-//       // Step 3: Check if all matched links are pending or completed
-//       const hasPending = matchedLinks.every(link => link.status === 'pending');
-//       const hasCompleted = matchedLinks.every(link => link.status === 'Completed');
-
-//       if (hasPending) {
-//         console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
-//         continue;
-//       }
-
-//       if (hasCompleted) {
-//         // Step 4: If none are pending, update emailsent status to completed
-//         await emailsent1.update(
-//           { status: 'completed' },
-//           { where: { uniqueId } }
-//         );
-//         await VerificationUpload.update(
-//           { final_status: 'Completed' },
-//           { where: { uniqueId } }
-//         );
-
-//         console.log(`✅ ${uniqueId} marked as completed in emailsent`);
-
-//         // Step 5: Get email address for this uniqueId
-//         const emailRecord = await emailsent1.findOne({
-//           where: { uniqueId },
-//           attributes: ['email']
-//         });
-
-//         if (!emailRecord || !emailRecord.email) {
-//           console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
-//           continue;
-//         }
-
-//         const email = emailRecord.email;
-
-//         // Step 6: Send the email
-//         try {
-//           const mailOptions = {
-//             from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
-//             to: email,
-//             subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
-//             html: `
-//               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-//                 <h2 style="color: #2563eb;">B2B LinkedIn Verification System Completed</h2>
-//                 <p>All Verification processes for ${uniqueId} have been completed.</p>
-                
-//                 <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-//                   <h3 style="margin-top: 0; color: #1f2937;">LinkedIn Verification System</h3>
-//                   <p><strong>File UniqueId:</strong> ${uniqueId}</p>
-//                 </div>
-                
-//                 <p>All results are now available for download.</p>
-//                 <p>Team,<br/>B2B Direct Data</p>
-//               </div>
-//             `
-//           };
-
-//           await transporter.sendMail(mailOptions);
-//           console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
-//         } catch (err) {
-//           console.error(`❌ Failed to send email for ${uniqueId}:`, err);
-//         }
-//       }
-//     }
-//   } catch (error) {
-//     console.error('❌ Error in cron job:', error);
-//   }
-// }
-// cron.schedule('*/10 * * * *', checkAndUpdateEmailStatus1);
-// console.log('⏰ Email status check job scheduled to run every 10 minutes');
 
 async function checkAndUpdateEmailStatus1() {
   console.log('⏳ Cron Job: Checking matchLink status...');
-  const jobStartTime = Date.now();
 
   try {
-    // Step 1: Get all uniqueIds with pending status in one query
+    // Step 1: Get all uniqueIds in emailsent with pending status
     const pendingUniqueIds = await emailsent1.findAll({
       where: { status: 'pending' },
       attributes: ['uniqueId'],
-      group: ['uniqueId'],
-      raw: true
+      group: ['uniqueId']
     });
 
-    if (pendingUniqueIds.length === 0) {
-      console.log('✅ No pending uniqueIds found');
-      return;
-    }
+    for (const record of pendingUniqueIds) {
+      const uniqueId = record.uniqueId;
 
-    const uniqueIds = pendingUniqueIds.map(record => record.uniqueId);
-    console.log(`📊 Processing ${uniqueIds.length} uniqueIds with pending status`);
-
-    // Step 2: Get status counts for all uniqueIds in bulk
-    const statusCounts = await VerificationUpload.findAll({
-      where: {
-        uniqueId: { [Op.in]: uniqueIds },
-        clean_link: { [Op.ne]: null }
-      },
-      attributes: [
-        'uniqueId',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'total_count'],
-        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = "pending" THEN 1 ELSE 0 END')), 'pending_count'],
-        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = "Completed" THEN 1 ELSE 0 END')), 'completed_count']
-      ],
-      group: ['uniqueId'],
-      raw: true
-    });
-
-    // Create a map for quick lookup
-    const statusMap = new Map();
-    statusCounts.forEach(item => {
-      statusMap.set(item.uniqueId, {
-        total: parseInt(item.total_count) || 0,
-        pending: parseInt(item.pending_count) || 0,
-        completed: parseInt(item.completed_count) || 0
+      // Step 2: Get all Link rows for this uniqueId where matchLink is not null
+      const matchedLinks = await VerificationUpload.findAll({
+        where: {
+          uniqueId,
+          clean_link: { [Op.ne]: null }
+        },
+        attributes: ['status']
       });
-    });
 
-    // Step 3: Get email addresses for all uniqueIds in bulk
-    const emailRecords = await emailsent1.findAll({
-      where: { uniqueId: { [Op.in]: uniqueIds } },
-      attributes: ['uniqueId', 'email'],
-      raw: true
-    });
-
-    const emailMap = new Map();
-    emailRecords.forEach(record => {
-      emailMap.set(record.uniqueId, record.email);
-    });
-
-    // Step 4: Process each uniqueId
-    const completedUniqueIds = [];
-    const emailsToSend = [];
-
-    for (const uniqueId of uniqueIds) {
-      const statusInfo = statusMap.get(uniqueId);
-      
-      if (!statusInfo || statusInfo.total === 0) {
+      if (matchedLinks.length === 0) {
         console.log(`⚠️ No cleanlink found for ${uniqueId}, skipping...`);
         continue;
       }
 
-      if (statusInfo.pending > 0) {
-        console.log(`⏳ ${uniqueId} has ${statusInfo.pending} pending matchLink rows, skipping...`);
+      // Step 3: Check if all matched links are pending or completed
+      const hasPending = matchedLinks.every(link => link.status === 'pending');
+      const hasCompleted = matchedLinks.every(link => link.status === 'Completed');
+
+      if (hasPending) {
+        console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
         continue;
       }
 
-      if (statusInfo.completed === statusInfo.total) {
-        completedUniqueIds.push(uniqueId);
-        const email = emailMap.get(uniqueId);
-        if (email) {
-          emailsToSend.push({ uniqueId, email });
+      if (hasCompleted) {
+        // Step 4: If none are pending, update emailsent status to completed
+        await emailsent1.update(
+          { status: 'completed' },
+          { where: { uniqueId } }
+        );
+        await VerificationUpload.update(
+          { final_status: 'Completed' },
+          { where: { uniqueId } }
+        );
+
+        console.log(`✅ ${uniqueId} marked as completed in emailsent`);
+
+        // Step 5: Get email address for this uniqueId
+        const emailRecord = await emailsent1.findOne({
+          where: { uniqueId },
+          attributes: ['email']
+        });
+
+        if (!emailRecord || !emailRecord.email) {
+          console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
+          continue;
+        }
+
+        const email = emailRecord.email;
+
+        // Step 6: Send the email
+        try {
+          const mailOptions = {
+            from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
+            to: email,
+            subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #2563eb;">B2B LinkedIn Verification System Completed</h2>
+                <p>All Verification processes for ${uniqueId} have been completed.</p>
+                
+                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                  <h3 style="margin-top: 0; color: #1f2937;">LinkedIn Verification System</h3>
+                  <p><strong>File UniqueId:</strong> ${uniqueId}</p>
+                </div>
+                
+                <p>All results are now available for download.</p>
+                <p>Team,<br/>B2B Direct Data</p>
+              </div>
+            `
+          };
+
+          await transporter.sendMail(mailOptions);
+          console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
+        } catch (err) {
+          console.error(`❌ Failed to send email for ${uniqueId}:`, err);
         }
       }
     }
-
-    // Step 5: Bulk update emailsent status
-    if (completedUniqueIds.length > 0) {
-      await emailsent1.update(
-        { status: 'completed' },
-        { 
-          where: { uniqueId: { [Op.in]: completedUniqueIds } },
-          silent: true // Skip hooks for better performance
-        }
-      );
-
-      await VerificationUpload.update(
-        { final_status: 'Completed' },
-        { 
-          where: { uniqueId: { [Op.in]: completedUniqueIds } },
-          silent: true
-        }
-      );
-
-      console.log(`✅ Marked ${completedUniqueIds.length} uniqueIds as completed`);
-    }
-
-    // Step 6: Send emails in parallel with controlled concurrency
-    if (emailsToSend.length > 0) {
-      console.log(`📧 Preparing to send ${emailsToSend.length} completion emails`);
-      
-      await sendEmailsWithConcurrency(emailsToSend);
-    }
-
-    const jobDuration = (Date.now() - jobStartTime) / 1000;
-    console.log(`✅ Email status check completed in ${jobDuration}s. Processed: ${uniqueIds.length}, Completed: ${completedUniqueIds.length}, Emails sent: ${emailsToSend.length}`);
-
   } catch (error) {
     console.error('❌ Error in cron job:', error);
   }
 }
+cron.schedule('*/10 * * * *', checkAndUpdateEmailStatus1);
+console.log('⏰ Email status check job scheduled to run every 10 minutes');
 
-// Helper function to send emails with controlled concurrency
-async function sendEmailsWithConcurrency(emailsToSend, concurrency = 3) {
-  for (let i = 0; i < emailsToSend.length; i += concurrency) {
-    const batch = emailsToSend.slice(i, i + concurrency);
+// async function checkAndUpdateEmailStatus1() {
+//   console.log('⏳ Cron Job: Checking matchLink status...');
+//   const jobStartTime = Date.now();
+
+//   try {
+//     // Step 1: Get all uniqueIds with pending status in one query
+//     const pendingUniqueIds = await emailsent1.findAll({
+//       where: { status: 'pending' },
+//       attributes: ['uniqueId'],
+//       group: ['uniqueId'],
+//       raw: true
+//     });
+
+//     if (pendingUniqueIds.length === 0) {
+//       console.log('✅ No pending uniqueIds found');
+//       return;
+//     }
+
+//     const uniqueIds = pendingUniqueIds.map(record => record.uniqueId);
+//     console.log(`📊 Processing ${uniqueIds.length} uniqueIds with pending status`);
+
+//     // Step 2: Get status counts for all uniqueIds in bulk
+//     const statusCounts = await VerificationUpload.findAll({
+//       where: {
+//         uniqueId: { [Op.in]: uniqueIds },
+//         clean_link: { [Op.ne]: null }
+//       },
+//       attributes: [
+//         'uniqueId',
+//         [sequelize.fn('COUNT', sequelize.col('id')), 'total_count'],
+//         [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = "pending" THEN 1 ELSE 0 END')), 'pending_count'],
+//         [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = "Completed" THEN 1 ELSE 0 END')), 'completed_count']
+//       ],
+//       group: ['uniqueId'],
+//       raw: true
+//     });
+
+//     // Create a map for quick lookup
+//     const statusMap = new Map();
+//     statusCounts.forEach(item => {
+//       statusMap.set(item.uniqueId, {
+//         total: parseInt(item.total_count) || 0,
+//         pending: parseInt(item.pending_count) || 0,
+//         completed: parseInt(item.completed_count) || 0
+//       });
+//     });
+
+//     // Step 3: Get email addresses for all uniqueIds in bulk
+//     const emailRecords = await emailsent1.findAll({
+//       where: { uniqueId: { [Op.in]: uniqueIds } },
+//       attributes: ['uniqueId', 'email'],
+//       raw: true
+//     });
+
+//     const emailMap = new Map();
+//     emailRecords.forEach(record => {
+//       emailMap.set(record.uniqueId, record.email);
+//     });
+
+//     // Step 4: Process each uniqueId
+//     const completedUniqueIds = [];
+//     const emailsToSend = [];
+
+//     for (const uniqueId of uniqueIds) {
+//       const statusInfo = statusMap.get(uniqueId);
+      
+//       if (!statusInfo || statusInfo.total === 0) {
+//         console.log(`⚠️ No cleanlink found for ${uniqueId}, skipping...`);
+//         continue;
+//       }
+
+//       if (statusInfo.pending > 0) {
+//         console.log(`⏳ ${uniqueId} has ${statusInfo.pending} pending matchLink rows, skipping...`);
+//         continue;
+//       }
+
+//       if (statusInfo.completed === statusInfo.total) {
+//         completedUniqueIds.push(uniqueId);
+//         const email = emailMap.get(uniqueId);
+//         if (email) {
+//           emailsToSend.push({ uniqueId, email });
+//         }
+//       }
+//     }
+
+//     // Step 5: Bulk update emailsent status
+//     if (completedUniqueIds.length > 0) {
+//       await emailsent1.update(
+//         { status: 'completed' },
+//         { 
+//           where: { uniqueId: { [Op.in]: completedUniqueIds } },
+//           silent: true // Skip hooks for better performance
+//         }
+//       );
+
+//       await VerificationUpload.update(
+//         { final_status: 'Completed' },
+//         { 
+//           where: { uniqueId: { [Op.in]: completedUniqueIds } },
+//           silent: true
+//         }
+//       );
+
+//       console.log(`✅ Marked ${completedUniqueIds.length} uniqueIds as completed`);
+//     }
+
+//     // Step 6: Send emails in parallel with controlled concurrency
+//     if (emailsToSend.length > 0) {
+//       console.log(`📧 Preparing to send ${emailsToSend.length} completion emails`);
+      
+//       await sendEmailsWithConcurrency(emailsToSend);
+//     }
+
+//     const jobDuration = (Date.now() - jobStartTime) / 1000;
+//     console.log(`✅ Email status check completed in ${jobDuration}s. Processed: ${uniqueIds.length}, Completed: ${completedUniqueIds.length}, Emails sent: ${emailsToSend.length}`);
+
+//   } catch (error) {
+//     console.error('❌ Error in cron job:', error);
+//   }
+// }
+
+// // Helper function to send emails with controlled concurrency
+// async function sendEmailsWithConcurrency(emailsToSend, concurrency = 3) {
+//   for (let i = 0; i < emailsToSend.length; i += concurrency) {
+//     const batch = emailsToSend.slice(i, i + concurrency);
     
-    await Promise.allSettled(
-      batch.map(({ uniqueId, email }) => sendCompletionEmail1(uniqueId, email))
-    );
+//     await Promise.allSettled(
+//       batch.map(({ uniqueId, email }) => sendCompletionEmail1(uniqueId, email))
+//     );
     
-    // Small delay between batches to avoid overwhelming the email service
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
-}
+//     // Small delay between batches to avoid overwhelming the email service
+//     await new Promise(resolve => setTimeout(resolve, 500));
+//   }
+// }
 
-// Helper function to send individual email
-async function sendCompletionEmail1(uniqueId, email) {
-  try {
-    const mailOptions = {
-      from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
-      to: email,
-      subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">B2B LinkedIn Verification System Completed</h2>
-          <p>All Verification processes for ${uniqueId} have been completed.</p>
+// // Helper function to send individual email
+// async function sendCompletionEmail1(uniqueId, email) {
+//   try {
+//     const mailOptions = {
+//       from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
+//       to: email,
+//       subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
+//       html: `
+//         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//           <h2 style="color: #2563eb;">B2B LinkedIn Verification System Completed</h2>
+//           <p>All Verification processes for ${uniqueId} have been completed.</p>
           
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-            <h3 style="margin-top: 0; color: #1f2937;">LinkedIn Verification System</h3>
-            <p><strong>File UniqueId:</strong> ${uniqueId}</p>
-          </div>
+//           <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+//             <h3 style="margin-top: 0; color: #1f2937;">LinkedIn Verification System</h3>
+//             <p><strong>File UniqueId:</strong> ${uniqueId}</p>
+//           </div>
           
-          <p>All results are now available for download.</p>
-          <p>Team,<br/>B2B Direct Data</p>
-        </div>
-      `
-    };
+//           <p>All results are now available for download.</p>
+//           <p>Team,<br/>B2B Direct Data</p>
+//         </div>
+//       `
+//     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
-  } catch (err) {
-    console.error(`❌ Failed to send email for ${uniqueId}:`, err.message);
-  }
-}
+//     await transporter.sendMail(mailOptions);
+//     console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
+//   } catch (err) {
+//     console.error(`❌ Failed to send email for ${uniqueId}:`, err.message);
+//   }
+// }
 
-// Schedule the job with proper error handling
-cron.schedule('*/10 * * * *', async () => {
-  if (isEmailJob1Running) {
-    console.log('⏸️ Email status check job 1 already running, skipping...');
-    return;
-  }
+// // Schedule the job with proper error handling
+// cron.schedule('*/10 * * * *', async () => {
+//   if (isEmailJob1Running) {
+//     console.log('⏸️ Email status check job 1 already running, skipping...');
+//     return;
+//   }
   
-  isEmailJob1Running = true;
-  try {
-    await checkAndUpdateEmailStatus1();
-  } catch (error) {
-    console.error('❌ Unhandled error in email status job 1:', error);
-  } finally {
-    isEmailJob1Running = false;
-  }
-});
+//   isEmailJob1Running = true;
+//   try {
+//     await checkAndUpdateEmailStatus1();
+//   } catch (error) {
+//     console.error('❌ Unhandled error in email status job 1:', error);
+//   } finally {
+//     isEmailJob1Running = false;
+//   }
+// });
 
-console.log('⏰ Email status check job 1 scheduled to run every 10 minutes');
+// console.log('⏰ Email status check job 1 scheduled to run every 10 minutes');
 
-// Add job locking variable
-let isEmailJob1Running = false;
+// // Add job locking variable
+// let isEmailJob1Running = false;
 
 
 cron.schedule('*/10 * * * *', async () => {
@@ -6905,293 +6906,293 @@ async function processSingleCompanyRecord(tempData) {
 
 console.log('⏰ VerificationTemp_com sync job scheduled to run every 10 minutes');
 
-// async function checkAndUpdateEmailStatus2() {
-//   console.log('⏳ Cron Job: Checking matchLink status...');
-
-//   try {
-//     // Step 1: Get all uniqueIds in emailsent with pending status
-//     const pendingUniqueIds = await emailsent2.findAll({
-//       where: { status: 'pending' },
-//       attributes: ['uniqueId'],
-//       group: ['uniqueId']
-//     });
-
-//     for (const record of pendingUniqueIds) {
-//       const uniqueId = record.uniqueId;
-
-//       // Step 2: Get all Link rows for this uniqueId where matchLink is not null
-//       const matchedLinks = await VerificationUpload_com.findAll({
-//         where: {
-//           uniqueId,
-//           clean_link: { [Op.ne]: null }
-//         },
-//         attributes: ['status']
-//       });
-
-//       if (matchedLinks.length === 0) {
-//         console.log(`⚠️ No cleanlink found for ${uniqueId}, skipping...`);
-//         continue;
-//       }
-
-//       // Step 3: Check if all matched links are pending or completed
-//       const hasPending = matchedLinks.every(link => link.status === 'pending');
-//       const hasCompleted = matchedLinks.every(link => link.status === 'Completed');
-
-//       if (hasPending) {
-//         console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
-//         continue;
-//       }
-
-//       if (hasCompleted) {
-//         // Step 4: If none are pending, update emailsent status to completed
-//         await emailsent2.update(
-//           { status: 'completed' },
-//           { where: { uniqueId } }
-//         );
-//         await VerificationUpload.update(
-//           { final_status: 'Completed' },
-//           { where: { uniqueId } }
-//         );
-
-//         console.log(`✅ ${uniqueId} marked as completed in emailsent`);
-
-//         // Step 5: Get email address for this uniqueId
-//         const emailRecord = await emailsent2.findOne({
-//           where: { uniqueId },
-//           attributes: ['email']
-//         });
-
-//         if (!emailRecord || !emailRecord.email) {
-//           console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
-//           continue;
-//         }
-
-//         const email = emailRecord.email;
-
-//         // Step 6: Send the email
-//         try {
-//           const mailOptions = {
-//             from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
-//             to: email,
-//             subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
-//             html: `
-//               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-//                 <h2 style="color: #2563eb;">B2B LinkedIn Verification System Completed</h2>
-//                 <p>All Verification processes for ${uniqueId} have been completed.</p>
-                
-//                 <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-//                   <h3 style="margin-top: 0; color: #1f2937;">LinkedIn Verification System</h3>
-//                   <p><strong>File UniqueId:</strong> ${uniqueId}</p>
-//                 </div>
-                
-//                 <p>All results are now available for download.</p>
-//                 <p>Team,<br/>B2B Direct Data</p>
-//               </div>
-//             `
-//           };
-
-//           await transporter.sendMail(mailOptions);
-//           console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
-//         } catch (err) {
-//           console.error(`❌ Failed to send email for ${uniqueId}:`, err);
-//         }
-//       }
-//     }
-//   } catch (error) {
-//     console.error('❌ Error in cron job:', error);
-//   }
-// }
-// cron.schedule('*/10 * * * *', checkAndUpdateEmailStatus2);
-// console.log('⏰ Email status check job scheduled to run every 10 minutes');
-
-
-
 async function checkAndUpdateEmailStatus2() {
   console.log('⏳ Cron Job: Checking matchLink status...');
-  const jobStartTime = Date.now();
 
   try {
-    // Step 1: Get all uniqueIds with pending status in one query
+    // Step 1: Get all uniqueIds in emailsent with pending status
     const pendingUniqueIds = await emailsent2.findAll({
       where: { status: 'pending' },
       attributes: ['uniqueId'],
-      group: ['uniqueId'],
-      raw: true
+      group: ['uniqueId']
     });
 
-    if (pendingUniqueIds.length === 0) {
-      console.log('✅ No pending uniqueIds found');
-      return;
-    }
+    for (const record of pendingUniqueIds) {
+      const uniqueId = record.uniqueId;
 
-    const uniqueIds = pendingUniqueIds.map(record => record.uniqueId);
-    console.log(`📊 Processing ${uniqueIds.length} uniqueIds with pending status`);
-
-    // Step 2: Get status counts for all uniqueIds in bulk
-    const statusCounts = await VerificationUpload_com.findAll({
-      where: {
-        uniqueId: { [Op.in]: uniqueIds },
-        clean_link: { [Op.ne]: null }
-      },
-      attributes: [
-        'uniqueId',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'total_count'],
-        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = "pending" THEN 1 ELSE 0 END')), 'pending_count'],
-        [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = "Completed" THEN 1 ELSE 0 END')), 'completed_count']
-      ],
-      group: ['uniqueId'],
-      raw: true
-    });
-
-    // Create a map for quick lookup
-    const statusMap = new Map();
-    statusCounts.forEach(item => {
-      statusMap.set(item.uniqueId, {
-        total: parseInt(item.total_count) || 0,
-        pending: parseInt(item.pending_count) || 0,
-        completed: parseInt(item.completed_count) || 0
+      // Step 2: Get all Link rows for this uniqueId where matchLink is not null
+      const matchedLinks = await VerificationUpload_com.findAll({
+        where: {
+          uniqueId,
+          clean_link: { [Op.ne]: null }
+        },
+        attributes: ['status']
       });
-    });
 
-    // Step 3: Get email addresses for all uniqueIds in bulk
-    const emailRecords = await emailsent2.findAll({
-      where: { uniqueId: { [Op.in]: uniqueIds } },
-      attributes: ['uniqueId', 'email'],
-      raw: true
-    });
-
-    const emailMap = new Map();
-    emailRecords.forEach(record => {
-      emailMap.set(record.uniqueId, record.email);
-    });
-
-    // Step 4: Process each uniqueId
-    const completedUniqueIds = [];
-    const emailsToSend = [];
-
-    for (const uniqueId of uniqueIds) {
-      const statusInfo = statusMap.get(uniqueId);
-      
-      if (!statusInfo || statusInfo.total === 0) {
+      if (matchedLinks.length === 0) {
         console.log(`⚠️ No cleanlink found for ${uniqueId}, skipping...`);
         continue;
       }
 
-      if (statusInfo.pending > 0) {
-        console.log(`⏳ ${uniqueId} has ${statusInfo.pending} pending matchLink rows, skipping...`);
+      // Step 3: Check if all matched links are pending or completed
+      const hasPending = matchedLinks.every(link => link.status === 'pending');
+      const hasCompleted = matchedLinks.every(link => link.status === 'Completed');
+
+      if (hasPending) {
+        console.log(`⏳ ${uniqueId} still has pending matchLink rows, skipping completion...`);
         continue;
       }
 
-      if (statusInfo.completed === statusInfo.total) {
-        completedUniqueIds.push(uniqueId);
-        const email = emailMap.get(uniqueId);
-        if (email) {
-          emailsToSend.push({ uniqueId, email });
+      if (hasCompleted) {
+        // Step 4: If none are pending, update emailsent status to completed
+        await emailsent2.update(
+          { status: 'completed' },
+          { where: { uniqueId } }
+        );
+        await VerificationUpload.update(
+          { final_status: 'Completed' },
+          { where: { uniqueId } }
+        );
+
+        console.log(`✅ ${uniqueId} marked as completed in emailsent`);
+
+        // Step 5: Get email address for this uniqueId
+        const emailRecord = await emailsent2.findOne({
+          where: { uniqueId },
+          attributes: ['email']
+        });
+
+        if (!emailRecord || !emailRecord.email) {
+          console.log(`⚠️ No savedEmail found for ${uniqueId}, skipping email sending...`);
+          continue;
+        }
+
+        const email = emailRecord.email;
+
+        // Step 6: Send the email
+        try {
+          const mailOptions = {
+            from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
+            to: email,
+            subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #2563eb;">B2B LinkedIn Verification System Completed</h2>
+                <p>All Verification processes for ${uniqueId} have been completed.</p>
+                
+                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                  <h3 style="margin-top: 0; color: #1f2937;">LinkedIn Verification System</h3>
+                  <p><strong>File UniqueId:</strong> ${uniqueId}</p>
+                </div>
+                
+                <p>All results are now available for download.</p>
+                <p>Team,<br/>B2B Direct Data</p>
+              </div>
+            `
+          };
+
+          await transporter.sendMail(mailOptions);
+          console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
+        } catch (err) {
+          console.error(`❌ Failed to send email for ${uniqueId}:`, err);
         }
       }
     }
-
-    // Step 5: Bulk update emailsent status
-    if (completedUniqueIds.length > 0) {
-      await emailsent2.update(
-        { status: 'completed' },
-        { 
-          where: { uniqueId: { [Op.in]: completedUniqueIds } },
-          silent: true // Skip hooks for better performance
-        }
-      );
-
-      await VerificationUpload.update(
-        { final_status: 'Completed' },
-        { 
-          where: { uniqueId: { [Op.in]: completedUniqueIds } },
-          silent: true
-        }
-      );
-
-      console.log(`✅ Marked ${completedUniqueIds.length} uniqueIds as completed`);
-    }
-
-    // Step 6: Send emails in parallel with controlled concurrency
-    if (emailsToSend.length > 0) {
-      console.log(`📧 Preparing to send ${emailsToSend.length} completion emails`);
-      
-      await sendEmailsWithConcurrency(emailsToSend);
-    }
-
-    const jobDuration = (Date.now() - jobStartTime) / 1000;
-    console.log(`✅ Email status check completed in ${jobDuration}s. Processed: ${uniqueIds.length}, Completed: ${completedUniqueIds.length}, Emails sent: ${emailsToSend.length}`);
-
   } catch (error) {
     console.error('❌ Error in cron job:', error);
   }
 }
-
-// Helper function to send emails with controlled concurrency
-async function sendEmailsWithConcurrency(emailsToSend, concurrency = 3) {
-  for (let i = 0; i < emailsToSend.length; i += concurrency) {
-    const batch = emailsToSend.slice(i, i + concurrency);
-    
-    await Promise.allSettled(
-      batch.map(({ uniqueId, email }) => sendCompletionEmail(uniqueId, email))
-    );
-    
-    // Small delay between batches to avoid overwhelming the email service
-    await new Promise(resolve => setTimeout(resolve, 500));
-  }
-}
-
-// Helper function to send individual email
-async function sendCompletionEmail(uniqueId, email) {
-  try {
-    const mailOptions = {
-      from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
-      to: email,
-      subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">B2B LinkedIn Verification System Completed</h2>
-          <p>All Verification processes for ${uniqueId} have been completed.</p>
-          
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
-            <h3 style="margin-top: 0; color: #1f2937;">LinkedIn Verification System</h3>
-            <p><strong>File UniqueId:</strong> ${uniqueId}</p>
-          </div>
-          
-          <p>All results are now available for download.</p>
-          <p>Team,<br/>B2B Direct Data</p>
-        </div>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
-  } catch (err) {
-    console.error(`❌ Failed to send email for ${uniqueId}:`, err.message);
-  }
-}
-
-// Schedule the job with proper error handling
-cron.schedule('*/10 * * * *', async () => {
-  if (isEmailJobRunning) {
-    console.log('⏸️ Email status check job already running, skipping...');
-    return;
-  }
-  
-  isEmailJobRunning = true;
-  try {
-    await checkAndUpdateEmailStatus2();
-  } catch (error) {
-    console.error('❌ Unhandled error in email status job:', error);
-  } finally {
-    isEmailJobRunning = false;
-  }
-});
-
+cron.schedule('*/10 * * * *', checkAndUpdateEmailStatus2);
 console.log('⏰ Email status check job scheduled to run every 10 minutes');
 
-// Add job locking variable
-let isEmailJobRunning = false;
+
+
+// async function checkAndUpdateEmailStatus2() {
+//   console.log('⏳ Cron Job: Checking matchLink status...');
+//   const jobStartTime = Date.now();
+
+//   try {
+//     // Step 1: Get all uniqueIds with pending status in one query
+//     const pendingUniqueIds = await emailsent2.findAll({
+//       where: { status: 'pending' },
+//       attributes: ['uniqueId'],
+//       group: ['uniqueId'],
+//       raw: true
+//     });
+
+//     if (pendingUniqueIds.length === 0) {
+//       console.log('✅ No pending uniqueIds found');
+//       return;
+//     }
+
+//     const uniqueIds = pendingUniqueIds.map(record => record.uniqueId);
+//     console.log(`📊 Processing ${uniqueIds.length} uniqueIds with pending status`);
+
+//     // Step 2: Get status counts for all uniqueIds in bulk
+//     const statusCounts = await VerificationUpload_com.findAll({
+//       where: {
+//         uniqueId: { [Op.in]: uniqueIds },
+//         clean_link: { [Op.ne]: null }
+//       },
+//       attributes: [
+//         'uniqueId',
+//         [sequelize.fn('COUNT', sequelize.col('id')), 'total_count'],
+//         [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = "pending" THEN 1 ELSE 0 END')), 'pending_count'],
+//         [sequelize.fn('SUM', sequelize.literal('CASE WHEN status = "Completed" THEN 1 ELSE 0 END')), 'completed_count']
+//       ],
+//       group: ['uniqueId'],
+//       raw: true
+//     });
+
+//     // Create a map for quick lookup
+//     const statusMap = new Map();
+//     statusCounts.forEach(item => {
+//       statusMap.set(item.uniqueId, {
+//         total: parseInt(item.total_count) || 0,
+//         pending: parseInt(item.pending_count) || 0,
+//         completed: parseInt(item.completed_count) || 0
+//       });
+//     });
+
+//     // Step 3: Get email addresses for all uniqueIds in bulk
+//     const emailRecords = await emailsent2.findAll({
+//       where: { uniqueId: { [Op.in]: uniqueIds } },
+//       attributes: ['uniqueId', 'email'],
+//       raw: true
+//     });
+
+//     const emailMap = new Map();
+//     emailRecords.forEach(record => {
+//       emailMap.set(record.uniqueId, record.email);
+//     });
+
+//     // Step 4: Process each uniqueId
+//     const completedUniqueIds = [];
+//     const emailsToSend = [];
+
+//     for (const uniqueId of uniqueIds) {
+//       const statusInfo = statusMap.get(uniqueId);
+      
+//       if (!statusInfo || statusInfo.total === 0) {
+//         console.log(`⚠️ No cleanlink found for ${uniqueId}, skipping...`);
+//         continue;
+//       }
+
+//       if (statusInfo.pending > 0) {
+//         console.log(`⏳ ${uniqueId} has ${statusInfo.pending} pending matchLink rows, skipping...`);
+//         continue;
+//       }
+
+//       if (statusInfo.completed === statusInfo.total) {
+//         completedUniqueIds.push(uniqueId);
+//         const email = emailMap.get(uniqueId);
+//         if (email) {
+//           emailsToSend.push({ uniqueId, email });
+//         }
+//       }
+//     }
+
+//     // Step 5: Bulk update emailsent status
+//     if (completedUniqueIds.length > 0) {
+//       await emailsent2.update(
+//         { status: 'completed' },
+//         { 
+//           where: { uniqueId: { [Op.in]: completedUniqueIds } },
+//           silent: true // Skip hooks for better performance
+//         }
+//       );
+
+//       await VerificationUpload.update(
+//         { final_status: 'Completed' },
+//         { 
+//           where: { uniqueId: { [Op.in]: completedUniqueIds } },
+//           silent: true
+//         }
+//       );
+
+//       console.log(`✅ Marked ${completedUniqueIds.length} uniqueIds as completed`);
+//     }
+
+//     // Step 6: Send emails in parallel with controlled concurrency
+//     if (emailsToSend.length > 0) {
+//       console.log(`📧 Preparing to send ${emailsToSend.length} completion emails`);
+      
+//       await sendEmailsWithConcurrency(emailsToSend);
+//     }
+
+//     const jobDuration = (Date.now() - jobStartTime) / 1000;
+//     console.log(`✅ Email status check completed in ${jobDuration}s. Processed: ${uniqueIds.length}, Completed: ${completedUniqueIds.length}, Emails sent: ${emailsToSend.length}`);
+
+//   } catch (error) {
+//     console.error('❌ Error in cron job:', error);
+//   }
+// }
+
+// // Helper function to send emails with controlled concurrency
+// async function sendEmailsWithConcurrency(emailsToSend, concurrency = 3) {
+//   for (let i = 0; i < emailsToSend.length; i += concurrency) {
+//     const batch = emailsToSend.slice(i, i + concurrency);
+    
+//     await Promise.allSettled(
+//       batch.map(({ uniqueId, email }) => sendCompletionEmail(uniqueId, email))
+//     );
+    
+//     // Small delay between batches to avoid overwhelming the email service
+//     await new Promise(resolve => setTimeout(resolve, 500));
+//   }
+// }
+
+// // Helper function to send individual email
+// async function sendCompletionEmail(uniqueId, email) {
+//   try {
+//     const mailOptions = {
+//       from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
+//       to: email,
+//       subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
+//       html: `
+//         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+//           <h2 style="color: #2563eb;">B2B LinkedIn Verification System Completed</h2>
+//           <p>All Verification processes for ${uniqueId} have been completed.</p>
+          
+//           <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 15px 0;">
+//             <h3 style="margin-top: 0; color: #1f2937;">LinkedIn Verification System</h3>
+//             <p><strong>File UniqueId:</strong> ${uniqueId}</p>
+//           </div>
+          
+//           <p>All results are now available for download.</p>
+//           <p>Team,<br/>B2B Direct Data</p>
+//         </div>
+//       `
+//     };
+
+//     await transporter.sendMail(mailOptions);
+//     console.log(`📧 Completion email sent to ${email} for ${uniqueId}`);
+//   } catch (err) {
+//     console.error(`❌ Failed to send email for ${uniqueId}:`, err.message);
+//   }
+// }
+
+// // Schedule the job with proper error handling
+// cron.schedule('*/10 * * * *', async () => {
+//   if (isEmailJobRunning) {
+//     console.log('⏸️ Email status check job already running, skipping...');
+//     return;
+//   }
+  
+//   isEmailJobRunning = true;
+//   try {
+//     await checkAndUpdateEmailStatus2();
+//   } catch (error) {
+//     console.error('❌ Unhandled error in email status job:', error);
+//   } finally {
+//     isEmailJobRunning = false;
+//   }
+// });
+
+// console.log('⏰ Email status check job scheduled to run every 10 minutes');
+
+// // Add job locking variable
+// let isEmailJobRunning = false;
 
 
 
