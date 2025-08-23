@@ -64,7 +64,7 @@ const sequelize = new Sequelize('postgres', 'postgres', 'admin==88', {
   host: 'newdevang.cnmam8aewz34.ap-south-1.rds.amazonaws.com',
   dialect: 'postgres',
   port: 5432,
-  // logging: false,
+  logging: false,
   dialectOptions: {
     ssl: {
       require: true,
