@@ -191,7 +191,7 @@ function Verification_company() {
 
   useEffect(() => {
     silentRefresh();
-    const intervalId = setInterval(silentRefresh, 50000);
+    const intervalId = setInterval(silentRefresh, 1000000);
     return () => clearInterval(intervalId);
   }, [silentRefresh]);
 
@@ -804,7 +804,8 @@ function Verification_company() {
                         />
                       )}
 
-                      {categorizedLinks.length > 0 && !showConfirmation && (
+                      { //categorizedLinks.length > 0 &&
+                       !showConfirmation && (
                         <div className="data-section">
                           <div className="data-section-header">
                             <h3 className="data-section-title">Your Verification History</h3>

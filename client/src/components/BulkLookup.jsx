@@ -210,9 +210,10 @@ function BulkLookup() {
 
   useEffect(() => {
     silentRefresh();
-    const intervalId = setInterval(silentRefresh, 50000);
+    const intervalId = setInterval(silentRefresh, 1000000);
     return () => clearInterval(intervalId);
   }, [silentRefresh]);
+
 
   useEffect(() => {
     const user = JSON.parse(sessionStorage.getItem("user"));
@@ -789,7 +790,8 @@ function BulkLookup() {
                         />
                       )}
 
-                      {uploadedData.length > 0 && !showConfirmation && (
+                      {/* {uploadedData.length > 0 && */
+                       !showConfirmation && (
                         <div className="data-section">
                           <div className="data-section-header">
                             <h3 className="data-section-title">

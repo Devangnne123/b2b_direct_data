@@ -303,7 +303,7 @@ function VerificationLinks() {
   
     useEffect(() => {
       silentRefresh();
-      const intervalId = setInterval(silentRefresh, 50000);
+      const intervalId = setInterval(silentRefresh, 1000000);
       return () => clearInterval(intervalId);
     }, [silentRefresh]);
   
@@ -1137,7 +1137,7 @@ function VerificationLinks() {
                         />
                       )}
 
-                      {categorizedLinks.length > 0 && 
+                      {/* {categorizedLinks.length > 0 &&  */
                       !showConfirmation && (
                         <div className="data-section">
                           <div className="data-section-header">

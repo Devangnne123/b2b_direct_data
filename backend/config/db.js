@@ -71,13 +71,13 @@ const sequelize = new Sequelize('postgres', 'postgres', 'admin==88', {
       rejectUnauthorized: false,
     },
   },
-  // pool: {
-  //   max: 60,
-  //   min: 0,
-  //   acquire: 80000,
-  //   idle: 10000,
-  //   evict: 10000
-  // },
+  pool: {
+    max: 60,
+    min: 10,
+    acquire: 80000,
+    idle: 10000,
+    evict: 10000
+  },
   // retry: {
   //   max: 3,
   //   match: [
