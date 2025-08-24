@@ -900,23 +900,25 @@ function Verification_company() {
                                                 {first.pendingCount || 0}
                                               </td>
                                               <td className="data-table-cell">
-                                                {status === "completed" ? (
-                                                  <span className="status-badge status-badge-completed">
-                                                    Completed
-                                                  </span>
-                                                ) : (
-                                                  <button
-                                                    onClick={() => checkStatus(uniqueId)}
-                                                    className="status-check-button"
-                                                    disabled={loading || isProcessing}
-                                                  >
-                                                    {loading || isProcessing ? (
-                                                      <Loader2 className="status-check-loader" />
-                                                    ) : (
-                                                      "Check Status"
-                                                    )}
-                                                  </button>
-                                                )}
+                                                <div
+                                                  className={`status-badge ${
+                                                    first.final_status === "pending"
+                                                      ? "status-badge-pending"
+                                                      : first.final_status === "completed"
+                                                      ? "status-badge-completed"
+                                                      : first.final_status === "not available"
+                                                      ? "status-badge-not-available"
+                                                      : "status-badge-processing"
+                                                  }`}
+                                                >
+                                                  {first.final_status === "pending"
+                                                    ? "Pending"
+                                                    : first.final_status === "completed"
+                                                    ? "Completed"
+                                                    : first.final_status === "not available"
+                                                    ? "Not Available"
+                                                    : "Processing"}
+                                                </div>
                                               </td>
                                               <td className="data-table-cell">
                                                 {formatDate(first.date)}
