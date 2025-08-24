@@ -2111,7 +2111,7 @@ const cron = require("node-cron");
         // Step 6: Send the email
         try {
           const mailOptions = {
-            from: '"B2B Direct Number Enrichment System" <b2bdirectdata@gmail.com>',
+            from: 'b2bdirectdata@gmail.com',
             to: email,
             subject: `B2B Direct Number Enrichment System Completed - ${uniqueId}`,
             html: `
@@ -5047,7 +5047,7 @@ app.post("/api/send-verification-confirmation/link", auth, async (req, res) => {
         // Step 6: Send the email
         try {
     const mailOptions = {
-      from: '"B2B LinkedIn Verification System" <b2bdirectdata@gmail.com>',
+      from: 'b2bdirectdata@gmail.com',
       to: email,
       subject: `B2B LinkedIn Verification System Completed - ${uniqueId}`,
       html: `
@@ -7082,7 +7082,7 @@ app.delete(
         // Step 6: Send the email
         try {
     const mailOptions = {
-      from: '"B2B LinkedIn Company Details " <b2bdirectdata@gmail.com>',
+      from: 'b2bdirectdata@gmail.com',
       to: email,
       subject: `B2B  LinkedIn Company Details  Completed - ${uniqueId}`,
       html: `
