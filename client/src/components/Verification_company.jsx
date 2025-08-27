@@ -321,7 +321,7 @@ function Verification_company() {
         return;
       }
   
-      if (response.data.message === "Max 5,000 links allowed") {
+      if (response.data.message === "Max 10000 links allowed") {
         toast.error(response.data.message);
         return;
       }

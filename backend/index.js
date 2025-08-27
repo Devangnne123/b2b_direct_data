@@ -653,7 +653,7 @@ app.post(
           return res.status(400).json({ message: "No LinkedIn links found." });
         }
 
-        if (links.length >= 5000) {
+        if (links.length > 5000) {
           fs.unlinkSync(filePath);
           await setProcessingFalse(email);
           return res.status(400).json({ message: "Max 5000 links allowed" });
@@ -2873,7 +2873,7 @@ app.post(
       }
 
       // For any number of links (less than or equal to 1000), require confirmation
-      if (links.length < 10000) {
+      if (links.length <= 10000) {
         return res.status(200).json({
           message: "Confirmation required to proceed",
           linkCount: links.length,
@@ -3835,10 +3835,10 @@ app.post(
           return res.status(400).json({ message: "No LinkedIn links found." });
         }
 
-        if (links.length >= 5000) {
+        if (links.length > 10000) {
           fs.unlinkSync(filePath);
           await setProcessingFalse2(email);
-          return res.status(400).json({ message: "Max 5,000 links allowed" });
+          return res.status(400).json({ message: "Max 10000 links allowed" });
         }
 
         uniqueId = uuidv4();
@@ -5315,7 +5315,7 @@ app.post(
       }
 
       // For any number of links (less than or equal to 1000), require confirmation
-      if (links.length < 10000) {
+      if (links.length <= 10000) {
         return res.status(200).json({
           message: "Confirmation required to proceed",
           linkCount: links.length,
@@ -5326,7 +5326,7 @@ app.post(
 
       if (links.length > 10000) {
         fs.unlinkSync(filePath);
-        return res.status(400).json({ message: "Max 10 links allowed" });
+        return res.status(400).json({ message: "Max 10000 links allowed" });
       }
     } catch (err) {
       console.error("Upload error:", err);
@@ -5893,11 +5893,11 @@ app.post(
           return res.status(400).json({ message: "No LinkedIn links found." });
         }
 
-        if (links.length > 5000) {
+        if (links.length > 10000) {
           fs.unlinkSync(filePath);
           await setProcessingFalse3(email);
 
-          return res.status(400).json({ message: "Max 5,000 links allowed" });
+          return res.status(400).json({ message: "Max 10000 links allowed" });
         }
 
         uniqueId = uuidv4();
