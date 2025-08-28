@@ -374,6 +374,13 @@ function Verification_company() {
         toast.error(response.data.message);
         return;
       }
+      
+        if (response.data.status === "processing") {
+            // Start polling for job completion
+            
+            toast.success("File uploaded. Processing started...");
+            return;
+          }
 
       const totalLinks = response.data.categorizedLinks?.length || 0;
       const pendingCount = response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0;

@@ -388,10 +388,21 @@ function BulkLookup() {
           },
         }
       );
+       
       if (response.data.message === "Upload timed out") {
         toast.error(response.data.message);
         return;
       }
+
+
+       // 3. For BullMQ, we get an immediate response that processing started
+    if (response.data.status === "processing") {
+      // Start polling for job completion
+      
+      toast.success("File uploaded. Processing started...");
+      return;
+    }
+
 
       // 3. Handle response
       const totalLinks = response.data.totallink || 0;
@@ -446,6 +457,11 @@ function BulkLookup() {
       setLoading(false);
     }
   };
+
+
+
+
+
 
   const cancelUpload = async () => {
     if (isConfirming || isProcessing) {

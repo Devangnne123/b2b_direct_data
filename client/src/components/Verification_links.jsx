@@ -551,6 +551,13 @@ function VerificationLinks() {
               return;
             }
 
+              if (response.data.status === "processing") {
+                  // Start polling for job completion
+                  
+                  toast.success("File uploaded. Processing started...");
+                  return;
+                }
+
         const totalLinks = response.data.categorizedLinks?.length || 0;
         const pendingCount= response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0;
        const creditToDeduct = (response.data.categorizedLinks?.filter(link => link.remark === 'pending').length || 0) * creditCost;
