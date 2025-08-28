@@ -26,7 +26,7 @@ async function processLinkedinJob(job) {
 
     let uniqueId = uuidv4();
     let links = [];
-    const BATCH_SIZE = 200;
+    const BATCH_SIZE = 700;
 
     // Process file
     const workbook = xlsx.readFile(filePath);

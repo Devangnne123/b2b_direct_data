@@ -252,60 +252,60 @@ function VerificationLinks() {
   //   return () => clearInterval(intervalId);
   // }, [savedEmail]);
 
-    const silentRefresh = useCallback(async () => {
-      try {
-        if (!savedEmail || savedEmail === "Guest") return;
+    // const silentRefresh = useCallback(async () => {
+    //   try {
+    //     if (!savedEmail || savedEmail === "Guest") return;
   
-        const [linksRes, creditsRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_BASE_URL}/get-verification-links`, {
-            headers: {
-              "user-email": savedEmail,
-              Authorization: `Bearer ${token}`,
-            },
-          }),
-          axios.get(
-            `${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          ),
-        ]);
+    //     const [linksRes, creditsRes] = await Promise.all([
+    //       axios.get(`${import.meta.env.VITE_API_BASE_URL}/get-verification-links`, {
+    //         headers: {
+    //           "user-email": savedEmail,
+    //           Authorization: `Bearer ${token}`,
+    //         },
+    //       }),
+    //       axios.get(
+    //         `${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`,
+    //         {
+    //           headers: { Authorization: `Bearer ${token}` },
+    //         }
+    //       ),
+    //     ]);
   
-        const now = Date.now();
-        const newData = linksRes.data || [];
+    //     const now = Date.now();
+    //     const newData = linksRes.data || [];
   
-        // Preserve processing status for items that are still within 1 minute window
-        const updatedData = newData.map((item) => {
-          const itemTime = new Date(item.date || 0).getTime();
-          if (now - itemTime < 60000) {
+    //     // Preserve processing status for items that are still within 1 minute window
+    //     const updatedData = newData.map((item) => {
+    //       const itemTime = new Date(item.date || 0).getTime();
+    //       if (now - itemTime < 60000) {
   
-            return { ...item, status: "pending" };
-          }
-          return item;
-        });
+    //         return { ...item, status: "pending" };
+    //       }
+    //       return item;
+    //     });
   
-        if (
-          JSON.stringify(updatedData) !==
-          JSON.stringify(dataRef.current.categorizedLinks)
-        ) {
-          setCategorizedLinks(updatedData);
-          dataRef.current.categorizedLinks = updatedData;
-        }
+    //     if (
+    //       JSON.stringify(updatedData) !==
+    //       JSON.stringify(dataRef.current.categorizedLinks)
+    //     ) {
+    //       setCategorizedLinks(updatedData);
+    //       dataRef.current.categorizedLinks = updatedData;
+    //     }
   
-        if (creditsRes.data.credits !== dataRef.current.credits) {
-          setCredits(creditsRes.data.credits);
-          dataRef.current.credits = creditsRes.data.credits;
-        }
-      } catch (error) {
-        console.error("Silent refresh error:", error);
-      }
-    }, [savedEmail, token]);
+    //     if (creditsRes.data.credits !== dataRef.current.credits) {
+    //       setCredits(creditsRes.data.credits);
+    //       dataRef.current.credits = creditsRes.data.credits;
+    //     }
+    //   } catch (error) {
+    //     console.error("Silent refresh error:", error);
+    //   }
+    // }, [savedEmail, token]);
   
-    useEffect(() => {
-      silentRefresh();
-      const intervalId = setInterval(silentRefresh, 50000);
-      return () => clearInterval(intervalId);
-    }, [silentRefresh]);
+    // useEffect(() => {
+    //   silentRefresh();
+    //   const intervalId = setInterval(silentRefresh, 50000);
+    //   return () => clearInterval(intervalId);
+    // }, [silentRefresh]);
   
     useEffect(() => {
       const user = JSON.parse(sessionStorage.getItem("user"));

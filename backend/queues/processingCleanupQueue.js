@@ -4,18 +4,18 @@ const { processCleanupJob } = require('../jobs/processCleanupJob');
 const { processCleanupJob1 } = require('../jobs/processCleanupJob1');
 const { processCleanupJob2 } = require('../jobs/processCleanupJob2');
 
-const connection = new IORedis({
-  host: '172.31.23.143', // Replace with your EC2 Redis host
-  port: 6379, // Replace with your Redis port
-  password: 'redis123', // Replace with your Redis password
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false
-});
-
-// const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
+// const connection = new IORedis({
+//   host: '172.31.23.143', // Replace with your EC2 Redis host
+//   port: 6379, // Replace with your Redis port
+//   password: 'redis123', // Replace with your Redis password
 //   maxRetriesPerRequest: null,
 //   enableReadyCheck: false
 // });
+
+const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false
+});
 // Create queue
 const processingCleanupQueue = new Queue('processing-cleanup-queue', { connection });
 
