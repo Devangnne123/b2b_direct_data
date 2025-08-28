@@ -139,23 +139,19 @@ const sequelize = new Sequelize('postgres', 'postgres', 'admin==88', {
     },
   },
   pool: {
-    max: 30,           // Reduced from 60 to prevent overloading RDS
-    min: 2,
-    acquire: 60000,    // 60 seconds acquire timeout
+    max: 5,           // Reduced from 60 to prevent overloading RDS
+    min: 1,
+    acquire: 20000,    // 60 seconds acquire timeout
     idle: 10000,       // 10 seconds idle timeout
     evict: 10000       // How often to check for idle connections
   },
   retry: {
-    max: 3,
+    max: 2,
     match: [
-      /ConnectionError/,
-      /ConnectionTimedOutError/,
-      /TimeoutError/,
       /SequelizeConnectionError/,
-      /SequelizeConnectionRefusedError/,
       /SequelizeConnectionAcquireTimeoutError/,
+      /TimeoutError/,
       /Deadlock/i,
-      'SQLITE_BUSY'
     ]
   }
 });
