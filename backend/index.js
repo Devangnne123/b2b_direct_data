@@ -2826,8 +2826,8 @@ const startServer = async () => {
     await connectDB();
 
     // Only start your server after successful database connection
-    const PORT = 8002;
-    app.listen(8002, () => {
+    const PORT = 8000;
+    app.listen(8000, () => {
       console.log(`🚀 Server running on port ${PORT}`);
     });
   } catch (error) {
