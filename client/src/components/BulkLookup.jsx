@@ -23,6 +23,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Hash,
+  Filter,
+  X
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import "../css/BulkLookup.css";
@@ -80,12 +82,15 @@ function BulkLookup() {
     direction: "desc",
   });
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [filteredLinks, setFilteredLinks] = useState([]);
   const [pendingUpload, setPendingUpload] = useState(null);
   const [processingStatus, setProcessingStatus] = useState({});
   const [creditCost, setCreditCost] = useState(null);
   const [isConfirmationActive, setIsConfirmationActive] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // Add this state
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [emailFilter, setEmailFilter] = useState('');
+  const [showEmailFilter, setShowEmailFilter] = useState(false);
   const fileInputRef = useRef(null);
 
   const dataRef = useRef({ uploadedData: [], credits: null });
@@ -158,71 +163,35 @@ function BulkLookup() {
     }
   };
 
-  // const silentRefresh = useCallback(async () => {
-  //   try {
-  //     if (!savedEmail || savedEmail === "Guest") return;
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/verifications/minimal-report_L`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-  //     const [linksRes, creditsRes] = await Promise.all([
-  //       axios.get(`${import.meta.env.VITE_API_BASE_URL}/bulklookup/get-links`, {
-  //         headers: {
-  //           "user-email": savedEmail,
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       }),
-  //       axios.get(
-  //         `${import.meta.env.VITE_API_BASE_URL}/api/user/${savedEmail}`,
-  //         {
-  //           headers: { Authorization: `Bearer ${token}` },
-  //         }
-  //       ),
-  //     ]);
+      const verificationData = response.data.data.map((item) => ({
+        ...item,
+        process: "Contact Verification",
+        transactionType: "Debit",
+        amount: item.creditDeducted || 0,
+        date: item.date,
+        finalStatus: item.final_status,
+        type: "verifications",
+      }));
 
-  //     const now = Date.now();
-  //     const newData = linksRes.data || [];
-
-  //     // Preserve processing status for items that are still within 1 minute window
-  //     const updatedData = newData.map((item) => {
-  //       const itemTime = new Date(item.date || 0).getTime();
-  //       if (now - itemTime < 60000) {
-
-  //         return { ...item, status: "pending" };
-  //       }
-  //       return item;
-  //     });
-
-  //     if (
-  //       JSON.stringify(updatedData) !==
-  //       JSON.stringify(dataRef.current.uploadedData)
-  //     ) {
-  //       setUploadedData(updatedData);
-  //       setFilteredData(updatedData);
-  //       dataRef.current.uploadedData = updatedData;
-  //     }
-
-  //     if (creditsRes.data.credits !== dataRef.current.credits) {
-  //       setCredits(creditsRes.data.credits);
-  //       dataRef.current.credits = creditsRes.data.credits;
-  //     }
-  //   } catch (error) {
-  //     console.error("Silent refresh error:", error);
-  //   }
-  // }, [savedEmail, token]);
-
-  // useEffect(() => {
-  //   silentRefresh();
-  //   const intervalId = setInterval(silentRefresh, 50000);
-  //   return () => clearInterval(intervalId);
-  // }, [silentRefresh]);
-
-
-  useEffect(() => {
-    const user = JSON.parse(sessionStorage.getItem("user"));
-    if (user?.email) {
-      setSavedEmail(user.email);
-      fetchCreditCost(user.email);
+      setUploadedData(verificationData);
+      // Initially filter by savedEmail
+      setFilteredData(verificationData.filter(item => item.email === savedEmail));
+    } catch (error) {
+      console.error("Error fetching verification report:", error);
+      toast.error("Failed to fetch verification history");
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  }, [token, savedEmail]);
 
+  // Fetch credits and credit cost
   const fetchCreditCost = async (email) => {
     try {
       const response = await axios.get(
@@ -232,14 +201,58 @@ function BulkLookup() {
         }
       );
       setCredits(response.data.credits);
-      setCreditCost(response.data.creditCostPerLink);
-      dataRef.current.credits = response.data.credits;
+      setCreditCost(response.data.creditCostPerLink || 5);
     } catch (error) {
       console.error("Error fetching credits:", error);
       setCredits(0);
+      setCreditCost(5);
     }
   };
 
+  // Apply email filter
+  const applyEmailFilter = () => {
+    if (emailFilter.trim() === '') {
+      setFilteredData(uploadedData);
+    } else {
+      setFilteredData(uploadedData.filter(item => 
+        item.email && item.email.toLowerCase().includes(emailFilter.toLowerCase())
+      ));
+    }
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
+  // Clear email filter and show only current user's data
+  const clearEmailFilter = () => {
+    setEmailFilter('');
+    setFilteredData(uploadedData.filter(item => item.email === savedEmail));
+  };
+
+  // Reset to show only current user's data
+  const showOnlyMyData = () => {
+    setEmailFilter('');
+    setFilteredData(uploadedData.filter(item => item.email === savedEmail));
+  };
+
+  // Initial data fetch and periodic refresh
+  useEffect(() => {
+    fetchData();
+    const intervalId = setInterval(fetchData, 500000);
+    return () => clearInterval(intervalId);
+  }, [fetchData]);
+
+  // Update filtered data when uploadedData changes
+  useEffect(() => {
+    setFilteredData(uploadedData.filter(item => item.email === savedEmail));
+  }, [uploadedData, savedEmail]);
+
+  useEffect(() => {
+    const user = JSON.parse(sessionStorage.getItem("user"));
+    if (user?.email) {
+      setSavedEmail(user.email);
+      fetchCreditCost(user.email);
+    }
+  }, []);
+  
   const getGroupStatus = (group) => {
     if (!group || group.length === 0) return "processing";
 
@@ -376,6 +389,12 @@ function BulkLookup() {
       formData.append("file", pendingUpload.originalFile);
       formData.append("userEmail", savedEmail);
       formData.append("processCredits", "true"); // Flag to process credits immediately
+     
+      await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing`,
+          { userEmail: savedEmail, isProcessing: true }
+        );
+         toast.success("Duing file processing you can't able to uplaod new file");
 
       // 2. Single API call that handles both upload and processing
       const response = await axios.post(
@@ -394,7 +413,6 @@ function BulkLookup() {
         return;
       }
 
-
        // 3. For BullMQ, we get an immediate response that processing started
     if (response.data.status === "processing") {
       // Start polling for job completion
@@ -402,7 +420,8 @@ function BulkLookup() {
       toast.success("File uploaded. Processing started...");
       return;
     }
-
+    
+    
 
       // 3. Handle response
       const totalLinks = response.data.totallink || 0;
@@ -411,7 +430,7 @@ function BulkLookup() {
 
       const uploadData = {
         file: response.data.fileName,
-        matchCount,
+        matchedCount :response.data.matchedCount,
         totallink: totalLinks,
         uniqueId: response.data.uniqueId,
         creditToDeduct,
@@ -457,11 +476,6 @@ function BulkLookup() {
       setLoading(false);
     }
   };
-
-
-
-
-
 
   const cancelUpload = async () => {
     if (isConfirming || isProcessing) {
@@ -806,17 +820,47 @@ function BulkLookup() {
                         />
                       )}
 
-                      {/* {uploadedData.length > 0 && */
-                       !showConfirmation && (
+                      {!showConfirmation && (
                         <div className="data-section">
                           <div className="data-section-header">
                             <h3 className="data-section-title">
                               Your Uploaded Files
                             </h3>
-                            <p className="data-section-info">
-                              <strong>Cost per link:</strong> {creditCost}{" "}
-                              credits
-                            </p>
+                            <div className="data-section-controls">
+                              <p className="data-section-info">
+                                <strong>Cost per link:</strong> {creditCost}{" "}
+                                credits
+                              </p>
+                              {/* <div className="filter-controls">
+                                <button 
+                                  onClick={() => setShowEmailFilter(!showEmailFilter)}
+                                  className="filter-toggle-button"
+                                >
+                                  <Filter size={16} />
+                                  Filter by Email
+                                </button>
+                                {showEmailFilter && (
+                                  <div className="email-filter-container">
+                                    <input
+                                      type="text"
+                                      placeholder="Filter by email..."
+                                      value={emailFilter}
+                                      onChange={(e) => setEmailFilter(e.target.value)}
+                                      className="email-filter-input"
+                                    />
+                                    <button onClick={applyEmailFilter} className="filter-apply-button">
+                                      Apply
+                                    </button>
+                                    <button onClick={clearEmailFilter} className="filter-clear-button">
+                                      <X size={14} />
+                                    </button>
+                                    <button onClick={showOnlyMyData} className="filter-my-data-button">
+                                      Show Only My Data
+                                    </button>
+                                  </div>
+                                )}
+                              </div> */}
+                            </div>
                           </div>
 
                           {loading ? (
@@ -881,6 +925,9 @@ function BulkLookup() {
                                             </span>
                                           </div>
                                         </th>
+                                        <SortableHeader sortKey="email">
+                                          <span className="table-header-text">Email</span>
+                                        </SortableHeader>
                                         <th className="data-table-header-cell">
                                           <div className="data-table-header-content">
                                             <Download className="table-icon" />
@@ -955,6 +1002,11 @@ function BulkLookup() {
                                                     {first.creditDeducted || 0}
                                                   </span>
                                                 </div>
+                                              </td>
+                                              <td className="data-table-cell">
+                                                <span className={`email-cell ${first.email === savedEmail ? 'email-cell-current-user' : ''}`}>
+                                                  {first.email || "Unknown"}
+                                                </span>
                                               </td>
                                               <td className="data-table-cell">
                                                 <button

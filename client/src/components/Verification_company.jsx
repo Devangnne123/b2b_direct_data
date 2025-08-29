@@ -13,6 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Hash,
+  Filter,
+  X
 } from 'lucide-react';
 import { FaCoins } from 'react-icons/fa';
 import Sidebar from "../components/Sidebar";
@@ -48,6 +50,7 @@ function Verification_company() {
   const [savedEmail, setSavedEmail] = useState("Guest");
   const [credits, setCredits] = useState(null);
   const [categorizedLinks, setCategorizedLinks] = useState([]);
+  const [filteredLinks, setFilteredLinks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,14 +65,16 @@ function Verification_company() {
   const [isConfirmationActive, setIsConfirmationActive] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [emailFilter, setEmailFilter] = useState('');
+  const [showEmailFilter, setShowEmailFilter] = useState(false);
   const token = sessionStorage.getItem('token');
 
   // Fetch data from /api/verifications/minimal-report
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/verifications/minimal-report`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/verifications/minimal-report_C`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       const verificationData = response.data.data.map((item) => ({
@@ -83,13 +88,39 @@ function Verification_company() {
       }));
 
       setCategorizedLinks(verificationData);
+      // Initially filter by savedEmail
+      setFilteredLinks(verificationData.filter(item => item.email === savedEmail));
     } catch (error) {
       console.error("Error fetching verification report:", error);
       toast.error("Failed to fetch verification history");
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, savedEmail]);
+
+  // Apply email filter
+  const applyEmailFilter = () => {
+    if (emailFilter.trim() === '') {
+      setFilteredLinks(categorizedLinks);
+    } else {
+      setFilteredLinks(categorizedLinks.filter(item => 
+        item.email && item.email.toLowerCase().includes(emailFilter.toLowerCase())
+      ));
+    }
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
+
+  // Clear email filter and show only current user's data
+  const clearEmailFilter = () => {
+    setEmailFilter('');
+    setFilteredLinks(categorizedLinks.filter(item => item.email === savedEmail));
+  };
+
+  // Reset to show only current user's data
+  const showOnlyMyData = () => {
+    setEmailFilter('');
+    setFilteredLinks(categorizedLinks.filter(item => item.email === savedEmail));
+  };
 
   // Fetch credits and credit cost
   const fetchCreditCost = async (email) => {
@@ -124,6 +155,11 @@ function Verification_company() {
       fetchCreditCost(user.email);
     }
   }, []);
+
+  // Update filtered data when categorizedLinks changes
+  useEffect(() => {
+    setFilteredLinks(categorizedLinks.filter(item => item.email === savedEmail));
+  }, [categorizedLinks, savedEmail]);
 
   // Handle refresh/back navigation
   useEffect(() => {
@@ -202,6 +238,13 @@ function Verification_company() {
       setFile(null);
       const formData = new FormData();
       formData.append('file', file);
+
+       await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing2`,
+          { userEmail: savedEmail, isProcessing: true }
+        );
+
+         toast.success("Duing file processing you can't able to uplaod new file");
 
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/upload-excel-verification-com`,
@@ -411,7 +454,7 @@ function Verification_company() {
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentEntries = useMemo(() => {
-    const grouped = categorizedLinks.reduce((acc, item) => {
+    const grouped = filteredLinks.reduce((acc, item) => {
       const key = item.uniqueId;
       if (!acc[key]) acc[key] = [];
       acc[key].push(item);
@@ -439,9 +482,9 @@ function Verification_company() {
         ? bValue - aValue
         : aValue - bValue;
     }).slice(indexOfFirstRow, indexOfLastRow);
-  }, [categorizedLinks, sortConfig, indexOfFirstRow, indexOfLastRow]);
+  }, [filteredLinks, sortConfig, indexOfFirstRow, indexOfLastRow]);
 
-  const totalPages = Math.ceil(categorizedLinks.length / rowsPerPage);
+  const totalPages = Math.ceil(filteredLinks.length / rowsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
   const nextPage = () => currentPage < totalPages && setCurrentPage(currentPage + 1);
@@ -609,7 +652,38 @@ function Verification_company() {
                 <div className="data-section">
                   <div className="data-section-header">
                     <h3 className="data-section-title">Your Verification History</h3>
-                    <p className="data-section-info"><strong>Cost per link:</strong> {creditCost} credits</p>
+                    <div className="data-section-controls">
+                      <p className="data-section-info"><strong>Cost per link:</strong> {creditCost} credits</p>
+                      {/* <div className="filter-controls">
+                        <button 
+                          onClick={() => setShowEmailFilter(!showEmailFilter)}
+                          className="filter-toggle-button"
+                        >
+                          <Filter size={16} />
+                          Filter by Email
+                        </button>
+                        {showEmailFilter && (
+                          <div className="email-filter-container">
+                            <input
+                              type="text"
+                              placeholder="Filter by email..."
+                              value={emailFilter}
+                              onChange={(e) => setEmailFilter(e.target.value)}
+                              className="email-filter-input"
+                            />
+                            <button onClick={applyEmailFilter} className="filter-apply-button">
+                              Apply
+                            </button>
+                            <button onClick={clearEmailFilter} className="filter-clear-button">
+                              <X size={14} />
+                            </button>
+                            <button onClick={showOnlyMyData} className="filter-my-data-button">
+                              Show Only My Data
+                            </button>
+                          </div>
+                        )}
+                      </div> */}
+                    </div>
                   </div>
 
                   {loading ? (
@@ -659,6 +733,9 @@ function Verification_company() {
                                     <span className="table-header-text">Credits</span>
                                   </div>
                                 </th>
+                                <SortableHeader sortKey="email">
+                                  <span className="table-header-text">Email</span>
+                                </SortableHeader>
                                 <th className="data-table-header-cell">
                                   <div className="data-table-header-content">
                                     <Download className="table-icon" />
@@ -707,6 +784,11 @@ function Verification_company() {
                                       </div>
                                     </td>
                                     <td className="data-table-cell">
+                                      <span className={`email-cell ${first.email === savedEmail ? 'email-cell-current-user' : ''}`}>
+                                        {first.email || "Unknown"}
+                                      </span>
+                                    </td>
+                                    <td className="data-table-cell">
                                       <button
                                         onClick={() => downloadGroupedEntry(group)}
                                         className="download-button"
@@ -730,7 +812,7 @@ function Verification_company() {
                         </div>
                       </div>
 
-                      {categorizedLinks.length > rowsPerPage && (
+                      {filteredLinks.length > rowsPerPage && (
                         <div className="pagination-container">
                           <button
                             onClick={prevPage}

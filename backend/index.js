@@ -9375,7 +9375,71 @@ app.patch("/users/update-single-credit-cost", auth, async (req, res) => {
 
 
 
-app.get("/api/verifications/minimal-report", auth, async (req, res) => {
+app.get("/api/verifications/minimal-report_C", auth, async (req, res) => {
+  try {
+    // Get aggregated data with only the requested fields
+    const verifications = await VerificationUpload_com.findAll({
+      attributes: [
+        "uniqueId",
+        [sequelize.fn("MIN", sequelize.col("totallink")), "totallink"],
+        [sequelize.fn("COUNT", sequelize.col("clean_link")), "matchCount"], // Assuming clean_link is equivalent to matchLink
+        [sequelize.fn("MIN", sequelize.col("fileName")), "fileName"],
+        [sequelize.fn("MIN", sequelize.col("date")), "date"],
+        [sequelize.fn("MIN", sequelize.col("creditsUsed")), "creditDeducted"],
+        [sequelize.fn("MIN", sequelize.col("email")), "email"],
+      ],
+      group: ["uniqueId"],
+      order: [[sequelize.fn("MIN", sequelize.col("date")), "DESC"]],
+    });
+
+    // Get status details for each uniqueId to determine final_status
+    const statusDetails = await VerificationUpload_com.findAll({
+      attributes: ["uniqueId", "final_status"],
+      where: {
+        uniqueId: verifications.map((verification) => verification.uniqueId),
+      },
+    });
+
+    // Group statuses by uniqueId
+    const statusByUniqueId = statusDetails.reduce((acc, item) => {
+      if (!acc[item.uniqueId]) {
+        acc[item.uniqueId] = [];
+      }
+      acc[item.uniqueId].push(item.final_status);
+      return acc;
+    }, {});
+
+    const report = {
+      tableName: "Company Verification Report",
+      data: verifications.map((item) => {
+        const allStatuses = statusByUniqueId[item.uniqueId] || [];
+        const isCompleted = allStatuses.every((status) => status !== "pending");
+
+        return {
+          uniqueId: item.uniqueId,
+          totallink: item.get("totallink"),
+          matchCount: item.get("matchCount"),
+          fileName: item.get("fileName"),
+          date: item.get("date"),
+          email: item.get("email"),
+          creditDeducted: item.get("creditDeducted") || 0,
+          final_status: isCompleted ? "completed" : "pending",
+        };
+      }),
+    };
+
+    res.json(report);
+  } catch (error) {
+    console.error("Error fetching minimal verifications report:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      details: error.message,
+    });
+  }
+});
+
+
+app.get("/api/verifications/minimal-report_V", auth, async (req, res) => {
   try {
     // Get aggregated data with only the requested fields
     const verifications = await VerificationUpload.findAll({
@@ -9386,6 +9450,7 @@ app.get("/api/verifications/minimal-report", auth, async (req, res) => {
         [sequelize.fn("MIN", sequelize.col("fileName")), "fileName"],
         [sequelize.fn("MIN", sequelize.col("date")), "date"],
         [sequelize.fn("MIN", sequelize.col("creditsUsed")), "creditDeducted"],
+        [sequelize.fn("MIN", sequelize.col("email")), "email"],
       ],
       group: ["uniqueId"],
       order: [[sequelize.fn("MIN", sequelize.col("date")), "DESC"]],
@@ -9420,6 +9485,72 @@ app.get("/api/verifications/minimal-report", auth, async (req, res) => {
           matchCount: item.get("matchCount"),
           fileName: item.get("fileName"),
           date: item.get("date"),
+          email: item.get("email"),
+          creditDeducted: item.get("creditDeducted") || 0,
+          final_status: isCompleted ? "completed" : "pending",
+        };
+      }),
+    };
+
+    res.json(report);
+  } catch (error) {
+    console.error("Error fetching minimal verifications report:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      details: error.message,
+    });
+  }
+});
+
+
+
+app.get("/api/verifications/minimal-report_L", auth, async (req, res) => {
+  try {
+    // Get aggregated data with only the requested fields
+    const verifications = await Link.findAll({
+      attributes: [
+        "uniqueId",
+        [sequelize.fn("MIN", sequelize.col("totallink")), "totallink"],
+        [sequelize.fn("MIN", sequelize.col("matchedCount")), "matchedCount"], // Assuming clean_link is equivalent to matchLink
+        [sequelize.fn("MIN", sequelize.col("fileName")), "fileName"],
+        [sequelize.fn("MIN", sequelize.col("date")), "date"],
+        [sequelize.fn("MIN", sequelize.col("creditDeducted")), "creditDeducted"],
+        [sequelize.fn("MIN", sequelize.col("email")), "email"],
+      ],
+      group: ["uniqueId"],
+      order: [[sequelize.fn("MIN", sequelize.col("date")), "DESC"]],
+    });
+
+    // Get status details for each uniqueId to determine final_status
+    const statusDetails = await Link.findAll({
+      attributes: ["uniqueId", "final_status"],
+      where: {
+        uniqueId: verifications.map((verification) => verification.uniqueId),
+      },
+    });
+
+    // Group statuses by uniqueId
+    const statusByUniqueId = statusDetails.reduce((acc, item) => {
+      if (!acc[item.uniqueId]) {
+        acc[item.uniqueId] = [];
+      }
+      acc[item.uniqueId].push(item.final_status);
+      return acc;
+    }, {});
+
+    const report = {
+      tableName: "Company Verification Report",
+      data: verifications.map((item) => {
+        const allStatuses = statusByUniqueId[item.uniqueId] || [];
+        const isCompleted = allStatuses.every((status) => status !== "pending");
+
+        return {
+          uniqueId: item.uniqueId,
+          totallink: item.get("totallink"),
+          matchedCount: item.get("matchedCount"),
+          fileName: item.get("fileName"),
+          date: item.get("date"),
+          email: item.get("email"),
           creditDeducted: item.get("creditDeducted") || 0,
           final_status: isCompleted ? "completed" : "pending",
         };
