@@ -138,22 +138,22 @@ const sequelize = new Sequelize('postgres', 'postgres', 'admin==88', {
       rejectUnauthorized: false,
     },
   },
-  pool: {
-    max: 5,           // Reduced from 60 to prevent overloading RDS
-    min: 1,
-    acquire: 20000,    // 60 seconds acquire timeout
-    idle: 10000,       // 10 seconds idle timeout
-    evict: 10000       // How often to check for idle connections
-  },
-  retry: {
-    max: 2,
-    match: [
-      /SequelizeConnectionError/,
-      /SequelizeConnectionAcquireTimeoutError/,
-      /TimeoutError/,
-      /Deadlock/i,
-    ]
-  }
+  // pool: {
+  //   max: 5,           // Reduced from 60 to prevent overloading RDS
+  //   min: 1,
+  //   acquire: 20000,    // 60 seconds acquire timeout
+  //   idle: 10000,       // 10 seconds idle timeout
+  //   evict: 10000       // How often to check for idle connections
+  // },
+  // retry: {
+  //   max: 2,
+  //   match: [
+  //     /SequelizeConnectionError/,
+  //     /SequelizeConnectionAcquireTimeoutError/,
+  //     /TimeoutError/,
+  //     /Deadlock/i,
+  //   ]
+  // }
 });
 
 const connectDB = async () => {
