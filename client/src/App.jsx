@@ -5,7 +5,7 @@ import {
   BrowserRouter as Router,
   Route,
   Routes,
-  useLocation,
+  
   Navigate,
 } from "react-router-dom";
 import Index from "./components/index";
