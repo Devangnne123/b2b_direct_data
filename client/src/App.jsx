@@ -7,8 +7,8 @@ import {
   Routes,
   Navigate,
 } from "react-router-dom";
-import Index from "./components/Index";
-import Header from "./components/Header";
+import Index from "./components/index";
+import Header from "./components/header";
 import Footer from "./components/Footer";
 import LinkedinContactVerification from "./components/LinkedinContactVerification";
 import Login from "./components/Login";
