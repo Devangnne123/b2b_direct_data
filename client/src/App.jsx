@@ -5,11 +5,13 @@ import {
   BrowserRouter as Router,
   Route,
   Routes,
+  useLocation,
   Navigate,
 } from "react-router-dom";
 import Index from "./components/index";
 import Header from "./components/header";
 import Footer from "./components/footer";
+
 import LinkedinContactVerification from "./components/LinkedinContactVerification";
 import Login from "./components/Login";
 import SignUp from "./components/SignUp";
