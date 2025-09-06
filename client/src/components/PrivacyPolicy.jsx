@@ -1,15 +1,14 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import '../css/privacy-policy.css';
 
 const PrivacyPolicy = () => {
 
-   const handleLinkClick = () => {
+  const handleLinkClick = () => {
     // Scroll to top of the page
     window.scrollTo({
       top: 0,
-      behavior:"smooth"
+      behavior: "smooth"
     });
   };
 
@@ -21,9 +20,9 @@ const PrivacyPolicy = () => {
 
         <section>
           <h2>Introduction</h2>
-          <p>B2B Direct Data respects your privacy, and we created this policy to help you understand how we collect, use, and handle your information. By using this site (www.b2bdirectdata.com), you consent to the practices described in this policy.</p>
-          <p>For purposes of this Privacy Policy, "you" or "your" means the person(s) using this site. "B2B Direct Data," "us," or "we" includes B2B Direct Data and its subsidiaries.</p>
-          <p>This privacy policy applies only to information collected through our site (www.b2bdirectdata.com) and not the information that we receive as part of providing services to our customers. If you email or call us using the information mentioned in this site, you agree to the practices mentioned in this policy.</p>
+          <p>B2B Lead Solutions respects your privacy, and we created this policy to help you understand how we collect, use, and handle your information. By using this site (www.b2bleadsolutions.com), you consent to the practices described in this policy.</p>
+          <p>For purposes of this Privacy Policy, "you" or "your" means the person(s) using this site. "B2B Lead Solutions," "us," or "we" includes B2B Lead Solutions and its subsidiaries.</p>
+          <p>This privacy policy applies only to information collected through our site (www.b2bleadsolutions.com) and not the information that we receive as part of providing services to our customers. If you email or call us using the information mentioned in this site, you agree to the practices mentioned in this policy.</p>
         </section>
 
         <section>
@@ -50,19 +49,19 @@ const PrivacyPolicy = () => {
         <section>
           <h2>Use of Your Information</h2>
           <p>We use personal data and business information only if (a) you give consent, (b) processing is carried out for legitimate interests, (c) processing is necessary for compliance with a legal obligation, and (d) to fulfill a contract. We use your information to respond to user inquiries submitted via the contact form, email, or telephone. We may also use your information to update you on our services, latest news, promotions, useful B2B content resources, and other information that we think will be of interest to you. We may also provide your data to third parties depending on the legitimate interests for specific marketing activities which may interest you.</p>
-          <p>The Data processing is carried out using computers and/or IT-enabled tools, following organizational procedures and modes strictly related to the purposes indicated. In addition to the Data Controller, in some cases, the data may be accessible to certain types of persons in charge, involved with the operation of this site (administration, sales, marketing, legal, system administration) or external parties (such as third-party technical service providers, mail carriers, hosting providers, IT companies, communications agencies) appointed, if necessary, as Data Processors by B2B Direct Data.</p>
+          <p>The Data processing is carried out using computers and/or IT-enabled tools, following organizational procedures and modes strictly related to the purposes indicated. In addition to the Data Controller, in some cases, the data may be accessible to certain types of persons in charge, involved with the operation of this site (administration, sales, marketing, legal, system administration) or external parties (such as third-party technical service providers, mail carriers, hosting providers, IT companies, communications agencies) appointed, if necessary, as Data Processors by B2B Lead Solutions.</p>
         </section>
 
         <section>
           <h2>Disclosure of Information</h2>
-          <p>We don't sell personal data of our site visitors. We may share your information if required to do so by law or in the good faith belief that such action is necessary to comply with a legal obligation, to protect or defend the rights of B2B Direct Data, or to protect against any legal liability.</p>
-          <p>The data collected by us will further be used by B2B Direct Data and its affiliates for targeted marketing.</p>
+          <p>We don't sell personal data of our site visitors. We may share your information if required to do so by law or in the good faith belief that such action is necessary to comply with a legal obligation, to protect or defend the rights of B2B Lead Solutions, or to protect against any legal liability.</p>
+          <p>The data collected by us will further be used by B2B Lead Solutions and its affiliates for targeted marketing.</p>
         </section>
 
         <section>
           <h2>Third-Party Tools and Service Providers</h2>
           <ul>
-            <li>We use Google Analytics to collect and analyze user behavior and take steps to improve site experience and offer you personalized content/offers. In case you want to opt out of the use of cookies by Google Analytics, click here.</li>
+            <li>We use Google Analytics to collect and analyze user behavior and take steps to improve site experience and offer you personalized content/offers. In case you want to opt out of the use of cookies by Google Analytics, <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer">click here</a>.</li>
             <li>We've implemented Google's Invisible reCAPTCHA technology on the site to prevent spam attacks. Use of the Invisible reCAPTCHA is subject to the Google Privacy Policy and Terms of Use.</li>
           </ul>
         </section>
@@ -74,12 +73,12 @@ const PrivacyPolicy = () => {
 
         <section>
           <h2>Information for EU Citizens</h2>
-          <p>B2B Direct Data has made additions, and changes in the way information is handled and protected in order to comply with the provisions of the GDPR (General Data Protection Regulation). B2B Direct Data only processes personal data when the Data Subject has given consent, to enforce a legal agreement, to fulfill a contract, and if we have a legitimate interest. For services that include processing personal data of EU citizens, Data Processing Addendum is enforced and transfer to subsequent third-parties, or sub-processors are covered in the agreement. We enforce confidentiality agreements with customers and third-parties to make sure your privacy is protected, and we ensure they implement appropriate security measures.</p>
+          <p>B2B Lead Solutions has made additions, and changes in the way information is handled and protected in order to comply with the provisions of the GDPR (General Data Protection Regulation). B2B Lead Solutions only processes personal data when the Data Subject has given consent, to enforce a legal agreement, to fulfill a contract, and if we have a legitimate interest. For services that include processing personal data of EU citizens, Data Processing Addendum is enforced and transfer to subsequent third-parties, or sub-processors are covered in the agreement. We enforce confidentiality agreements with customers and third-parties to make sure your privacy is protected, and we ensure they implement appropriate security measures.</p>
         </section>
 
         <section>
           <h2>Data Transfer</h2>
-          <p>If you are located outside of the United States, any information you provide to us will be transferred to and processed in the United States or in the countries where B2B Direct Data has offices.</p>
+          <p>If you are located outside of the United States, any information you provide to us will be transferred to and processed in the United States or in the countries where B2B Lead Solutions has offices.</p>
         </section>
 
         <section>
@@ -89,13 +88,13 @@ const PrivacyPolicy = () => {
 
         <section>
           <h2>Data Integrity</h2>
-          <p>B2B Direct Data takes necessary steps to ensure the data collected is used for the intended purposes only.</p>
+          <p>B2B Lead Solutions takes necessary steps to ensure the data collected is used for the intended purposes only.</p>
         </section>
 
         <section>
           <h2>Opting Out</h2>
-          <p>All our marketing emails will have an "Unsubscribe" option. Once you choose to "Unsubscribe," your details will be removed from our database within 24 hours from the time of submission. You can any time choose to resubscribe or update your information by sending us an email at privacy@b2bdirectdata.com. You can even update your email address directly by using "Update your preferences" link mentioned in the footer of any of the marketing emails sent by us.</p>
-          <p>To exercise the right to opt-out, you (or your authorized representative) may submit a request to us by visiting the following Internet Web page link. <Link to="/remove_data" onClick={handleLinkClick}>Do Not Sell My Information</Link>.</p>
+          <p>All our marketing emails will have an "Unsubscribe" option. Once you choose to "Unsubscribe," your details will be removed from our database within 24 hours from the time of submission. You can any time choose to resubscribe or update your information by sending us an email at privacy@b2bleadsolutions.com. You can even update your email address directly by using "Update your preferences" link mentioned in the footer of any of the marketing emails sent by us.</p>
+          <p>To exercise the right to opt-out, you (or your authorized representative) may submit a request to us by visiting the following Internet Web page link. <Link to="/do-not-sell" onClick={handleLinkClick}>Do Not Sell My Information</Link>.</p>
         </section>
 
         <section>
@@ -110,7 +109,7 @@ const PrivacyPolicy = () => {
 
         <section>
           <h2>Testimonials</h2>
-          <p>We display personal testimonials of delighted customers on our site. We post testimonials with your name, designation, and photo. In case you wish to update or delete the testimonial, please send an email at privacy@b2bdirectdata.com.</p>
+          <p>We display personal testimonials of delighted customers on our site. We post testimonials with your name, designation, and photo. In case you wish to update or delete the testimonial, please send an email at privacy@b2bleadsolutions.com.</p>
         </section>
 
         <section>
@@ -125,7 +124,7 @@ const PrivacyPolicy = () => {
 
         <section>
           <h2>Editing or Deleting Information</h2>
-          <p>You have the right to inform us about any change in your information. Please send an email at privacy@b2bdirectdata.com to submit a request for change, correction, or removal of inaccurate and outdated data.</p>
+          <p>You have the right to inform us about any change in your information. Please send an email at privacy@b2bleadsolutions.com to submit a request for change, correction, or removal of inaccurate and outdated data.</p>
         </section>
 
         <section>
@@ -174,9 +173,9 @@ const PrivacyPolicy = () => {
           <p>Please note that Personal Information as defined in the CCPA does not include the following: (i) publicly available information, as that term is defined in the CCPA; (ii) deidentified or aggregated consumer information; or (iii) information otherwise excluded from the scope of the CCPA.</p>
 
           <h3>Source category identification</h3>
-          <p>B2B Direct Data obtains the categories of personal information listed above from the following categories of sources:</p>
+          <p>B2B Lead Solutions obtains the categories of personal information listed above from the following categories of sources:</p>
           <ul>
-            <li>Indirectly from you, if your personal information is publicly available. B2B Direct Data crawls through the entire web and collects information and data from public web pages. Such information may be your name, job title, employer, email address, job title, social media identifiers, and telephone number.</li>
+            <li>Indirectly from you, if your personal information is publicly available. B2B Lead Solutions crawls through the entire web and collects information and data from public web pages. Such information may be your name, job title, employer, email address, job title, social media identifiers, and telephone number.</li>
             <li>Indirectly from you, the client or consumer. For example, from observing your actions on our Website so we can improve your experience on our Website.</li>
           </ul>
 
@@ -193,7 +192,7 @@ const PrivacyPolicy = () => {
             <li>To respond to law enforcement requests and as required by applicable law, court order, or governmental regulations.</li>
             <li>To our customers depending on the legitimate interests for specific marketing activities which may interest you.</li>
           </ul>
-          <p>B2B Direct Data will not collect additional categories of personal information or use the personal information we collected for materially different, unrelated, or incompatible purposes without providing you notice.</p>
+          <p>B2B Lead Solutions will not collect additional categories of personal information or use the personal information we collected for materially different, unrelated, or incompatible purposes without providing you notice.</p>
 
           <h3>Sharing personal information</h3>
           <p>We may disclose your personal information to a third party for a business purpose, subject to your right to opt-out of those sales (see the section "Personal Information Sales Opt-Out and Opt-In Rights").</p>
@@ -206,7 +205,7 @@ const PrivacyPolicy = () => {
 
           <h3>Sale of Personal Information</h3>
           <p>Within the last 12 months, we have disclosed the following categories of personal information in a manner that may be considered a "sale" as defined in the CCPA: identifiers, geolocation data, and professional and employment-related information.</p>
-          <p>You may opt-out of the "sale" of you personal information on an going-forward basis by clicking the link below <Link to="/remove_data" onClick={handleLinkClick}>Do Not Sell My Information</Link>.</p>
+          <p>You may opt-out of the "sale" of you personal information on an going-forward basis by clicking the link below <Link to="/do-not-sell" onClick={handleLinkClick}>Do Not Sell My Information</Link>.</p>
 
           <h3>Your rights and choices</h3>
           <p>The CCPA provides consumers (California residents) with specific rights regarding their personal information. This section describes your CCPA rights and explains how to exercise those rights.</p>
@@ -244,7 +243,7 @@ const PrivacyPolicy = () => {
           <h4>Exercising access, data portability, and deletion rights</h4>
           <p>To exercise the access, data portability, and deletion rights described above, please submit a verifiable consumer request to us by either:</p>
           <ul>
-            <li>Visiting the link <Link to="/remove_data" onClick={handleLinkClick}>Do Not Sell My Information</Link>.</li>
+            <li>Visiting the link <Link to="/do-not-sell" onClick={handleLinkClick}>Do Not Sell My Information</Link>.</li>
             <li>Calling us at [US Toll-free Number].</li>
           </ul>
           <p>Only you, or a person registered with the California Secretary of State that you authorize to act on your behalf, may make a verifiable consumer request related to your personal information. You may also make a verifiable consumer request on behalf of your minor child.</p>
@@ -261,7 +260,7 @@ const PrivacyPolicy = () => {
 
           <h4>Personal information sales opt-out and opt-in rights</h4>
           <p>If you are 16 years of age or older, you have the right to direct us to not sell your personal information at any time (the "right to opt-out"). We do not sell the personal information of consumers we actually know are less than 16 years of age, unless we receive affirmative authorization (the "right to opt-in") from either the consumer who is between 13 and 16 years of age, or the parent or guardian of a consumer less than 13 years of age. Consumers who opt-in to personal information sales may opt-out of future sales at any time.</p>
-          <p>To exercise the right to opt-out, you (or your authorized representative) may submit a request to us by visiting the following Internet Web page link <Link to="/remove_data" onClick={handleLinkClick}>Do Not Sell My Information</Link>.</p>
+          <p>To exercise the right to opt-out, you (or your authorized representative) may submit a request to us by visiting the following Internet Web page link <Link to="/do-not-sell" onClick={handleLinkClick}>Do Not Sell My Information</Link>.</p>
 
           <h4>Non-discrimination</h4>
           <p>We will not discriminate against you for exercising any of your CCPA rights. Unless permitted by the CCPA, we will not:</p>
@@ -274,20 +273,20 @@ const PrivacyPolicy = () => {
           <p>However, we may offer you certain financial incentives permitted by the CCPA that can result in different prices, rates, or quality levels. Any CCPA-permitted financial incentive we offer will reasonably relate to your personal information's value and contain written terms that describe the program's material aspects. Participation in a financial incentive program requires your prior opt in consent, which you may revoke at any time.</p>
 
           <h3>California's "Shine the Light" law</h3>
-          <p>California's "Shine the Light" law (CA Civil Code § 1798.83) permits users of our Website that are California residents to request certain information regarding our disclosure of personal information to third parties for their direct marketing purposes. To make such a request, please contact us at privacy@b2bdirectdata.com.</p>
+          <p>California's "Shine the Light" law (CA Civil Code § 1798.83) permits users of our Website that are California residents to request certain information regarding our disclosure of personal information to third parties for their direct marketing purposes. To make such a request, please contact us at privacy@b2bleadsolutions.com.</p>
         </section>
 
         <section>
           <h2>Contacting Us</h2>
           <p>If there are any questions regarding this privacy policy, you may contact us using the information below.</p>
           <address>
-            B2B Direct Data<br />
-            Email: privacy@b2bdirectdata.com
+            B2B Lead Solutions<br />
+            Email: privacy@b2bleadsolutions.com
           </address>
         </section>
 
         <div className="back-to-home">
-          <Link to="/" className="back-link">← Back to Home</Link>
+          <Link to="/" className="back-link" onClick={handleLinkClick}>← Back to Home</Link>
         </div>
       </div>
     </div>

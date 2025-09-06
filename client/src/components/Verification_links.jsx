@@ -62,7 +62,7 @@ function VerificationLinks() {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusCheckData, setStatusCheckData] = useState(null);
   const [rowsPerPage] = useState(10);
-  const [creditCost, setCreditCost] = useState(5);
+  const [creditCost, setCreditCost] = useState(null);
   const [sortConfig, setSortConfig] = useState({
     key: 'date',
     direction: 'desc'
@@ -322,7 +322,9 @@ function VerificationLinks() {
 
       await axios.post(
             `${import.meta.env.VITE_API_BASE_URL}/api/set-file-processing1`,
+            
             { userEmail: savedEmail, isProcessing: true }
+            
           );
            toast.success("Duing file processing you can't able to uplaod new file");
 
@@ -749,9 +751,21 @@ function VerificationLinks() {
                         <div className="data-section-header">
                           <h3 className="data-section-title">Your Verification History</h3>
                           <div className="data-section-controls">
-                            <p className="data-section-info">
+                            <div className="app-header-right">
+                    <div className="credits-display">
+                      <img
+                        src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
+                        alt="credits"
+                        className="credits-icon"
+                      />
+                      <span className="credits-text">
+                        Cost per link: {creditCost !== null ? creditCost : "Loading..."}
+                      </span>
+                    </div>
+                  </div>
+                            {/* <p className="data-section-info">
                               <strong>Cost per link:</strong> {creditCost} credits
-                            </p>
+                            </p> */}
                             {/* <div className="filter-controls">
                               <button 
                                 onClick={() => setShowEmailFilter(!showEmailFilter)}
@@ -833,9 +847,9 @@ function VerificationLinks() {
                                           <span className="table-header-text">Credits</span>
                                         </div>
                                       </th>
-                                      <SortableHeader sortKey="email">
+                                      {/* <SortableHeader sortKey="email">
                                         <span className="table-header-text">Email</span>
-                                      </SortableHeader>
+                                      </SortableHeader> */}
                                       <th className="data-table-header-cell">
                                         <div className="data-table-header-content">
                                           <Download className="table-icon" />
@@ -883,11 +897,11 @@ function VerificationLinks() {
                                               <span>{first.amount || 0}</span>
                                             </div>
                                           </td>
-                                          <td className="data-table-cell">
+                                          {/* <td className="data-table-cell">
                                             <span className={`email-cell ${first.email === savedEmail ? 'email-cell-current-user' : ''}`}>
                                               {first.email || "Unknown"}
                                             </span>
-                                          </td>
+                                          </td> */}
                                           <td className="data-table-cell">
                                             <button
                                               onClick={() => downloadGroupedEntry(group)}

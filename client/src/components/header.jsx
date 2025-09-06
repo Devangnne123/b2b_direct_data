@@ -4,7 +4,7 @@ import Login from "./Login";
 import SignUp from "./SignUp";
 
 import "../css/Index.css"; // Import the CSS file
-
+import "../css/Index.css";
 function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [showModal, setShowModal] = useState(null);

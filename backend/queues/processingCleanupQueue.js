@@ -3,11 +3,11 @@ const IORedis = require('ioredis');
 const { processCleanupJob } = require('../jobs/processCleanupJob');
 const { processCleanupJob1 } = require('../jobs/processCleanupJob1');
 const { processCleanupJob2 } = require('../jobs/processCleanupJob2');
-
+require("dotenv").config(); // Load the .env file
 const connection = new IORedis({
   host: '172.31.23.143', // Replace with your EC2 Redis host
   port: 6379, // Replace with your Redis port
-  password: 'redis123', // Replace with your Redis password
+  password: process.env.redis_p, // Replace with your Redis password
   maxRetriesPerRequest: null,
   enableReadyCheck: false
 });

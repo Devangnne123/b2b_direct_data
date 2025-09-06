@@ -40,8 +40,9 @@
   }
   
   th {
-    background-color: #007bff;
-    color: white;
+    background-color: #e8e8e8e7;
+      
+    color: rgb(83, 84, 87);
   }
   
   /* Responsive Design */

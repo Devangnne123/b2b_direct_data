@@ -337,14 +337,20 @@ const AllHistory = () => {
         ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
         (createdBy.toLowerCase() === savedEmail.toLowerCase())) &&
         (item.email && item.email.toLowerCase() === savedEmail.toLowerCase()) && 
+        (item.email && item.email.toLowerCase().includes(emailSearchLower)) &&
+        
         transactionMatch
       );
     } else if (roleId === 1) {
       return (
         ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
         (createdBy.toLowerCase() === savedEmail.toLowerCase())) &&
-        (item.email && item.email.toLowerCase() === savedEmail.toLowerCase()) && 
+        ((item.email && item.email.toLowerCase() === savedEmail.toLowerCase()) ||(createdBy.toLowerCase() === savedEmail.toLowerCase()) && (item.email || item.email.toLowerCase().includes(emailSearchLower)) )&&
+         ((item.uniqueId && item.uniqueId.toLowerCase().includes(searchLower)) ||
+        (createdBy.toLowerCase().includes(searchLower))) &&
+        (item.email && item.email.toLowerCase().includes(emailSearchLower)) &&
         transactionMatch
+        
       );
     } else if (roleId === 123) {
       return (
@@ -490,9 +496,9 @@ const AllHistory = () => {
                       className="filter-select"
                     >
                       <option value="all">All</option>
-                      <option value="links">Link Report</option>
-                      <option value="verification">Company Verification</option>
-                      <option value="company-verification">Company Verification Report</option>
+                      <option value="links">Direct Number Enrichment</option>
+                      <option value="verification">Contact Verification</option>
+                      <option value="company-verification">Company Verification</option>
                       <option value="credit">Credit Transactions</option>
                     </select>
                   </div>
@@ -615,30 +621,45 @@ const AllHistory = () => {
                                 <tr className="data-table-row">
                                   <td>{indexOfFirstRow + index + 1}</td>
                                   <td>
-                                    {item.email ? (
-                                      <div className="email-cell">
-                                        {item.email.length > 15 ? `${item.email.substring(0, 8)}...` : item.email}
-                                      </div>
-                                    ) : '-----'}
-                                  </td>
+  {item.email ? (
+    <div className="email-cell-container">
+      <div className="email-cell">
+        {item.email.length > 15 ? `${item.email.substring(0, 8)}...` : item.email}
+      </div>
+      <div className="full-email-tooltip">
+        {item.email}
+      </div>
+    </div>
+  ) : '-----'}
+</td>
                                   <td>{format(item.date, 'PPpp')}</td>
                                   <td>
                                     {item.process}
                                   </td>
                                   <td>
-                                    {item.senderEmail ? (
-                                      <div className="email-cell">
-                                        {item.senderEmail.length > 15 ? `${item.senderEmail.substring(0, 8)}...` : item.senderEmail}
-                                      </div>
-                                    ) : '-----'}
-                                  </td>
-                                  <td>
-                                    {item.email ? (
-                                      <div className="email-cell">
-                                        {item.email.length > 15 ? `${item.email.substring(0, 8)}...` : item.email}
-                                      </div>
-                                    ) : '-----'}
-                                  </td>
+  {item.senderEmail ? (
+    <div className="email-cell-container">
+      <div className="truncated-email">
+        {item.senderEmail.length > 15 ? `${item.senderEmail.substring(0, 8)}...` : item.senderEmail}
+      </div>
+      <div className="full-email-tooltip">
+        {item.senderEmail}
+      </div>
+    </div>
+  ) : '-----'}
+</td>
+<td>
+  {item.email ? (
+    <div className="email-cell-container">
+      <div className="truncated-email">
+        {item.email.length > 15 ? `${item.email.substring(0, 8)}...` : item.email}
+      </div>
+      <div className="full-email-tooltip">
+        {item.email}
+      </div>
+    </div>
+  ) : '-----'}
+</td>
                                   <td className={`amount-cell ${item.transactionType?.toLowerCase() === 'credit' ? 'credit' : 'debit'}`}>
                                     {item.transactionType?.toLowerCase() === 'debit' ? '-' : ''}
                                     {Number(item.amount || 0).toFixed(2)}

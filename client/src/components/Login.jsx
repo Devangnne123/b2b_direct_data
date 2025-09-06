@@ -361,6 +361,18 @@ const handleLogin = async (e) => {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        <div className="auth-hero-section login-hero">
+          <div className="auth-hero-content">
+            <br />
+            <br />
+            <h3>Direct Number Enrichment</h3>
+            <p>
+              Verify and <span className="blue">Connect</span> with professionals on{" "}
+              <span className="blue">LinkedIn</span>
+            </p>
+            <img src="Capture-removebg-preview (2).png" alt="Illustration" className="auth-hero-image" width={300} />
+          </div>
+        </div>
         <div className="auth-form-section">
           <div className="auth-header">
             <img src="new.png" alt="Company Logo" className="auth-logo" />
@@ -370,7 +382,7 @@ const handleLogin = async (e) => {
           </div>
           
           <h2 className="auth-title">
-            {showForgotPassword ? "Reset Password" : "Welcome Back"}
+            {showForgotPassword ? "Reset Password" : ""}
           </h2>
           <p className="auth-subtitle">
             {showForgotPassword ? "Enter your new password" : "Login to your account"}
@@ -413,8 +425,8 @@ const handleLogin = async (e) => {
                 <div className="force-logout-form">
                   <p>To logout from other device, please verify your password:</p>
                   <div className="form-group">
-                    
-                    <div className="form-group">
+
+                <div className="form-group">
                     <label htmlFor="email">Email</label>
                     <input
                       type="email"

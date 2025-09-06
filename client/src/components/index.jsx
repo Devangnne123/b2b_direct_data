@@ -93,6 +93,9 @@ function Index() {
   
     {/* Hero Section */}
     <section className="heroSection">
+      <br />
+      <br />
+
       <div className="heroContainer">
         <div className="right-r">
        <div className="section-m">
@@ -102,6 +105,7 @@ function Index() {
           connections effortlessly
         </h1>
         <div className="search-email">
+          
         <p className="sub-text1">
         Our platform helps you instantly verify LinkedIn connections and enrich profiles with accurate contact details, company information, and social data — all in one click. Whether you're building lead lists, updating your CRM, or qualifying prospects, we streamline the process so you can focus on making real connections.
       </p>

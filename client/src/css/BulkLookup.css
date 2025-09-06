@@ -11,7 +11,7 @@
 .app-layout {
   min-height: 100vh;
   
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -39,7 +39,7 @@
 
 /* Header */
 .app-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #000000 0%, #764ba2 100%);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   padding: 1rem 2rem;
   position: sticky;
@@ -171,7 +171,7 @@
 .file-upload-icon {
   width: 32px;
   height: 32px;
-  color: #667eea;
+  color: #9aa0b9;
   flex-shrink: 0;
 }
 
@@ -186,7 +186,7 @@
 }
 
 .upload-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+   background: linear-gradient(135deg, #2c62df7b 0%, #4343438b 100%);
   color: white;
   border: none;
   padding: 1.5rem 2rem;
@@ -368,13 +368,16 @@
 }
 
 .data-section-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 2rem;
+   background: linear-gradient(135deg, #2c62df7b 0%, #9c82e0cc 100%);
+  padding: 1rem 2rem;
   color: white;
+  display: flex;
+  justify-content: space-between;
+  
 }
 
 .data-section-title {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
 }
@@ -382,6 +385,7 @@
 .data-section-info {
   opacity: 0.9;
   font-size: 1rem;
+  
 }
 
 /* Loading State */
@@ -469,7 +473,7 @@
 .table-icon {
   width: 18px;
   height: 18px;
-  color: #667eea;
+  color: #193cd985;
   flex-shrink: 0;
 }
 
@@ -577,7 +581,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+ background: linear-gradient(135deg, #163fb07b 0%, #4343438b 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -885,11 +889,11 @@
   }
   
   .data-section-header {
-    padding: 3rem;
+    padding: 1rem;
   }
   
   .data-section-title {
-    font-size: 2rem;
+    font-size: 1.2rem;
   }
 }
 

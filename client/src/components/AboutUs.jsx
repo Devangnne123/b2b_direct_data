@@ -14,7 +14,7 @@ const AboutUs = () => {
     <div className="about-container">
       <header className="about-header">
         <h2>About Us</h2>
-        <p>Your Trusted Partner in B2B Data Solutions</p>
+        <p>Your Trusted Partner in B2B Lead Solutions</p>
       </header>
 
       <section className="about-section">
@@ -42,8 +42,12 @@ const AboutUs = () => {
 
       <section className="about-contact">
         <h2>Let's Grow Together!</h2>
-        <p>Join hands with <strong>B2B Direct Data</strong> and take your business to the next level with our premium data solutions.</p>
+        
+       
+       <p>Join hands with <strong>B2B Lead Solutions</strong> and take your business to the next level with our premium data solutions.</p>
+        <br />
         <button className="contact-button" onClick={handleContactClick}>
+
           Contact Us
         </button>
       </section>

@@ -1,7 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
 /* Base Styles */
 :root {
-  --primary-color: #4361ee;
-  --primary-dark: #3a56d4;
+  --primary-color: #0a2dcaa9;
+  --primary-dark: #000a7b;
   --secondary-color: #3f37c9;
   --success-color: #4cc9f0;
   --error-color: #f72585;
@@ -9,7 +11,7 @@
   --dark-color: #212529;
   --gray-color: #6c757d;
   --light-gray: #e9ecef;
-  --border-radius: 8px;
+  --border-radius: 8px; /* Added missing border-radius variable */
   --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   --transition: all 0.3s ease;
 }
@@ -22,9 +24,11 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+   font-family: "Bebas Neue", sans-serif;
   line-height: 1.6;
   color: var(--dark-color);
   background-color: #f5f7fa;
+  font-size: 14px; /* Reduced base font size */
 }
 
 /* Auth Container */
@@ -32,33 +36,37 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  
   padding: 20px;
+  
 }
 
 .auth-card {
   display: flex;
   width: 100%;
   height: 500px;
-  
   max-width: 1000px;
   background: white;
-  border-radius: var(--border-radius);
+  border-radius: 40px;
   box-shadow: var(--box-shadow);
   overflow: hidden;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.26), 0 6px 20px 0 rgba(1, 0, 0, 0.5);
+  
+
 }
 
 .auth-form-section {
   flex: 1;
-  min-width: 800px;
-  padding: 20px;
   
+  min-width: 450px;
+  padding: 20px;
+  max-height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
 .auth-hero-section {
-  flex: 1;
-  background: linear-gradient(135deg, #4361ee, #3f37c9);
-  color: white;
+   background-color: #92a1afd4;
+  color: rgb(0, 0, 0);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -69,17 +77,26 @@ body {
 
 .auth-hero-content {
   position: relative;
+
   z-index: 2;
 }
 
 .auth-hero-content h3 {
-  font-size: 22px;
-  margin-bottom: 15px;
+  font-size: 25px; /* Reduced from 22px */
+  margin-bottom: 12px; /* Reduced from 15px */
+   font-family: "Bebas Neue", sans-serif;
+    font-weight: 200;
+    font-style: normal;
+    margin-left: 50px;
+    
+    
+    
 }
 
 .auth-hero-content p {
-  font-size: 16px;
-  margin-bottom: 10px;
+  font-size: 14px; /* Reduced from 16px */
+  margin-bottom: 8px; /* Reduced from 10px */
+   
 }
 
 .auth-hero-content p span {
@@ -87,9 +104,11 @@ body {
 }
 
 .auth-hero-image {
+filter: drop-shadow(10px 5px 10px #606060);
   max-width: 100%;
+ 
   height: auto;
-  margin-top: 20px;
+  margin-top: 15px; /* Reduced from 20px */
 }
 
 /* Auth Header */
@@ -97,17 +116,17 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 20px; /* Reduced from 30px */
 }
 
 .auth-logo {
-  height: 40px;
+  height: 35px; /* Reduced from 40px */
 }
 
 .auth-close-btn {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 20px; /* Reduced from 24px */
   color: var(--gray-color);
   cursor: pointer;
   transition: var(--transition);
@@ -119,43 +138,57 @@ body {
 
 /* Auth Content */
 .auth-title {
-  font-size: 28px;
-  margin-bottom: 10px;
+  font-size: 22px; /* Reduced from 28px */
+  margin-bottom: 8px; /* Reduced from 10px */
   color: var(--dark-color);
+  margin-left: 50px;
 }
 
 .auth-subtitle {
-  font-size: 16px;
+  font-size: 14px; /* Reduced from 16px */
   color: var(--gray-color);
-  margin-bottom: 10px;
+  margin-bottom: 8px; /* Reduced from 10px */
+   margin-left: 50px;
 }
-.auth-btn{
- margin-bottom: 20px;
+
+.auth-btn {
+  margin-bottom: 15px; /* Reduced from 20px */
+ 
 }
+.secondary{
+   margin-left: 50px;
+}
+
 /* Auth Form */
 .auth-form {
+  margin-top: 50px ;
   display: flex;
   flex-direction: column;
   gap: 0px;
+  width: 320px;
+  margin-left: 40px;
+  
 }
-
+.blue{
+  color: #0a3f9c;
+}
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px; /* Reduced from 8px */
 }
 
 .form-group label {
-  font-size: 14px;
+  font-size: 10px; /* Reduced from 14px */
   font-weight: 500;
   color: var(--dark-color);
 }
 
 .form-group input {
-  padding: 12px 15px;
+  padding: 10px 12px; /* Reduced from 12px 15px */
   border: 1px solid var(--light-gray);
   border-radius: var(--border-radius);
-  font-size: 14px;
+  font-size: 1px; /* Reduced from 14px */
   transition: var(--transition);
 }
 
@@ -171,27 +204,27 @@ body {
 
 .password-input input {
   width: 100%;
-  padding-right: 40px;
+  padding-right: 35px; /* Reduced from 40px */
 }
 
 .password-toggle {
   position: absolute;
-  right: 10px;
+  right: 8px; /* Reduced from 10px */
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--gray-color);
+  color:rgb(163, 148, 148);
   cursor: pointer;
-  font-size: 18px;
+  font-size: 10px; /* Reduced from 18px */
 }
 
 /* CAPTCHA Styles */
 .captcha-container {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px; /* Reduced from 10px */
+  margin-bottom: 8px; /* Reduced from 10px */
 }
 
 .captcha-canvas {
@@ -203,16 +236,16 @@ body {
 .captcha-refresh {
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 18px; /* Reduced from 20px */
   cursor: pointer;
   color: var(--gray-color);
 }
 
 /* Auth Buttons */
 .auth-btn {
-  padding: 12px;
+  padding: 10px; /* Reduced from 12px */
   border-radius: var(--border-radius);
-  font-size: 16px;
+  font-size: 14px; /* Reduced from 16px */
   font-weight: 500;
   cursor: pointer;
   transition: var(--transition);
@@ -261,16 +294,16 @@ body {
   border: none;
   color: var(--primary-color);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px; /* Reduced from 14px */
   text-align: center;
-  margin-top: -10px;
+  margin-top: -8px; /* Reduced from -10px */
 }
 
 .auth-switch {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 15px; /* Reduced from 20px */
   color: var(--gray-color);
-  font-size: 14px;
+  font-size: 13px; /* Reduced from 14px */
 }
 
 .auth-switch button {
@@ -286,8 +319,8 @@ body {
   display: flex;
   align-items: center;
   color: var(--gray-color);
-  font-size: 14px;
-  margin: 10px 0;
+  font-size: 13px; /* Reduced from 14px */
+  margin: 8px 0; /* Reduced from 10px 0 */
 }
 
 .auth-divider::before,
@@ -298,24 +331,27 @@ body {
 }
 
 .auth-divider::before {
-  margin-right: 10px;
+  margin-right: 8px; /* Reduced from 10px */
 }
 
 .auth-divider::after {
-  margin-left: 10px;
+  margin-left: 8px; /* Reduced from 10px */
 }
 
 /* Auth Messages */
 .auth-message {
-  padding: 12px 15px;
+  padding: 10px 12px; /* Reduced from 12px 15px */
+  margin-left: 30px;
+  margin-right: 30px;
   border-radius: var(--border-radius);
-  font-size: 14px;
-  margin-bottom: 15px;
+  font-size: 13px; /* Reduced from 14px */
+  margin-bottom: 12px; /* Reduced from 15px */
 }
 
 .auth-message.error {
   background-color: #ffebee;
   color: var(--error-color);
+ 
 }
 
 .auth-message.success {
@@ -325,10 +361,10 @@ body {
 
 /* Terms */
 .auth-terms {
-  font-size: 12px;
+  font-size: 11px; /* Reduced from 12px */
   color: var(--gray-color);
   text-align: center;
-  margin-top: 15px;
+  margin-top: 12px; /* Reduced from 15px */
 }
 
 .auth-terms a {
@@ -343,7 +379,8 @@ body {
   }
   
   .auth-form-section, .auth-hero-section {
-    padding: 30px;
+    padding: 25px; /* Reduced from 30px */
+    
   }
   
   .auth-hero-section {
@@ -351,68 +388,78 @@ body {
   }
   
   .auth-title {
-    font-size: 24px;
+    font-size: 20px; 
+  
   }
   
   .auth-subtitle {
-    font-size: 14px;
+    font-size: 13px; /* Reduced from 14px */
   }
 }
 
 @media (max-width: 480px) {
   .auth-form-section, .auth-hero-section {
-    padding: 20px;
+    padding: 15px; /* Reduced from 20px */
   }
   
   .auth-header {
-    margin-bottom: 20px;
+    margin-bottom: 15px; /* Reduced from 20px */
   }
   
   .auth-title {
-    font-size: 22px;
+    font-size: 18px; /* Reduced from 22px */
   }
   
   .auth-btn {
-    padding: 10px;
-    font-size: 14px;
+    padding: 8px; /* Reduced from 10px */
+    font-size: 13px; /* Reduced from 14px */
   }
 }
 
 /* Update the auth-form-section styles */
-.auth-form-section {
-  flex: 1;
-  min-width: 600px;
-  padding: 40px;
-  
-  max-height: 100vh; /* Set maximum height to viewport height */
-  overflow-y: auto; /* Enable vertical scrolling */
-  overscroll-behavior-y: contain; /* Prevent scroll chaining */
-}
+
 
 /* Add this to prevent layout shift when scrollbar appears */
 .auth-card {
-  overflow: hidden; /* Contain the scroll within the form section */
+  overflow: hidden;
 }
 
 /* For smaller screens */
 @media (max-width: 768px) {
   .auth-form-section {
-    max-height: 80vh; /* Slightly smaller max-height on mobile */
-    padding: 30px;
+    max-height: 80vh;
+    padding: 25px; /* Reduced from 30px */
+    
+  }
+  .login-hero,
+  .signup-hero
+  {
+    display: none;
   }
 }
 
 @media (max-width: 480px) {
   .auth-form-section {
-    max-height: 75vh; /* Adjust for very small screens */
-    padding: 20px;
+     max-height: 70vh;
+    padding: 15px; /* Reduced from 20px */
   }
-}
+   .login-hero{
+    display: none;
+  }
+  .auth-form-section {
+  flex: 1;
+  min-width: 350px;
 
+  padding: 30px; /* Reduced from 40px */
+  max-height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+}
 
 /* Custom scrollbar for better visibility when zoomed */
 .auth-form-section::-webkit-scrollbar {
-  width: 8px;
+  width: 6px; /* Reduced from 8px */
 }
 
 .auth-form-section::-webkit-scrollbar-track {
@@ -421,74 +468,73 @@ body {
 
 .auth-form-section::-webkit-scrollbar-thumb {
   background: #888;
-  border-radius: 4px;
+  border-radius: 3px; /* Reduced from 4px */
 }
 
 .auth-form-section::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
 
-
 /* Make form elements scale properly */
 .form-group input,
 .auth-btn,
 .captcha-canvas {
-  min-height: 44px; /* Minimum touch target size */
-  font-size: 1rem; /* Base font size that scales with zoom */
+  max-height: 35px; /* Reduced from 44px */
+  font-size: 0.8rem;
 }
 
 .password-toggle {
-  min-width: 44px; /* Ensure toggle remains clickable */
-  min-height: 44px;
+  min-width: 40px; /* Reduced from 44px */
+  min-height: 40px; /* Reduced from 44px */
 }
 
 .auth-form-section {
-  overflow-x: hidden; /* Prevent horizontal scroll */
-  width: 100%; /* Ensure full width */
+  overflow-x: hidden;
+  width: 100%;
 }
-
-
 
 /* New styles for active session and force logout */
 .active-session-message {
   text-align: center;
-  margin-bottom: 20px;
-  padding: 15px;
+  margin-bottom: 15px; /* Reduced from 20px */
+  padding: 12px; /* Reduced from 15px */
   background-color: #fff8f8;
   border-radius: 8px;
   border: 1px solid #ffdddd;
 }
 
 .active-session-message p {
-  margin-bottom: 15px;
+  margin-bottom: 12px; /* Reduced from 15px */
   color: #ff6b6b;
   font-weight: 500;
+  font-size: 13px; /* Added font size */
 }
 
 .force-logout-form {
-  margin-top: 20px;
-  padding: 20px;
+  margin-top: 15px; /* Reduced from 20px */
+  padding: 15px; /* Reduced from 20px */
   background-color: #f9f9f9;
   border-radius: 8px;
   border: 1px solid #eee;
 }
 
 .force-logout-form p {
-  margin-bottom: 15px;
+  margin-bottom: 12px; /* Reduced from 15px */
   color: #333;
   text-align: center;
+  font-size: 13px; /* Added font size */
 }
 
 .force-logout-buttons {
   display: flex;
-  gap: 10px;
-  margin-top: 15px;
+  gap: 8px; /* Reduced from 10px */
+  margin-top: 12px; /* Reduced from 15px */
 }
 
 .auth-btn.warning {
   background-color: #ff6b6b;
   color: white;
-  margin-bottom: 10px;
+  margin-bottom: 8px; /* Reduced from 10px */
 }
 
 .auth-btn.warning:hover {
@@ -503,3 +549,8 @@ body {
 .auth-btn.auto-login:hover {
   background-color: #45a049;
 }
+
+/* Specific styles for login hero (left side) */
+
+
+/* Specific styles for signup hero (right side) */

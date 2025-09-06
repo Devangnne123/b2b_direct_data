@@ -563,60 +563,51 @@ function BulkLookup() {
     });
   }, [filteredData, sortConfig, processingStatus]);
 
-  const downloadGroupedEntry = (group) => {
-    if (isProcessing) return; // Prevent multiple clicks
-    
+  const downloadGroupedEntry = async (group) => {
+    if (isProcessing) return;
     try {
+      setLoading(true);
       setIsProcessing(true);
-      const sortedGroup = [...group].sort((a, b) => {
-        const dateA = new Date(a.date || 0);
-        const dateB = new Date(b.date || 0);
-        return dateA - dateB;
-      });
+      const uniqueId = group[0]?.uniqueId;
+      if (!uniqueId) {
+        toast.error('Missing unique identifier for download');
+        return;
+      }
 
-      const rowData = sortedGroup.map((entry) => {
-        const links = entry?.link || null;
-        const matchLink = entry?.matchLink || null;
-        const mobile_number = entry?.mobile_number || "N/A";
-        const mobile_number_2 = entry?.mobile_number_2 || "N/A";
-        const person_name = entry?.person_name || "N/A";
-        const person_location = entry?.person_location || "N/A";
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/api/verification/${uniqueId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-        let status = "Completed";
-        if (!matchLink) {
-          status = "Incompleted";
-        } else if (mobile_number !== "N/A" || mobile_number_2 !== "N/A") {
-          status = "Completed";
-        } else {
-          status = "Pending";
-        }
-
-        return {
-          fileName: entry?.fileName || "Unknown",
-          uniqueId: entry?.uniqueId || "Unknown",
-          date: entry?.date ? new Date(entry.date).toLocaleString() : "Unknown",
-          orignal_link: links,
-          matchLink: matchLink || "N/A",
-          status,
-          mobile_number,
-          mobile_number_2,
-          person_name,
-          person_location,
-        };
-      });
+      const allData = response.data;
+      const rowData = allData.map((entry) => ({
+         'links' : entry?.link || null,
+         'matchLink' : entry?.matchLink || null,
+         'Final Remarks': entry?.final_remarks || 'N/A',
+         'mobile_number' : entry?.mobile_number || "N/A",
+         'mobile_number_2' : entry?.mobile_number_2 || "N/A",
+        'person_name' : entry?.person_name || "N/A",
+         'person_location' : entry?.person_location || "N/A",
+         'Status': entry.final_status || 'N/A',
+        
+      }));
 
       const worksheet = XLSX.utils.json_to_sheet(rowData);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "LinkData");
-      XLSX.writeFile(workbook, `LinkData_${group[0]?.uniqueId || "data"}.xlsx`);
+      XLSX.utils.book_append_sheet(workbook, worksheet, "VerificationData");
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      XLSX.writeFile(workbook, `VerificationData_${uniqueId}_${timestamp}.xlsx`);
       toast.success('Download complete!');
     } catch (error) {
       console.error('Download error:', error);
       toast.error('Failed to download data. Please try again.');
     } finally {
+      setLoading(false);
       setIsProcessing(false);
     }
   };
+
+
 
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
@@ -824,13 +815,22 @@ function BulkLookup() {
                         <div className="data-section">
                           <div className="data-section-header">
                             <h3 className="data-section-title">
-                              Your Uploaded Files
+                             File History
                             </h3>
                             <div className="data-section-controls">
-                              <p className="data-section-info">
-                                <strong>Cost per link:</strong> {creditCost}{" "}
-                                credits
-                              </p>
+                              
+                              <div className="app-header-right">
+                    <div className="credits-display">
+                      <img
+                        src="https://img.icons8.com/external-flaticons-flat-flat-icons/50/external-credits-university-flaticons-flat-flat-icons.png"
+                        alt="credits"
+                        className="credits-icon"
+                      />
+                      <span className="credits-text">
+                        Cost per link: {creditCost !== null ? creditCost : "Loading..."}
+                      </span>
+                    </div>
+                  </div>
                               {/* <div className="filter-controls">
                                 <button 
                                   onClick={() => setShowEmailFilter(!showEmailFilter)}
@@ -925,9 +925,9 @@ function BulkLookup() {
                                             </span>
                                           </div>
                                         </th>
-                                        <SortableHeader sortKey="email">
+                                        {/* <SortableHeader sortKey="email">
                                           <span className="table-header-text">Email</span>
-                                        </SortableHeader>
+                                        </SortableHeader> */}
                                         <th className="data-table-header-cell">
                                           <div className="data-table-header-content">
                                             <Download className="table-icon" />
@@ -1003,11 +1003,11 @@ function BulkLookup() {
                                                   </span>
                                                 </div>
                                               </td>
-                                              <td className="data-table-cell">
+                                              {/* <td className="data-table-cell">
                                                 <span className={`email-cell ${first.email === savedEmail ? 'email-cell-current-user' : ''}`}>
                                                   {first.email || "Unknown"}
                                                 </span>
-                                              </td>
+                                              </td> */}
                                               <td className="data-table-cell">
                                                 <button
                                                   onClick={() =>

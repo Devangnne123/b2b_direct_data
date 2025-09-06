@@ -3,11 +3,11 @@ const IORedis = require('ioredis');
 const { processLinkedinJob } = require('../jobs/processLinkedinJob');
 const { processVerificationJob } = require('../jobs/processVerificationJob');
 const { processVerificationComJob } = require('../jobs/processVerificationComJob');
-
+require("dotenv").config(); // Load the .env file
 const connection = new IORedis({
   host: '172.31.23.143', // Replace with your EC2 Redis host
   port: 6379, // Replace with your Redis port
-  password: 'redis123', // Replace with your Redis password
+   password: process.env.redis_p, // Replace with your Redis password
   maxRetriesPerRequest: null,
   enableReadyCheck: false
 });

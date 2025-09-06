@@ -52,7 +52,7 @@ function Footer() {
         <div className="footer-container1">
           <div className="footer-section">
             <div className='footer-title'>
-              <h3> <img width="210px" src="B@B.png" alt="" /><br /></h3>
+              <h3> <img width="110px" src="new.png" alt="" /><br /></h3>
             </div>
           </div>
           <div className='menu-product'>
@@ -134,6 +134,10 @@ function Footer() {
                 <li>
                   <a><Link to="/remove_data" onClick={handleLinkClick}>Do Not Sell My Information</Link></a>
                 </li>
+                <li>
+                  <a><Link to="/cookies-policy" onClick={handleLinkClick}>Cookies Policy</Link></a>
+                </li>
+                
               </ul>
             </div>
           </div>

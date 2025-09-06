@@ -3312,7 +3312,7 @@ const VerificationTemp = require("./model/verification_temp");
 //           clean_link: link,
 //           remark,
 //           fileName: req.file.originalname,
-//           pendingCount
+//           
 //         };
 //       });
 
@@ -6652,6 +6652,50 @@ app.get("/api/verification-uploads-com/:uniqueId", auth, async (req, res) => {
   }
 });
 
+app.get("/api/verification/:uniqueId", auth, async (req, res) => {
+  try {
+    const { uniqueId } = req.params;
+
+    // Get all records for this uniqueId
+    const records = await Link.findAll({
+      where: { uniqueId },
+    });
+
+    // Calculate group status (same logic as frontend)
+    const getGroupStatus = (group) => {
+      if (!group || group.length === 0) return "completed";
+
+      const hasPending = group.some(
+        (item) =>
+          item.remark === "pending" ||
+          (!item.matchLink && item.remark !== "invalid")
+      );
+
+      const allCompleted = group.every(
+        (item) =>
+          item.matchLink ||
+          item.remark === "invalid" ||
+          item.remark === "processed"
+      );
+
+      if (hasPending) return "pending";
+      if (allCompleted) return "completed";
+      return "incompleted";
+    };
+
+    const groupStatus = getGroupStatus(records);
+
+    // Add status to each record
+    const responseData = records.map((record) => ({
+      ...record.get({ plain: true }),
+      groupStatus, // Add the calculated group status
+    }));
+
+    res.json(responseData);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 app.post("/api/deduct-credits_v-com", auth, async (req, res) => {
   try {
     const { userEmail, credits, uniqueId } = req.body;
@@ -9088,14 +9132,14 @@ app.get("/VerificationUpload/report", auth, async (req, res) => {
         [sequelize.fn("MIN", sequelize.col("date")), "date"],
         [sequelize.fn("MIN", sequelize.col("totallink")), "totallink"],
         [sequelize.fn("MAX", sequelize.col("pendingCount")), "pendingCount"],
-        [sequelize.fn("MIN", sequelize.col("status")), "status"],
+        
         [sequelize.fn("MAX", sequelize.col("final_status")), "final_status"],
         // Count completed statuses
         [
           sequelize.fn(
             "SUM",
             sequelize.literal(
-              `CASE WHEN final_status = 'Completed' THEN 1 ELSE 0 END`
+              `CASE WHEN final_status = 'completed' THEN 1 ELSE 0 END`
             )
           ),
           "completedCount",
@@ -9105,7 +9149,7 @@ app.get("/VerificationUpload/report", auth, async (req, res) => {
           sequelize.fn(
             "SUM",
             sequelize.literal(
-              `CASE WHEN final_status = 'Pending' THEN 1 ELSE 0 END`
+              `CASE WHEN final_status = 'pending' THEN 1 ELSE 0 END`
             )
           ),
           "pendingCount",
@@ -9129,7 +9173,7 @@ app.get("/VerificationUpload/report", auth, async (req, res) => {
         status: item.get("status"),
         final_status: item.get("final_status"),
         completedCount: item.get("completedCount") || 0,
-        pendingCount: item.get("pendingCount") || 0,
+       
         creditsUsed: item.get("creditsUsed") || 0,
       })),
     };
@@ -9159,14 +9203,14 @@ app.get("/company/report", auth, async (req, res) => {
         [sequelize.fn("MIN", sequelize.col("date")), "date"],
         [sequelize.fn("MIN", sequelize.col("totallink")), "totallink"],
         [sequelize.fn("MAX", sequelize.col("pendingCount")), "pendingCount"],
-        [sequelize.fn("MIN", sequelize.col("status")), "status"],
+      
         [sequelize.fn("MAX", sequelize.col("final_status")), "final_status"],
         // Count completed statuses
         [
           sequelize.fn(
             "SUM",
             sequelize.literal(
-              `CASE WHEN final_status = 'Completed' THEN 1 ELSE 0 END`
+              `CASE WHEN final_status = 'completed' THEN 1 ELSE 0 END`
             )
           ),
           "completedCount",
@@ -9176,7 +9220,7 @@ app.get("/company/report", auth, async (req, res) => {
           sequelize.fn(
             "SUM",
             sequelize.literal(
-              `CASE WHEN final_status = 'Pending' THEN 1 ELSE 0 END`
+              `CASE WHEN final_status = 'pending' THEN 1 ELSE 0 END`
             )
           ),
           "pendingCount",
@@ -9200,7 +9244,7 @@ app.get("/company/report", auth, async (req, res) => {
         status: item.get("status"),
         final_status: item.get("final_status"),
         completedCount: item.get("completedCount") || 0,
-        pendingCount: item.get("pendingCount") || 0,
+       
         creditsUsed: item.get("creditsUsed") || 0,
       })),
     };
@@ -9229,15 +9273,16 @@ app.get("/Direct-number/report", auth, async (req, res) => {
         [sequelize.fn("MIN", sequelize.col("fileName")), "fileName"],
         [sequelize.fn("MIN", sequelize.col("date")), "date"],
         [sequelize.fn("MIN", sequelize.col("totallink")), "totallink"],
-        [sequelize.fn("MAX", sequelize.col("matchCount")), "matchCount"],
-        // [sequelize.fn('MIN', sequelize.col('status')), 'status'],
-        [sequelize.fn("MAX", sequelize.col("status")), "status"],
+        [sequelize.fn("MAX", sequelize.col("matchCount")), "pendingCount"],
+        [sequelize.fn('MIN', sequelize.col('status')), 'status'],
+        
+         [sequelize.fn("MAX", sequelize.col("final_status")), "final_status"],
         // Count completed statuses
         [
           sequelize.fn(
             "SUM",
             sequelize.literal(
-              `CASE WHEN status = 'completed' THEN 1 ELSE 0 END`
+              `CASE WHEN  final_status = 'completed' THEN 1 ELSE 0 END`
             )
           ),
           "completedCount",
@@ -9246,7 +9291,7 @@ app.get("/Direct-number/report", auth, async (req, res) => {
         [
           sequelize.fn(
             "SUM",
-            sequelize.literal(`CASE WHEN status = 'pending' THEN 1 ELSE 0 END`)
+            sequelize.literal(`CASE WHEN final_status = 'pending' THEN 1 ELSE 0 END`)
           ),
           "pendingCount",
         ],
@@ -9268,11 +9313,13 @@ app.get("/Direct-number/report", auth, async (req, res) => {
         fileName: item.get("fileName"),
         date: item.get("date"),
         totallink: item.get("totallink"),
-        pendingCount: item.get("matchCount"),
+        pendingCount: item.get("pendingCount"),
+        final_status: item.get("final_status"),
+        
         status: item.get("status"),
 
         completedCount: item.get("completedCount") || 0,
-        pendingCount: item.get("pendingCount") || 0,
+        
         creditsUsed: item.get("creditDeducted") || 0,
       })),
     };

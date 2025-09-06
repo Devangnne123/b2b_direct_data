@@ -137,3 +137,16 @@ footer{
         
     }
 }
+
+@media (max-width: 680px){
+    .menu-product{
+        display: flex;
+        
+        flex-direction: column;
+       margin-left: 40px ;
+        gap: 60px;
+        font-size: small;
+        
+    }
+    
+}

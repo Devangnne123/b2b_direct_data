@@ -138,20 +138,24 @@ const resetInactivityTimer = () => {
         { name: "Add User", path: "/add-user" },
         { name: "User Lists", path: "/user-list" },
         { name: "Reset Password", path: "/change_your_password" },
-        { 
-          name: "Sign out", 
-          path: "#",
-          onClick: handleLogout,
-          icon: <FaSignOutAlt className="logout-icon" />
-        },
+        // { 
+        //   name: "Sign out", 
+        //   path: "#",
+        //   onClick: handleLogout,
+        //   icon: <FaSignOutAlt className="logout-icon" />
+        // },
+       { name: "Sign out", path: "#", icon: <FaSignOutAlt />, type: "logout", onClick:handleLogout }
+        
       ],
     },
+    
     {
       name: "Statistics",
       icon: <FaChartBar />,
       options: [
         { name: "Credit Reports", path: "/user-credit-report" },
-        { name: "All report", path: "/all_history" }
+        { name: "All report", path: "/all_history" },
+         { name: "All Status Report", path: "/all_completed_report" }
       ]
     },
   ];
@@ -177,7 +181,8 @@ const resetInactivityTimer = () => {
       icon: <FaChartBar />,
       options: [
         { name: "Credit Reports", path: "/user-credit-report" },
-        { name: "All report", path: "/all_history" }
+        { name: "All report", path: "/all_history" }, 
+        { name: "All Status Report", path: "/all_completed_report" }
       ],
     },
     {
@@ -187,7 +192,7 @@ const resetInactivityTimer = () => {
         name: "Sign out", 
         path: "#",
         onClick: handleLogout,
-        icon: <FaSignOutAlt className="logout-icon" />
+        icon: <FaSignOutAlt  />
       }],
     },
   ];
@@ -199,6 +204,7 @@ const resetInactivityTimer = () => {
       options: [
         { name: "All report", path: "/all_history" },
         { name: "All Status Report", path: "/all_completed_report" }
+        
       ],
     },
     {
@@ -208,7 +214,7 @@ const resetInactivityTimer = () => {
         name: "Sign out", 
         path: "#",
         onClick: handleLogout,
-        icon: <FaSignOutAlt className="logout-icon" />
+        icon: <FaSignOutAlt  />
       }],
     },
   ];
@@ -259,9 +265,9 @@ const resetInactivityTimer = () => {
       icon: <IoMdSettings />,
       options: [{
         name: "Sign out", 
-        path: "#",
+        
         onClick: handleLogout,
-        icon: <FaSignOutAlt className="logout-icon" />
+        icon: <FaSignOutAlt  />
       }],
     },
    
@@ -283,9 +289,12 @@ const resetInactivityTimer = () => {
       </button>
       
       <div className="sidebar-user-info">
-        <FaUsers className="sidebar-avatar" />
-        {!isCollapsed && <p className="sidebar-user-email">{userEmail}</p>}
+       
         {!isCollapsed && <img className="sidebar-brand-logo" src="new.png" alt="" />}
+        <br />
+        <br />
+        {!isCollapsed && <p className="sidebar-user-email">{userEmail}</p>}
+        
       </div>
       
       <nav className="sidebar-menu">

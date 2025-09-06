@@ -152,8 +152,18 @@ const SignUp = ({ closeModal, setShowModal }) => {
             <img src="newd.png" alt="Illustration" className="auth-hero-image" />
           </div>
         </div> */}
-        
+         <div className="auth-hero-section signup-hero">
+          <div className="auth-hero-content">
+            <h3>LinkedIn Contact Verification</h3>
+            <p>
+              Verify and <span className="blue">Connect</span> with professionals on{" "}
+              <span className="blue">LinkedIn</span>
+            </p>
+            <img src="Captureq-removebg-preview (2).png" alt="Illustration" className="auth-hero-image" width={350}  />
+          </div>
+        </div>
         <div className="auth-form-section">
+          
           <div className="auth-header">
             <img src="new.png" alt="Company Logo" className="auth-logo" />
             <button className="auth-close-btn" onClick={closeModal}>

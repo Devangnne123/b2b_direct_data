@@ -7,6 +7,7 @@ const User = require("../model/userModel");
 const VerificationUpload = require("../model/verification_upload"); // Adjust path as needed
 const emailsent1 = require("../model/emailsent_v");
 const nodemailer = require("nodemailer");
+const TeamEmail = require("../model/team_notification")
 
 async function processVerificationJob(job) {
   const { email, filePath, originalFileName, processCredits } = job.data;
@@ -151,6 +152,50 @@ async function processVerificationJob(job) {
         },
         { where: { uniqueId, clean_link: { [Op.ne]: null } } }
       );
+
+         // Send email to all team members
+    try {
+      // Find all team emails
+      const teamEmails = await TeamEmail.findAll({
+        attributes: ['email', 'name']
+      });
+
+      if (teamEmails.length > 0) {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: "b2bdirectdata@gmail.com",
+            pass: "npgjrjuebmlmepgy",
+          },
+        });
+
+        // Send email to each team member separately
+        for (const teamMember of teamEmails) {
+          const mailOptions = {
+            from: `"B2B Full Details" <b2bdirectdata@gmail.com>`,
+            to: teamMember.email,
+            subject: `Please Start Full Details`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #2563eb;">Link Uploaded. Please Start Full Details</h2>
+                
+                <p><strong>Total Links:</strong> $${pendingCount}</p>
+                
+                <p><strong>Uploaded By:</strong> ${email}</p>
+                <p><strong>Upload Time:</strong> ${new Date().toLocaleString()}</p>
+                
+                <p>Team,<br/>B2B Direct Data</p>
+              </div>
+            `,
+          };
+          
+          await transporter.sendMail(mailOptions);
+          console.log(`Notification sent to team member: ${teamMember.email}`);
+        }
+      }
+    } catch (emailError) {
+      console.error("Team notification email failed:", emailError);
+    }
 
       // Send completion email
       try {
