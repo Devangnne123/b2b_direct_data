@@ -138,6 +138,7 @@ const sequelize = new Sequelize('postgres', 'postgres', 'admin==88', {
       rejectUnauthorized: false,
     },
   },
+  
   // pool: {
   //   max: 5,           // Reduced from 60 to prevent overloading RDS
   //   min: 1,

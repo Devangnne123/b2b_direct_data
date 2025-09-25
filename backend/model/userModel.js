@@ -75,27 +75,27 @@ otpBlockedUntil: {
   // In your User model definition
 // In your User model definition
 creditCostPerLink: {
-  type: DataTypes.INTEGER,
+  type: DataTypes.DECIMAL(10, 2),
   defaultValue: 5,
   allowNull: false,
   validate: {
-    min: 1
+    min: 0
   }
 },
 creditCostPerLink_V: {
-  type: DataTypes.INTEGER,
-  defaultValue: 3,
+  type: DataTypes.DECIMAL(10, 2),
+  defaultValue: 0.50,
   allowNull: false,
   validate: {
-    min: 1
+    min: 0
   }
 },
 creditCostPerLink_C: {
-  type: DataTypes.INTEGER,
-  defaultValue: 3,
+  type: DataTypes.DECIMAL(10, 2),
+  defaultValue: 0.30,
   allowNull: false,
   validate: {
-    min: 1
+    min: 0
   }
 },
   credits: {

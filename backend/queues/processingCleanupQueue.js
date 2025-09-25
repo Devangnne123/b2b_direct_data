@@ -4,12 +4,26 @@ const { processCleanupJob } = require('../jobs/processCleanupJob');
 const { processCleanupJob1 } = require('../jobs/processCleanupJob1');
 const { processCleanupJob2 } = require('../jobs/processCleanupJob2');
 require("dotenv").config(); // Load the .env file
-const connection = new IORedis({
-  host: '172.31.23.143', // Replace with your EC2 Redis host
-  port: 6379, // Replace with your Redis port
-  password: 'redis123', // Replace with your Redis password
+// const connection = new IORedis({
+//   host: '172.31.27.77', // Replace with your EC2 Redis host
+//   port: 6379, // Replace with your Redis port
+//   password: 'redis123', // Replace with your Redis password
+//   maxRetriesPerRequest: null,
+//   enableReadyCheck: false
+// });
+
+
+const connection = new IORedis(process.env.REDIS_URL, {
   maxRetriesPerRequest: null,
-  enableReadyCheck: false
+  enableReadyCheck: false,
+  reconnectOnError: (err) => {
+    console.error("Redis reconnect error:", err);
+    return true; // always reconnect
+  },
+  retryStrategy(times) {
+    const delay = Math.min(times * 50, 2000); // exponential backoff
+    return delay;
+  },
 });
 
 // const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
