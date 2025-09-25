@@ -53,7 +53,7 @@ const VerificationUpload = sequelize.define('verification_upload', {
     defaultValue: 'pending'
   },
   remainingCredits: {
-    type: DataTypes.INTEGER, // <-- Add this field
+    type: DataTypes.DECIMAL(10, 2), // <-- Add this field
     defaultValue: 0,
   },
   fileName: {
@@ -61,7 +61,7 @@ const VerificationUpload = sequelize.define('verification_upload', {
     allowNull: false
   },
   creditsUsed: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.DECIMAL(10, 2),
     defaultValue: 0
   },
   status: {

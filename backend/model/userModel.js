@@ -99,7 +99,7 @@ creditCostPerLink_C: {
   }
 },
   credits: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.DECIMAL(10, 2),
     defaultValue: 0,
     validate: {
       min: {

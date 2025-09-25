@@ -72,11 +72,11 @@ const Link = sequelize.define('Link', {
     allowNull: true,
   },
   creditDeducted: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.DECIMAL(10, 2),
     allowNull: true, // allowNull true in case it's not deducted immediately
   },
   remainingCredits: {
-    type: DataTypes.INTEGER, // <-- Add this field
+    type: DataTypes.DECIMAL(10, 2), // <-- Add this field
     defaultValue: 0,
   },
 status: {

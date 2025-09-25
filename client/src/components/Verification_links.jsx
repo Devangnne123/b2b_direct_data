@@ -463,7 +463,7 @@ function VerificationLinks() {
         'Unique ID': entry.uniqueId || 'Unknown',
         'Date': entry.date ? new Date(entry.date).toLocaleString() : 'Unknown',
         'Link': entry.link || 'N/A',
-        'Status': entry.status || 'N/A',
+        'Status': entry.final_status || 'N/A',
         'Credits Used': entry.creditsUsed || 0,
         'Full Name': entry.full_name || 'N/A',
         'Headline': entry.head_title || 'N/A',
